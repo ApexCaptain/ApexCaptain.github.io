@@ -11733,6 +11733,12 @@ body.dark h5 {
 body.dark h6 {
   color: #d4d4d4;
 }
+body.dark strong {
+  color: #ffc0cb;
+}
+body.dark .content table thead th {
+  color: #ffc;
+}
 body {
   counter-reset: card;
 }
