@@ -1,0 +1,116 @@
+@charset "UTF-8";
+#toggleTheme {
+  border: 0;
+}
+body
+.dark {
+  background-color: #212121;
+}
+.dark .navbar {
+  background-color: #181818;
+}
+.dark .navbar .navbar-menu {
+  background-color: transparent !important;
+}
+.dark .navbar .navbar-menu .navbar-item {
+  background-color: inherit;
+  color: #fff;
+}
+.dark .navbar .navbar-menu .navbar-item:hover {
+  background-color: #212121;
+  color: #aaa;
+}
+.dark .footer {
+  background-color: #181818;
+  color: #fff;
+}
+.dark .card {
+  background-color: #181818;
+  color: #fff;
+}
+.dark .card .title {
+  color: #aaa;
+}
+.dark .card h1 {
+  color: #aaa;
+}
+.dark .card h2 {
+  color: #aaa;
+}
+.dark .card h3 {
+  color: #aaa;
+}
+.dark .card h4 {
+  color: #aaa;
+}
+.dark .card h5 {
+  color: #aaa;
+}
+.dark .card h6 {
+  color: #aaa;
+}
+.dark .card strong {
+  color: #ffc0cb;
+}
+.dark .content table thead th {
+  color: #ffc;
+}
+.dark #toc .is-mobile .level-item {
+  color: #3273dc;
+}
+body
+.navy {
+  background-color: ;
+}
+.navy .navbar {
+  background-color: ;
+}
+.navy .navbar .navbar-menu {
+  background-color: transparent !important;
+}
+.navy .navbar .navbar-menu .navbar-item {
+  background-color: inherit;
+  color: ;
+}
+.navy .navbar .navbar-menu .navbar-item:hover {
+  background-color: ;
+  color: ;
+}
+.navy .footer {
+  background-color: ;
+  color: ;
+}
+.navy .card {
+  background-color: ;
+  color: ;
+}
+.navy .card .title {
+  color: ;
+}
+.navy .card h1 {
+  color: ;
+}
+.navy .card h2 {
+  color: ;
+}
+.navy .card h3 {
+  color: ;
+}
+.navy .card h4 {
+  color: ;
+}
+.navy .card h5 {
+  color: ;
+}
+.navy .card h6 {
+  color: ;
+}
+.navy .card strong {
+  color: ;
+}
+.navy .content table thead th {
+  color: #ffc;
+}
+.navy #toc .is-mobile .level-item {
+  color: #3273dc;
+}

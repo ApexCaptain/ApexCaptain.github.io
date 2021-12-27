@@ -1,0 +1,76 @@
+#toggleTheme {
+  border: 0;
+}
+body.dark {
+  background-color: #1e1e1e;
+}
+body.dark #toggleTheme {
+  background-color: #3c3c3c;
+}
+body.dark #toggleTheme:hover,
+body.dark #toggleTheme:focus {
+  background-color: #37373d;
+  color: #007acc;
+}
+body.dark .navbar {
+  background-color: #3c3c3c;
+  color: #d4d4d4;
+}
+body.dark .navbar .navbar-menu {
+  background-color: transparent !important;
+}
+body.dark .navbar .navbar-menu .navbar-item {
+  color: inherit;
+}
+body.dark .navbar .navbar-menu .navbar-item:hover,
+body.dark .navbar .navbar-menu .navbar-item:focus {
+  background-color: #37373d;
+  color: #007acc;
+}
+body.dark .card {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+}
+body.dark .title {
+  color: #d4d4d4;
+}
+body.dark .content {
+  color: #d4d4d4;
+}
+body.dark .footer {
+  background-color: #3c3c3c;
+  color: #d4d4d4;
+}
+body.dark .menu-label {
+  color: #d4d4d4;
+}
+body.dark span.level-start {
+  color: #d4d4d4;
+}
+body.dark h1 {
+  color: #d4d4d4;
+}
+body.dark h2 {
+  color: #d4d4d4;
+}
+body.dark h3 {
+  color: #d4d4d4;
+}
+body.dark h4 {
+  color: #d4d4d4;
+}
+body.dark h5 {
+  color: #d4d4d4;
+}
+body.dark h6 {
+  color: #d4d4d4;
+}
+body.dark strong {
+  color: #ffc0cb;
+}
+body.dark .content table thead th {
+  color: #ffc;
+}
+body.dark #toc .is-mobile .level-item {
+  color: #3273dc;
+}

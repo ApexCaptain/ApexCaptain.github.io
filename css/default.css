@@ -11665,76 +11665,117 @@ figure.highlight .section {
     padding: 1.5rem 1rem;
   }
 }
+@charset "UTF-8";
 #toggleTheme {
   border: 0;
 }
-body.dark {
-  background-color: #1e1e1e;
+.dark {
+  background-color: #212121;
 }
-body.dark #toggleTheme {
-  background-color: #3c3c3c;
+.dark .navbar {
+  background-color: #181818;
 }
-body.dark #toggleTheme:hover,
-body.dark #toggleTheme:focus {
-  background-color: #37373d;
-  color: #007acc;
-}
-body.dark .navbar {
-  background-color: #3c3c3c;
-  color: #d4d4d4;
-}
-body.dark .navbar .navbar-menu {
+.dark .navbar .navbar-menu {
   background-color: transparent !important;
 }
-body.dark .navbar .navbar-menu .navbar-item {
-  color: inherit;
+.dark .navbar .navbar-menu .navbar-item {
+  background-color: inherit;
+  color: #fff;
 }
-body.dark .navbar .navbar-menu .navbar-item:hover,
-body.dark .navbar .navbar-menu .navbar-item:focus {
-  background-color: #37373d;
-  color: #007acc;
+.dark .navbar .navbar-menu .navbar-item:hover {
+  background-color: #212121;
+  color: #aaa;
 }
-body.dark .card {
-  background-color: #1e1e1e;
-  color: #d4d4d4;
+.dark .footer {
+  background-color: #181818;
+  color: #fff;
 }
-body.dark .title {
-  color: #d4d4d4;
+.dark .card {
+  background-color: #181818;
+  color: #fff;
 }
-body.dark .content {
-  color: #d4d4d4;
+.dark .card .title {
+  color: #aaa;
 }
-body.dark .footer {
-  background-color: #3c3c3c;
-  color: #d4d4d4;
+.dark .card h1 {
+  color: #aaa;
 }
-body.dark .menu-label {
-  color: #d4d4d4;
+.dark .card h2 {
+  color: #aaa;
 }
-body.dark span.level-start {
-  color: #d4d4d4;
+.dark .card h3 {
+  color: #aaa;
 }
-body.dark h1 {
-  color: #d4d4d4;
+.dark .card h4 {
+  color: #aaa;
 }
-body.dark h2 {
-  color: #d4d4d4;
+.dark .card h5 {
+  color: #aaa;
 }
-body.dark h3 {
-  color: #d4d4d4;
+.dark .card h6 {
+  color: #aaa;
 }
-body.dark h4 {
-  color: #d4d4d4;
-}
-body.dark h5 {
-  color: #d4d4d4;
-}
-body.dark h6 {
-  color: #d4d4d4;
-}
-body.dark strong {
+.dark .card strong {
   color: #ffc0cb;
 }
-body.dark .content table thead th {
+.dark .content table thead th {
   color: #ffc;
+}
+.dark #toc .is-mobile .level-item {
+  color: #3273dc;
+}
+.navy {
+  background-color: ;
+}
+.navy .navbar {
+  background-color: ;
+}
+.navy .navbar .navbar-menu {
+  background-color: transparent !important;
+}
+.navy .navbar .navbar-menu .navbar-item {
+  background-color: inherit;
+  color: ;
+}
+.navy .navbar .navbar-menu .navbar-item:hover {
+  background-color: ;
+  color: ;
+}
+.navy .footer {
+  background-color: ;
+  color: ;
+}
+.navy .card {
+  background-color: ;
+  color: ;
+}
+.navy .card .title {
+  color: ;
+}
+.navy .card h1 {
+  color: ;
+}
+.navy .card h2 {
+  color: ;
+}
+.navy .card h3 {
+  color: ;
+}
+.navy .card h4 {
+  color: ;
+}
+.navy .card h5 {
+  color: ;
+}
+.navy .card h6 {
+  color: ;
+}
+.navy .card strong {
+  color: ;
+}
+.navy .content table thead th {
+  color: #ffc;
+}
+.navy #toc .is-mobile .level-item {
+  color: #3273dc;
 }
