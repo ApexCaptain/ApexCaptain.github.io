@@ -2,12 +2,13 @@
 title: ApexCaptain.IaC
 description: Terraform으로 멀티 클러스터 구성하기
 slug: personal-project/apexcaptain.iac
-date: 2025-09-28 00:00:00+0000
+date: 2025-09-28 18:05:00+0900
 image: cover.png
 categories:
     - 개인플젝
 tags:
     - Terraform
+    - Kubernetes
     - IaC
 weight: 1    
 ---
