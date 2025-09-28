@@ -1,0 +1,11 @@
+# Change baseurl before deploy
+baseurl = "https://blog.ayteneve93.com"
+languageCode = "ko-kr"
+title = "ApexCaptain의 기술 블로그"
+
+defaultContentLanguage = "ko"
+hasCJKLanguage = true
+disqusShortname = "hugo-theme-stack"
+
+[pagination]
+pagerSize = 5

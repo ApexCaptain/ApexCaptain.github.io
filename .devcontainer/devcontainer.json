@@ -1,0 +1,31 @@
+{
+  // Basic
+  "name": "ApexCaptain.github.io Dev Container",
+  "dockerComposeFile": "docker-compose.dev.yml",
+  "service": "workspace",
+  "workspaceFolder": "/home/vscode/workspace/${localWorkspaceFolderBasename}",
+  "remoteUser": "vscode",
+  // Features
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {},
+    "ghcr.io/devcontainers/features/hugo:1": {
+      "extended": true
+    }
+  },
+  // Custom
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "PKief.material-icon-theme",
+        "mhutchie.git-graph",
+        "github.vscode-github-actions",
+        "ms-azuretools.vscode-docker",
+        "tamasfe.even-better-toml"
+      ]
+    }
+  },
+  // LifeCycles
+  "initializeCommand": "bash ./.devcontainer/commands/initializeCommand.sh ${localWorkspaceFolder} ${containerWorkspaceFolder} ${localWorkspaceFolderBasename} ${containerWorkspaceFolderBasename}",
+  "updateContentCommand": "bash ./.devcontainer/commands/updateContentCommand.sh",
+  "postStartCommand": "bash ./.devcontainer/commands/postStartCommand.sh"
+}

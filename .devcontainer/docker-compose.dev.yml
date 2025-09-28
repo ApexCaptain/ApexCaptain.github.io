@@ -1,0 +1,14 @@
+services:
+  workspace:
+    container_name: apex_captain_github_io_devcon_workspace
+    # Base On Ubuntu Noble
+    image: mcr.microsoft.com/devcontainers/base:dev-noble
+
+    env_file:
+      - .env
+
+    command: sleep infinity
+
+    volumes:
+      # Workspace Cache
+      - ..:${containerWorkspaceFolder}:cached
