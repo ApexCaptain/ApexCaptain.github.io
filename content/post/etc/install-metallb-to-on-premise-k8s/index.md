@@ -1,6 +1,6 @@
 ---
 title: On-Premise k8s에 Metallb 설치
-description: 방구석 k8s도 로드 밸런서는 필요해요 (요약 정리)
+description: 방구석 k8s도 로드 밸런서는 필요해요
 slug: etc/install-metallb-to-on-premise-k8s
 date: 2025-09-29 00:00:00+0900
 image: cover.png
@@ -11,22 +11,20 @@ tags:
 weight: 1
 ---
 
-### 배경지식
+### 들어가기 앞서
 
-- **내 환경**
+- **회사와 무관하게 개인적으로 관리하는 k8s 클러스터는 다음과 같다.**
   - 클라우드: OKE(EKS/GKE와 유사)처럼 기본 L4/L7 Load Balancer 제공
   - 온프레미스: 집에서 운영하는 싱글 노드로 시작한 k8s, 리소스 집약적 워크로드 배치(Jellyfin, 7 Days To Die, Ollama, QBittorrent 등)
   <br>
   <p align='center'>
       <img src="jellyfin.png" alt>
-      <em>만일 Jellyfin같은 앱은 클라우드에 설치하기엔 자원 소모량이 너무 크다.</em>
+      <em>Jellyfin같은 앱은 클라우드에 설치하기엔 자원 소모량이 너무 크다.</em>
   </p>
-  <br>
-  <br>
 
-  - 내부망: `93.5.22.0/24`
+  - 내부망 대역: `93.5.22.0/24`
   - 초기 Worker Node: `93.5.22.44`
-  - 공유기 포트포워딩: 외부 `80/443` → `93.5.22.44:80/443`, 클러스터 내 Ingress Controller가 도메인 기반 라우팅
+  - 공유기 포트포워딩: 외부 `80/443` → `93.5.22.44:80/443`, 클러스터 내 Nginx Ingress Controller가 도메인 기반 라우팅
 
 - **로드밸런서란?**
   - 트래픽을 여러 노드/파드로 분산하고, 가상 IP(VIP)를 통해 단일 진입점을 제공
@@ -43,25 +41,25 @@ weight: 1
     - GARP(Gratuitous ARP): 자신의 IP-MAC 정보를 네트워크에 알리는 ARP, VIP 전환 시 필수
     - Strict ARP: 노드가 소유하지 않은 IP에 응답하지 않도록 제한, L2 모드와 IPVS에서 안전성 향상
 
-### 문제점
+### 문제의 시작
 
-> 노드가 늘어나면(예: `93.5.22.45`, `93.5.22.46`) 공유기는 어느 노드로 포워딩해야 할까?
 
 - 초기에는 단일 노드(`93.5.22.44`)로 포워딩하면 충분했지만, 노드가 추가되면 단일 대상 포워딩만으로는 고가용성/확장성 확보 불가
+  <p align='center'>
+    <img src="cannot-route.png" alt>
+    <em>이런 상황이라면 공유기는 대체 어느 Node로 포워딩을 해야하는가?</em>
+  </p>
 - Kubernetes의 `LoadBalancer` 타입이 클라우드 밖에서는 기본 제공되지 않아, 외부에서 접근 가능한 VIP가 부재
 - 결과적으로, 인입 트래픽을 안정적으로 받아 서비스로 라우팅할 수 있는 소프트웨어 로드밸런서가 필요
 
-<p align='center'>
-    <img src="cannot-route.png" alt>
-    <em>이런 상황이라면 공유기는 대체 어느 Node로 포워딩을 해야하는가?</em>
-</p>
+
 
 ### 해결방안 — Metallb(L2 모드) 도입
 
 - 같은 서브넷(`93.5.22.0/24`)에서 VIP를 광고하는 L2 모드로 간단하게 시작
 - 예시 VIP: `93.5.22.100` (공유기 포트포워딩은 이 VIP로 설정)
 
-#### 1) 설치(Helm)
+#### 설치(Helm)
 
 ```bash
 helm repo add metallb https://metallb.github.io/metallb
@@ -76,7 +74,7 @@ helm upgrade --install metallb metallb/metallb -n metallb-system --wait
 kubectl get crd | grep metallb.io
 ```
 
-#### 2) IP 풀/광고 리소스 생성
+#### IP 풀/광고 리소스 생성
 
 `ipaddresspool.yaml`:
 
@@ -116,7 +114,7 @@ spec:
 kubectl apply -f l2advertisement.yaml
 ```
 
-#### 3) 동작 확인 체크리스트
+#### 동작 확인 체크리스트
 
 ```bash
 # 컨트롤러/스피커 파드 상태
@@ -129,7 +127,7 @@ kubectl get ipaddresspools.metallb.io,l2advertisements.metallb.io -n metallb-sys
 kubectl get svc -A | grep LoadBalancer || true
 ```
 
-#### 4) 공유기 포트포워딩
+#### 공유기 포트포워딩
 
 
 
