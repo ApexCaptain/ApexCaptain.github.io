@@ -295,7 +295,7 @@ spec:
 kubectl apply -f deployment-qbittorrent.yaml
 ```
 
-#### 마치며
+### 참고
 
 - `NET_LOCAL`은 클러스터 Pod CIDR에 맞춘다.
 - `PRIVATE_KEY`는 위 시크릿 참조와 일치시킨다.
@@ -303,6 +303,8 @@ kubectl apply -f deployment-qbittorrent.yaml
 - `NET_ADMIN` capability가 없으면 VPN 터널이 정상 동작하지 않는다.
 - VPN 네트워크가 끊어지면 모든 토렌트 서비스가 셧다운 된다.
 - Service Type은 Cluster IP로 설정했는데, 이는 Nginx Ingress Controller와 연결하기 위함이다. 필요에 따라 NodePort등을 사용해서 접근 할 수 있도록 하자.
+
+### 마치며
 
 <p align='center'>
     <img src="logs.png" alt>
