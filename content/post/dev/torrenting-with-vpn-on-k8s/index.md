@@ -58,6 +58,18 @@ weight: 1
   - `fsGroup: 1000`으로 퍼미션 정리
 - **Ingress(선택)**: NGINX Ingress
 
+<br><br>
+
+#### 네임스페이스 생성
+
+늘 그렇듯 처음은 `Namespace`부터 만든다. 이번 포스트에서는 일관성 있게 `torrent`라는 이름을 사용한다.
+
+```bash
+kubectl create namespace torrent
+```
+
+<br><br>
+
 #### NordVPN Access Token 발급
 
   1. [NordVPN Dashboard](https://my.nordaccount.com/dashboard/)에 접속 후 좌상단 `NordVPN`을 클릭한다.
@@ -79,19 +91,20 @@ weight: 1
 
 <br><br>
 
-#### 네임스페이스 생성
+#### Private Key 생성
+Docker 명령어를 통해 Private Key를 생성한다.
 
-늘 그렇듯 처음은 `Namespace`부터 만든다. 이번 포스트에서는 일관성 있게 `torrent`라는 이름을 사용한다.
+ `<YOUR_ACCESS_TOKEN>` 자리에 위에서 생성한 토큰 값을 넣어준다.
 
 ```bash
-kubectl create namespace torrent
-```
+docker run --rm --cap-add=NET_ADMIN -e TOKEN=<YOUR_ACCESS_TOKEN> ghcr.io/bubuntux/nordvpn:get_private_key | grep "Private Key:" | cut -d' ' -f3 | tr -d '\n'
+  ```
 
 <br><br>
 
 #### 시크릿 생성
 
-`<YOUR_PRIVATE_KEY>` 자리를 위에서 발급한 Access Token 값으로 교체한다.
+`<YOUR_PRIVATE_KEY>` 자리를 위에서 Docker Command로 생성한 Private Key 값으로 교체한다.
 
 
 ```bash
