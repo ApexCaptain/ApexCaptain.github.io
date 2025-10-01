@@ -23,6 +23,10 @@ weight: 1
 
 그중 하나가 바로가기 파일이 윈도우 작업 표시줄에 드래그 앤 드롭으로 추가가 안 된다는 것이다.
 
+이번 포스트에선 `Cursor`나 `VsCode` 작업 영역(Workspace)의 바로가기를 만들고
+
+이를 작업 표시줄에 추가하는 방법을 공유하겠다.
+
 <br><br>
 
 ### 해결방안
@@ -92,7 +96,7 @@ Workspace 파일의 바로가기를 만들어서 바탕화면으로 옮겨준다
     <p align='left'>
         <img src="open-workstation-from-task-bar.gif" alt>
     </p>
-- 바탕화면에 있는 아이콘은 물론이고 윈도우 검색으로도 들어갈 수 있다.
+- 윈도우 검색으로도 들어갈 수 있다.
     <p align='left'>
         <img src="open-workstation-using-search.gif" alt>
     </p>
