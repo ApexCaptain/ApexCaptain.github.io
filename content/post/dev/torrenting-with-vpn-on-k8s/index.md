@@ -22,14 +22,14 @@ weight: 1
 
 <br>
 
-### 문제의 시작
+## 문제의 시작
 
 - [**Jellyfin**](https://jellyfin.ayteneve93.com)으로 지인들과 편하게 미디어를 함께 보고 싶어졌다. <sub>_~귀칼이 그렇게 재밌다길래~_</sub>
 - 미디어 콘텐츠를 구하는 가장 좋은 방법은 Torrent이다.
 - 하지만 이를 위해 메인 PC를 하루종일 켜두고 싶지는 않다.
 - 보안을 위해 VPN은 쓰되, 메인 PC 전체 트래픽을 VPN에 묶고 싶지는 않다.
 
-### 해결방안
+## 해결방안
 - k8s 클러스터에 [qBittorrent](https://hub.docker.com/r/linuxserver/qbittorrent) 배포
 - VPN 구성을 위해 NordVPN의 서비스인 [NordLynx](https://hub.docker.com/r/bubuntux/nordlynx)를 적용
 - Ingress를 구성해서 보유한 도메인을 통해 접근 가능하도록 설정 (선택)
@@ -46,7 +46,7 @@ weight: 1
 
 
 
-#### 구성 개요
+### 구성 개요
 
 - **시크릿**: NordLynx 개인키(`nord-lynx-private-key`)를 담는 `Opaque` 타입 시크릿.
 - **서비스(Service)**: `ClusterIP`로 qBittorrent 웹 및 토렌트 포트 노출.
@@ -60,7 +60,7 @@ weight: 1
 
 <br><br>
 
-#### 네임스페이스 생성
+### 네임스페이스 생성
 
 늘 그렇듯 처음은 `Namespace`부터 만든다. 이번 포스트에서는 일관성 있게 `torrent`라는 이름을 사용한다.
 
@@ -70,7 +70,7 @@ kubectl create namespace torrent
 
 <br><br>
 
-#### NordVPN Access Token 발급
+### NordVPN Access Token 발급
 
   1. [NordVPN Dashboard](https://my.nordaccount.com/dashboard/)에 접속 후 좌상단 `NordVPN`을 클릭한다.
   <p align='left'>
@@ -91,7 +91,7 @@ kubectl create namespace torrent
 
 <br><br>
 
-#### Private Key 생성
+### Private Key 생성
 Docker 명령어를 통해 Private Key를 생성한다.
 
  `<YOUR_ACCESS_TOKEN>` 자리에 위에서 생성한 토큰 값을 넣어준다.
@@ -102,7 +102,7 @@ docker run --rm --cap-add=NET_ADMIN -e TOKEN=<YOUR_ACCESS_TOKEN> ghcr.io/bubuntu
 
 <br><br>
 
-#### 시크릿 생성
+### 시크릿 생성
 
 `<YOUR_PRIVATE_KEY>` 자리를 위에서 Docker Command로 생성한 Private Key 값으로 교체한다.
 
@@ -115,7 +115,7 @@ kubectl -n torrent create secret generic torrent-nord-lynx-private-key \
 
 <br><br>
 
-#### Service 생성
+### Service 생성
 
 `service-qbittorrent.yaml`:
 
@@ -152,7 +152,7 @@ kubectl apply -f service-qbittorrent.yaml
 
 <br><br>
 
-#### PVC 생성
+### PVC 생성
 
 StorageClass가 별도로 없다면 비워도 상관 없다.
 
@@ -214,7 +214,7 @@ kubectl apply -f pvc-qbittorrent.yaml
 
 <br><br>
 
-#### Deployment 생성
+### Deployment 생성
 
 `deployment-qbittorrent.yaml`:
 
@@ -328,7 +328,7 @@ kubectl apply -f deployment-qbittorrent.yaml
 
 <br><br>
 
-#### Ingress 생성(선택)
+### Ingress 생성(선택)
 
 Ingress는 옵션이다. 실 사용에서는 Cloudflare 레코드로 도메인을 연결하고
 
@@ -370,7 +370,7 @@ spec:
 kubectl apply -f ingress-qbittorrent.yaml
 ```
 
-### 참고
+## 참고
 
 - `NET_LOCAL`은 클러스터 Pod CIDR에 맞춘다.
 - `PRIVATE_KEY`는 위 시크릿 참조와 일치시킨다.
@@ -381,7 +381,7 @@ kubectl apply -f ingress-qbittorrent.yaml
 
   환경에 따라 `NodePort`나 `LoadBalancer`를 사용해서 접근 할 수 있도록 하자.
 
-### 마치며
+## 마치며
 
 <p align='center'>
     <img src="logs.png" alt>

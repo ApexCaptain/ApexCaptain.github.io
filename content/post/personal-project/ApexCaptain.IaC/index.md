@@ -15,7 +15,7 @@ weight: 1
 
 # [GitHub](https://github.com/ApexCaptain/ApexCaptain.IaC)
 
-### 주요 목표
+## 주요 목표
 
 - **하이브리드 멀티 클러스터**: OCI OKE(클라우드) + Workstation microk8s(온프레미스)
 - **GitOps 파이프라인**: ArgoCD 중심의 선언적 배포 자동화
@@ -24,14 +24,14 @@ weight: 1
 - **개인 미디어 인프라**: Jellyfin, qBittorrent, 게임 서버 등
 
 
-### 아키텍처 개요
+## 아키텍처 개요
 
 - **네트워크(OCI)**: VCN + Public/Private/DB Subnet, LB/Bastion, K8s 노드, 데이터 계층
 - **클러스터 계층**
   - OKE(클라우드): System(NS)에 Istio, ArgoCD(개발 중), Vault(개발 중), 모니터링(개발 중), Ingress
   - Workstation(microk8s): System(NS)에 Istio/모니터링/Longhorn, Application(NS)에 Dev/Media/Game/File 서비스
 
-### 현재 성과(핵심)
+## 현재 성과(핵심)
 
 - **인프라 자동화**
   - OKE 및 Workstation 클러스터 구성 정의, 선택적 스택 배포/병렬화, 상태 백업 스크립트 제공
@@ -45,7 +45,7 @@ weight: 1
   - `src/terraform/stacks` 중심 스택화 구조, `scripts/` 내 배포 선택/백업/터미널 도구
   - Projen, ESLint/Prettier, Yarn 워크플로우 정착
 
-### 진행 현황(요약)
+## 진행 현황(요약)
 
 - OKE 클러스터 자동 프로비저닝: 구성
 - Workstation microk8s 클러스터: 구성

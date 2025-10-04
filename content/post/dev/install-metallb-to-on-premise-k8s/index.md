@@ -14,7 +14,7 @@ tags:
 weight: 1
 ---
 
-### 들어가기 앞서
+## 들어가기 앞서
 
 - **회사와 무관하게 개인적으로 관리하는 k8s 클러스터는 다음과 같다.**
   - 클라우드: OKE(EKS/GKE와 유사)처럼 기본 L4/L7 Load Balancer 제공
@@ -44,7 +44,7 @@ weight: 1
     - GARP(Gratuitous ARP): 자신의 IP-MAC 정보를 네트워크에 알리는 ARP, VIP 전환 시 필수
     - Strict ARP: 노드가 소유하지 않은 IP에 응답하지 않도록 제한, L2 모드와 IPVS에서 안전성 향상
 
-### 문제의 시작
+## 문제의 시작
 
 
 - 초기에는 단일 노드(`93.5.22.44`)로 포워딩하면 충분했지만, 노드가 추가되면 단일 대상 포워딩만으로는 고가용성/확장성 확보 불가
@@ -58,14 +58,14 @@ weight: 1
 
 <br><br>
 
-### 해결방안 — Metallb(L2 모드) 도입
+## 해결방안 — Metallb(L2 모드) 도입
 
 - 같은 서브넷(`93.5.22.0/24`)에서 VIP를 광고하는 L2 모드로 간단하게 시작
 - 예시 VIP: `93.5.22.100` (공유기 포트포워딩은 이 VIP로 설정)
 
 <br><br>
 
-#### 설치(Helm)
+### 설치(Helm)
 
 ```bash
 helm repo add metallb https://metallb.github.io/metallb
@@ -98,7 +98,7 @@ kubectl get crd | grep metallb.io
 
 <br><br>
 
-#### IP 풀/광고 리소스 생성
+### IP 풀/광고 리소스 생성
 
 `ipaddresspool.yaml`:
 
@@ -142,7 +142,7 @@ kubectl apply -f l2advertisement.yaml
 
 <br><br>
 
-#### 동작 확인 체크리스트
+### 동작 확인 체크리스트
 
 ```bash
 # 컨트롤러/스피커 파드 상태
@@ -157,7 +157,7 @@ kubectl get svc -A | grep LoadBalancer || true
 
 <br><br>
 
-#### 공유기 포트포워딩
+### 공유기 포트포워딩
 
 
 
@@ -167,14 +167,14 @@ kubectl get svc -A | grep LoadBalancer || true
   </p>
 
 
-### 참고(안전한 네트워킹을 위해)
+## 참고(안전한 네트워킹을 위해)
 
 - Strict ARP를 활성화하면, 노드가 소유하지 않은 IP에 응답하지 않아 ARP 오류를 방지
 - `kube-proxy` IPVS 모드 사용 시에도 Strict ARP는 중요
 - BGP 모드는 외부 라우터와의 동적 라우팅이 필요할 때 선택
 -  추가로 Nginx Ingress Controller가 VIP로 들어온 요청을 각 서비스로 라우팅하도록 설정했다
 
-### 마무리
+## 마무리
 
 온프레미스 k8s에서 `Metallb`는 외부 트래픽을 받는 가장 간단하고 표준적인 방법이다. 같은 서브넷에서는 L2 모드만으로도 VIP를 안전하게 광고하여, 노드 수가 늘어나도 일관된 진입점을 유지할 수 있다.
 
