@@ -1,0 +1,728 @@
+<!doctype html><html lang=ko-kr dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="OCI Block Volume 효율 최대로!!"><title>OKE에 NFS 서버 및 NFS PVC 공급자 설치하기</title><link rel=canonical href=https://blog.ayteneve93.com/p/dev/nfs-subdir-external-provisioner/><link rel=stylesheet href=/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="OKE에 NFS 서버 및 NFS PVC 공급자 설치하기"><meta property='og:description' content="OCI Block Volume 효율 최대로!!"><meta property='og:url' content='https://blog.ayteneve93.com/p/dev/nfs-subdir-external-provisioner/'><meta property='og:site_name' content='ApexCaptain의 기술 블로그'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Kubernetes'><meta property='article:tag' content='OCI'><meta property='article:tag' content='NFS'><meta property='article:tag' content='StorageClass'><meta property='article:tag' content='PVC'><meta property='article:tag' content='LoadBalancer'><meta property='article:published_time' content='2025-10-04T00:00:00+09:00'><meta property='article:modified_time' content='2025-10-04T00:00:00+09:00'><meta property='og:image' content='https://blog.ayteneve93.com/p/dev/nfs-subdir-external-provisioner/cover.png'><meta name=twitter:title content="OKE에 NFS 서버 및 NFS PVC 공급자 설치하기"><meta name=twitter:description content="OCI Block Volume 효율 최대로!!"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://blog.ayteneve93.com/p/dev/nfs-subdir-external-provisioner/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="메뉴 여닫기">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_7c3bd1d4d98bb2c4.png width=300 height=298 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>👋</span></figure><div class=site-meta><h1 class=site-name><a href=/>ApexCaptain의 기술 블로그</a></h1><h2 class=site-description></h2></div></header><ol class=menu-social><li><a href=https://github.com/ApexCaptain target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>다크 모드</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">목차</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#들어가기-앞서>들어가기 앞서</a><ol><li><a href=#자체-k8s를-운영하는-이유>자체 k8s를 운영하는 이유</a></li><li><a href=#oracle을-선택한-이유>Oracle을 선택한 이유</a></li><li><a href=#단점은>단점은?</a></li><li><a href=#oci-always-free-제한사항>OCI Always Free 제한사항</a></li></ol></li><li><a href=#문제의-시작>문제의 시작</a><ol><li><a href=#boot-volume-최소값-제한>Boot Volume 최소값 제한</a></li><li><a href=#심지어-pvc도-마찬가지>심지어 PVC도 마찬가지</a></li><li><a href=#상황을-정리하자면>상황을 정리하자면</a></li></ol></li><li><a href=#해결방안>해결방안</a><ol><li><a href=#nodepool의-스펙-및-수-조정>NodePool의 스펙 및 수 조정</a></li><li><a href=#시스템-구성-요소>시스템 구성 요소</a></li><li><a href=#사용하는-도구>사용하는 도구</a></li><li><a href=#terraform-인프라-구성>Terraform 인프라 구성</a><ol><li><a href=#oci-볼륨-생성>OCI 볼륨 생성</a></li><li><a href=#볼륨-백업-정책>볼륨 백업 정책</a></li><li><a href=#백업-정책-할당>백업 정책 할당</a></li><li><a href=#변수-정의>변수 정의</a></li><li><a href=#출력값-정의>출력값 정의</a></li><li><a href=#terraformtfvars-파일-생성><code>terraform.tfvars</code> 파일 생성</a></li><li><a href=#terraform-배포>Terraform 배포</a></li></ol></li><li><a href=#k8s-manifest>k8s Manifest</a><ol><li><a href=#네임스페이스-생성>네임스페이스 생성</a></li><li><a href=#persistentvolume-생성>PersistentVolume 생성</a></li><li><a href=#persistentvolumeclaim-생성>PersistentVolumeClaim 생성</a></li><li><a href=#configmap-sftp-pod용-ssh-키-관리-선택사항>ConfigMap (SFTP Pod용 SSH 키 관리, 선택사항)</a></li><li><a href=#service-생성>Service 생성</a></li><li><a href=#deployment-생성>Deployment 생성</a></li><li><a href=#filebrowser-ingress-구성-선택>FileBrowser Ingress 구성 (선택)</a></li><li><a href=#k8s-리소스-배포>k8s 리소스 배포</a></li></ol></li><li><a href=#helm>Helm</a><ol><li><a href=#helm-저장소-추가>Helm 저장소 추가</a></li><li><a href=#nfs-subdir-external-provisioner-values-파일>NFS Subdir External Provisioner Values 파일</a></li><li><a href=#helm-chart-배포>Helm Chart 배포</a></li></ol></li><li><a href=#검증-및-테스트>검증 및 테스트</a><ol><li><a href=#리소스-상태-확인>리소스 상태 확인</a></li></ol></li></ol></li><li><a href=#마치며>마치며</a></li><li><a href=#추후-계획>추후 계획</a></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/dev/nfs-subdir-external-provisioner/><img src=/p/dev/nfs-subdir-external-provisioner/cover_hu_341d9b11fcfb35a6.png srcset="/p/dev/nfs-subdir-external-provisioner/cover_hu_341d9b11fcfb35a6.png 800w, /p/dev/nfs-subdir-external-provisioner/cover_hu_139cdeac6a9cfe85.png 1600w" width=800 height=336 loading=lazy alt="Featured image of post OKE에 NFS 서버 및 NFS PVC 공급자 설치하기"></a></div><div class=article-details><header class=article-category><a href=/categories/%EA%B0%9C%EB%B0%9C/>개발</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/dev/nfs-subdir-external-provisioner/>OKE에 NFS 서버 및 NFS PVC 공급자 설치하기</a></h2><h3 class=article-subtitle>OCI Block Volume 효율 최대로!!</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>10월 04, 2025</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>9 분 정도</time></div></footer></div></header><section class=article-content><h2 id=들어가기-앞서>들어가기 앞서</h2><h3 id=자체-k8s를-운영하는-이유>자체 k8s를 운영하는 이유</h3><ul><li>다양한 기술을 테스트 & 학습</li><li>개인적으로 쓸 앱 배포</li></ul><p>회사 자원을 사용해서 이런걸 해볼 순 없는 노릇이었고, 직접 k8s 클러스터를 보유 & 운영 하는 것이 가장 현실적인 해결책이었다.</p><p><br><br></p><h3 id=oracle을-선택한-이유>Oracle을 선택한 이유</h3><p>현재 클러스터는 총 2개로, 하나는 On-Premise, 나머지 하나는 <a class=link href=https://www.oracle.com/kr/cloud/ target=_blank rel=noopener>OCI (Oracle Cloud Infrastructure)</a>에서 운영한다.</p><p><code>OCI</code>는 <code>Oracle</code>에서 운영하는 <code>CP(Cloud Provider)</code>로 <code>Amazon</code>의 <code>AWS</code>, <code>Microsoft</code>의 <code>Azure</code>와 같은 서비스이다.</p><p>여느 클라우드와 마찬가지로 OCI에서도 <code>KaaS</code>를 제공하는데, 이를 <a class=link href=https://www.oracle.com/kr/cloud/cloud-native/kubernetes-engine/ target=_blank rel=noopener>OKE (Oracle Kubernetes Engine)</a>라고 부른다.</p><p>별로 특별할 건 없다. <a class=link href=https://aws.amazon.com/ko/eks/ target=_blank rel=noopener>EKS</a>나 <a class=link href=https://learn.microsoft.com/ko-kr/azure/aks/what-is-aks target=_blank rel=noopener>AKS</a>에 비해 특별히 더 좋은 점이 있는 것도 아니다.</p><p>하지만 OCI에는 다른 CP들과는 다른 엄청난 장점이 하나 있다.</p><blockquote><p>Oracle에는 무려 <code>상시 무료 서비스</code>가 존재한다!</p></blockquote><p align=center><img src=oci-free-tier.png alt>
+<em>클러스터 하나를 운영하기에는 부족함이 없다. 정말 혜자다.</em></p><p>예상컨데 Cloud 후발주자인 Oracle에서 사용자 좀 끌어 모아 보겠다고 일종의 프로모션의 개념으로 나온 것일테지만, 아무렴 어떠한가?</p><p>AWS도 무료로 사용 가능한 건 1년이 한계이고, 그마저도 EKS는 Node 하나 없이 깡통 클러스터만 만들어놓고 숨만 쉬고 있어도 시간당 $0.1씩 과금 된다.</p><p>별 거 아닌거 같다고?</p><p><strong>환율 1400원 기준으로 계산하면 한 달에 무려 10만원씩 나간다!</strong></p><p>적어도 내가 알기로 상시 무료 + k8s 운영이 가능한 CP는 Oracle이 유일하다.</p><p>이것이 내가 OCI를 택한 이유이다.</p><p><br><br></p><h3 id=단점은>단점은?</h3><p>당연히 단점도 있다. 크게 2가지이다.</p><ul><li><p>레퍼런스가 너무 없다. 대부분의 개발자들은 그 존재조차 모르는 것 같다.</p></li><li><p>그럼 공식 문서라도 잘 되어 있어야 하는데 그것도 아니다.</p><p>AWS에 익숙해져서 그런 것도 있겠지만 OCI의 공식 문서는 객관적으로 봐도 가독성이 매우 떨어진다.</p><p><a class=link href=https://docs.oracle.com/en/ target=_blank rel=noopener>공식 문서 사이트 링크</a>가 있으니 궁금한 사람은 부디 들어가서 탐험 해보길 바란다.</p></li></ul><p><br><br></p><h3 id=oci-always-free-제한사항>OCI Always Free 제한사항</h3><p><a class=link href=https://www.oracle.com/kr/cloud/free/#always-free target=_blank rel=noopener>OCI Free Tier</a>페이지에도 나와있는데, 모든 서비스가 무제한으로 사용 가능한 건 당연히 아니다.</p><p>클라스터 1개를 운영한다고 가정하고, k8s에서 가용 가능한 자원을 간단한게 요약하면 다음과 같다.</p><div class=table-wrapper><table><thead><tr><th>자원 유형</th><th>제한사항</th></tr></thead><tbody><tr><td><strong>Node</strong></td><td>Arm 기반 Ampere A1 코어 4개, 24GB 메모리</td></tr><tr><td><strong>Persistent Volume</strong></td><td>200GB</td></tr><tr><td><strong>Load Balancer</strong></td><td>Flexible Network Load Balancer 1개</td></tr></tbody></table></div><p>Node의 경우 Node 1개당 최소 1개의 코어는 필요하므로 최대 사용 가능한 Node 수는 4개이다. AMD Node도 있긴 한데, 사이즈가 너무 작아서 여기선 무시한다.</p><p>OKE로 만드는 클러스터도 1개까지는 무료이다. OKE는 KaaS이기 때문에 Control-Plane Node가 따로 필요 없다.</p><blockquote><p><strong>따라서, 4개의 Arm Node는 모두 Worker Node로 쓸 수 있다! 그것도 공짜로!</strong> <sub><em>아마존, 보고 있나?</em></sub></p></blockquote><p>위의 리소스 제한 안에서 클러스터를 구성하는 게 목표다.</p><p><br><br></p><h2 id=문제의-시작>문제의 시작</h2><h3 id=boot-volume-최소값-제한>Boot Volume 최소값 제한</h3><p>당초 계획했던 대로 OKE로 클러스터와 ARM Node Pool을 생성했다. Node 수는 4개로 각각 1개의 OCPU와 6GB의 메모리를 할당했다.</p><p align=center><img src=instance-detail.png alt>
+<em>k8s Node의 역할을 하는 Oracle Instance 중 하나의 Storage 정보</em></p><p>Boot Volume은 문자 그대로 Linux 시스템이 부팅하는데 필요한 기본 디스크로, 윈도우로 치면 C드라이브 같은 존재이다.</p><p>문제는 다음과 같다.</p><ul><li><p>Boot Volume의 크기는 최소 47Gi (50GB) 이상 할당 해줘야 한다.</p></li><li><p>이 용량은 당초 Free Tier에서 제공되는 200GB에서 차감된다.</p></li></ul><blockquote><p><strong>결론: 단순하게 Node 4개를 만든 것 만으로도 Free Tier의 200GB를 다 써버리게 된다.</strong></p></blockquote><p><br><br></p><h3 id=심지어-pvc도-마찬가지>심지어 PVC도 마찬가지</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>PersistentVolumeClaim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>my-pvc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>storageClassName</span><span class=p>:</span><span class=w> </span><span class=l>oci-bv</span><span class=w> </span><span class=c># 이게 OCI에서 기본적으로 제공하는 Storage Class이다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>accessModes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>ReadWriteOnce</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class=l>100Mi </span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>이처럼 OKE k8s 클러스터에 pvc 하나를 만든다고 가정해보자.</p><p><code>oci-bv</code>는 Oracle에서 기본적으로 제공되는 Storage class로 OCI Block Volume을 저장소로 쓴다.</p><p>약 100MB 정도의 크기를 가지는 작은 PVC이다. 그럼 실제 만들어지는 OCI Block Volume의 크기도 100MB 정도여야 하지 않을까?</p><p>어림도 없다. 여기도 크기 제약이 걸려있어서 최소 47Gi(50GB) 이상을 할당 해줘야 한다.</p><blockquote><p><strong>결론: 극단적으로 Node를 1개만 쓴다고 가정해도, PVC는 3개가 한계이다. 각각 50GB씩&mldr;</strong> <sub><em>오라클, 보고 있나?</em></sub></p><p><strong>심지어 Access Mode도 <code>ReadWriteOnce</code>만 사용 가능하다.</strong></p></blockquote><p><br><br></p><h3 id=상황을-정리하자면>상황을 정리하자면</h3><ol><li><p><strong>당초 계획</strong></p><p>Node에는 최소한의 용량만, 나머지 대부분은 PVC로 할당</p><p align=center><img src=storage-plan-1.png alt></p></li></ol><br><ol start=2><li><p><strong>Boot Volume 최소 크기 제한 50GB</strong></p><p>Node 자체가 50GB씩 잡아먹는다.</p><p>때문에, Node 수가 4개라면 그 자체만으로도 이미 200GB가 다 차버린다.</p><p align=center><img src=storage-plan-2.png alt>
+<em>심지어 PVC는 낄 틈도 없다</em></p></li></ol><br><ol start=3><li><p><strong>Block Volume(PVC)에도 최소 크기 제한 50GB</strong></p><p>PVC도 최소 크기가 50GB이다.</p><p>그러면 만일 Node를 하나만 둬서 Single Node Cluster로 구성한다 손 쳐도,</p><p>할당 가능한 PVC는 3개가 한계이다.</p><p align=center><img src=storage-plan-3.png alt></p></li></ol><p><br><br></p><h2 id=해결방안>해결방안</h2><h3 id=nodepool의-스펙-및-수-조정>NodePool의 스펙 및 수 조정</h3><p>우선 Node에 50GB씩 기본 할당 되는 건 어쩔 도리가 없기 때문에 Node 수를 타협해야 한다.</p><p>클러스터로써 구색은 맞춰야 하므로 기존 4개에서 2개로 줄였다.</p><p>각각 OCPU는 2개, 메모리는 12GB씩 할당 해줬다.</p><p align=center><img src=instance-list.png alt>
+<em>이걸로 벌써 100GB가 날아갔다</em></p><br><h3 id=시스템-구성-요소>시스템 구성 요소</h3><p align=center><img src=nfs-provisioner.png alt></p><p><a class=link href=https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner target=_blank rel=noopener>NFS Subdir External Provisioner</a>를 사용해서 별도의 <code>StorageClass</code>를 만들어줘야 한다.</p><p>NFS Storage, 즉 NFS 서버를 Source로 해서 StorageClass를 만들고, 해당 StorageClass를 통해</p><p>PVC를 생성하면, NFS 서버에 볼륨이 생성되고 데이터가 저장되는 구조이다.</p><p>주요 구성 요소를 배포 순서에 따라 나열하면 다음과 같다.</p><ol><li><p>OCI Block Volume</p><p>앞서 Node 2개를 배치했으므로, 사용 가능한 용량 제한은 100GB이다.</p><p align=center><img src=block-volume-list.png alt></p><p>남은 100GB를 모두 사용하는 OCI Block Volume 1개가 필요하다.</p></li><li><p>NFS Server</p><p>1에서 생성한 OCI Block Volume을 PVC로 매핑 받아 NFS Storage를 제공하는 서비스이다.</p></li><li><p>NFS Subdir External Provisioner</p><p>이번 포스트의 핵심으로, 2에서 생성한 NFS 서버를 Source로 StorageClass를 제공한다.</p></li></ol><br><p>(선택) 추가로 <a class=link href=https://github.com/filebrowser/filebrowser target=_blank rel=noopener>FileBrowser</a>와 SFTP도 함께 설치했다.</p><br><h3 id=사용하는-도구>사용하는 도구</h3><ul><li><strong>Terraform</strong>: 인프라 자원 관리 (OCI 볼륨, 백업 정책)</li><li><strong>Kubernetes Manifests</strong>: NFS 서버, File Browser, SFTP 서비스</li><li><strong>Helm</strong>: NFS Subdir External Provisioner 설치</li></ul><blockquote><p>실제 구현은 CDKTF를 써서 하나의 Stack 파일로 구성했었다.</p><p><a class=link href=https://github.com/ApexCaptain/ApexCaptain.IaC/blob/main/src/terraform/stacks/k8s/oke/apps/nfs.stack.ts target=_blank rel=noopener>GitHub 링크</a>로 들어가서 확인 가능하다.</p></blockquote><p><br><br></p><h3 id=terraform-인프라-구성>Terraform 인프라 구성</h3><h4 id=oci-볼륨-생성>OCI 볼륨 생성</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-hcl data-lang=hcl><span class=line><span class=cl><span class=c1># main.tf
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>resource</span> <span class=s2>&#34;oci_core_volume&#34; &#34;nfs_core_volume&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  compartment_id</span>      <span class=o>=</span> <span class=k>var</span><span class=p>.</span><span class=k>compartment_id</span>
+</span></span><span class=line><span class=cl><span class=n>  availability_domain</span> <span class=o>=</span> <span class=k>var</span><span class=p>.</span><span class=k>availability_domain</span>
+</span></span><span class=line><span class=cl><span class=n>  size_in_gbs</span>         <span class=o>=</span> <span class=m>100</span>
+</span></span><span class=line><span class=cl><span class=n>  display_name</span>        <span class=o>=</span> <span class=s2>&#34;nfs-core-volume&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>lifecycle</span> {
+</span></span><span class=line><span class=cl><span class=n>    prevent_destroy</span> <span class=o>=</span> <span class=kt>true</span>
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><br><h4 id=볼륨-백업-정책>볼륨 백업 정책</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-hcl data-lang=hcl><span class=line><span class=cl><span class=c1># backup_policy.tf
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>resource</span> <span class=s2>&#34;oci_core_volume_backup_policy&#34; &#34;nfs_core_volume_backup_policy&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  compartment_id</span> <span class=o>=</span> <span class=k>var</span><span class=p>.</span><span class=k>compartment_id</span>
+</span></span><span class=line><span class=cl><span class=n>  display_name</span>   <span class=o>=</span> <span class=s2>&#34;nfs-volume-backup-policy&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>schedules</span> {
+</span></span><span class=line><span class=cl><span class=n>    backup_type</span>        <span class=o>=</span> <span class=s2>&#34;INCREMENTAL&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>    period</span>             <span class=o>=</span> <span class=s2>&#34;ONE_WEEK&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>    retention_seconds</span>  <span class=o>=</span> <span class=m>60</span> <span class=err>*</span> <span class=m>60</span> <span class=err>*</span> <span class=m>24</span> <span class=err>*</span> <span class=m>7</span> <span class=err>*</span> <span class=m>3</span><span class=c1>  # 3주 보관
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>    day_of_week</span>        <span class=o>=</span> <span class=s2>&#34;SUNDAY&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>    hour_of_day</span>        <span class=o>=</span> <span class=m>2</span>
+</span></span><span class=line><span class=cl><span class=n>    offset_seconds</span>     <span class=o>=</span> <span class=m>0</span>
+</span></span><span class=line><span class=cl><span class=n>    offset_type</span>        <span class=o>=</span> <span class=s2>&#34;STRUCTURED&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>    time_zone</span>          <span class=o>=</span> <span class=s2>&#34;REGIONAL_DATA_CENTER_TIME&#34;</span>
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>schedules</span> {
+</span></span><span class=line><span class=cl><span class=n>    backup_type</span>        <span class=o>=</span> <span class=s2>&#34;FULL&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>    period</span>             <span class=o>=</span> <span class=s2>&#34;ONE_MONTH&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>    retention_seconds</span>  <span class=o>=</span> <span class=m>60</span> <span class=err>*</span> <span class=m>60</span> <span class=err>*</span> <span class=m>24</span> <span class=err>*</span> <span class=m>30</span> <span class=err>*</span> <span class=m>2</span><span class=c1>  # 2달 보관
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>    day_of_month</span>       <span class=o>=</span> <span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=n>    hour_of_day</span>        <span class=o>=</span> <span class=m>3</span>
+</span></span><span class=line><span class=cl><span class=n>    offset_seconds</span>     <span class=o>=</span> <span class=m>0</span>
+</span></span><span class=line><span class=cl><span class=n>    offset_type</span>        <span class=o>=</span> <span class=s2>&#34;STRUCTURED&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>    time_zone</span>          <span class=o>=</span> <span class=s2>&#34;REGIONAL_DATA_CENTER_TIME&#34;</span>
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p><strong>백업 스케줄:</strong></p><ul><li><strong>증분 백업</strong>: 매주 일요일 2시, 3주 보관</li><li><strong>전체 백업</strong>: 매월 1일 3시, 2달 보관</li></ul><br><h4 id=백업-정책-할당>백업 정책 할당</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-hcl data-lang=hcl><span class=line><span class=cl><span class=c1># backup_policy_assignment.tf
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>resource</span> <span class=s2>&#34;oci_core_volume_backup_policy_assignment&#34; &#34;nfs_core_volume_backup_policy_assignment&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  asset_id</span>  <span class=o>=</span> <span class=k>oci_core_volume</span><span class=p>.</span><span class=k>nfs_core_volume</span><span class=p>.</span><span class=k>id</span>
+</span></span><span class=line><span class=cl><span class=n>  policy_id</span> <span class=o>=</span> <span class=k>oci_core_volume_backup_policy</span><span class=p>.</span><span class=k>nfs_core_volume_backup_policy</span><span class=p>.</span><span class=k>id</span>
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><br><h4 id=변수-정의>변수 정의</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-hcl data-lang=hcl><span class=line><span class=cl><span class=c1># variables.tf
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>variable</span> <span class=s2>&#34;compartment_id&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  description</span> <span class=o>=</span> <span class=s2>&#34;OCI Compartment ID&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>  type</span>        <span class=o>=</span> <span class=k>string</span>
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>variable</span> <span class=s2>&#34;availability_domain&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  description</span> <span class=o>=</span> <span class=s2>&#34;OCI Availability Domain&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>  type</span>        <span class=o>=</span> <span class=k>string</span> 
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><br><h4 id=출력값-정의>출력값 정의</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-hcl data-lang=hcl><span class=line><span class=cl><span class=c1># outputs.tf
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>output</span> <span class=s2>&#34;nfs_volume_id&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  description</span> <span class=o>=</span> <span class=s2>&#34;NFS Core Volume OCID&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>  value</span>       <span class=o>=</span> <span class=k>oci_core_volume</span><span class=p>.</span><span class=k>nfs_core_volume</span><span class=p>.</span><span class=k>id</span>
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p><code>nfs_volume_id</code> 값은 PV를 만들 때 필요하다</p><br><h4 id=terraformtfvars-파일-생성><code>terraform.tfvars</code> 파일 생성</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cat &gt; terraform.tfvars <span class=s>&lt;&lt; EOF
+</span></span></span><span class=line><span class=cl><span class=s>compartment_id      = &#34;&lt;&lt; 배포할 OCI Compartment의 ID &gt;&gt;&#34;
+</span></span></span><span class=line><span class=cl><span class=s>availability_domain = &#34;&lt;&lt; AD 이름, 가령 ibHX:AP-CHUNCHEON-1-AD-1 &gt;&gt;&#34;
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span></code></pre></td></tr></table></div></div><br><h4 id=terraform-배포>Terraform 배포</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Terraform 초기화</span>
+</span></span><span class=line><span class=cl>terraform init
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 인프라 계획 확인</span>
+</span></span><span class=line><span class=cl>terraform plan -var-file<span class=o>=</span><span class=s2>&#34;terraform.tfvars&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 인프라 배포</span>
+</span></span><span class=line><span class=cl>terraform apply -var-file<span class=o>=</span><span class=s2>&#34;terraform.tfvars&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 출력값 확인 (볼륨 ID 등)</span>
+</span></span><span class=line><span class=cl>terraform output
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=k8s-manifest>k8s Manifest</h3><h4 id=네임스페이스-생성>네임스페이스 생성</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># namespace.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Namespace</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-system</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><h4 id=persistentvolume-생성>PersistentVolume 생성</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># persistentvolume.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>PersistentVolume</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-pv</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>annotations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pv.kubernetes.io/provisioned-by</span><span class=p>:</span><span class=w> </span><span class=l>blockvolume.csi.oraclecloud.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>storageClassName</span><span class=p>:</span><span class=w> </span><span class=l>oci-bv</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>persistentVolumeReclaimPolicy</span><span class=p>:</span><span class=w> </span><span class=l>Retain</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>capacity</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class=l>100Gi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>accessModes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>ReadWriteOnce</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>persistentVolumeSource</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>csi</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>blockvolume.csi.oraclecloud.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>volumeHandle</span><span class=p>:</span><span class=w> </span><span class=l>&lt;OCI_VOLUME_OCID&gt;</span><span class=w> </span><span class=c># Terraform에서 Output 된 Volume ID값을 넣어준다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                                      </span><span class=c># ocid1.volume.oc1 어쩌구 하는 값이다. Web Console에서 복사해서 가져와도 된다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>fsType</span><span class=p>:</span><span class=w> </span><span class=l>ext4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nodeAffinity</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>required</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>nodeSelectorTerms</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>matchExpressions</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>failure-domain.beta.kubernetes.io/zone</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>operator</span><span class=p>:</span><span class=w> </span><span class=l>In</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>values</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span>- <span class=l>&lt;AVAILABILITY_DOMAIN&gt;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><h4 id=persistentvolumeclaim-생성>PersistentVolumeClaim 생성</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># persistentvolumeclaim.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>PersistentVolumeClaim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-pvc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>nfs-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>volumeName</span><span class=p>:</span><span class=w> </span><span class=l>nfs-pv</span><span class=w> </span><span class=c># 위에서 생서한 PV의 이름이다</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>accessModes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>ReadWriteOnce</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class=l>100Gi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>storageClassName</span><span class=p>:</span><span class=w> </span><span class=l>oci-bv</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><h4 id=configmap-sftp-pod용-ssh-키-관리-선택사항>ConfigMap (SFTP Pod용 SSH 키 관리, 선택사항)</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># configmap.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ConfigMap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-system-sftp-config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>nfs-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ssh-public-key</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQ... # SSH 공개키</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><h4 id=service-생성>Service 생성</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># service.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>nfs-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>nfs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>2049</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class=m>2049</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># -- 선택 사항 -- #</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>file-browser</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>sftp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>22</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class=m>22</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><h4 id=deployment-생성>Deployment 생성</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># deployment.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>nfs-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>nfs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>nfs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># FileBrowser를 안 쓸 거라면 initContainers는 필요 없음   </span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>initContainers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>init-filebrowser-db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>busybox:1.35</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=l>/bin/sh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- -<span class=l>c</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>              mkdir -p /exports/fb-database
+</span></span></span><span class=line><span class=cl><span class=sd>              chown -R 1000:1000 /exports/fb-database
+</span></span></span><span class=line><span class=cl><span class=sd>              chmod -R 755 /exports/fb-database</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/exports</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c># NFS 서버 컨테이너 (핵심!!)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>itsthenetwork/nfs-server-alpine:latest-arm</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>imagePullPolicy</span><span class=p>:</span><span class=w> </span><span class=l>Always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>2049</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>securityContext</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>capabilities</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span>- <span class=l>SYS_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span>- <span class=l>SETPCAP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=l>/bin/sh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- -<span class=l>c</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>              mkdir -p /exports/services
+</span></span></span><span class=line><span class=cl><span class=sd>              /usr/bin/nfsd.sh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/exports</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>env</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>SHARED_DIRECTORY</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=l>/exports</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>SHARED_DIRECTORY_2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=l>/exports/services</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c># File Browser 컨테이너(선택)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>file-browser</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>filebrowser/filebrowser</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>imagePullPolicy</span><span class=p>:</span><span class=w> </span><span class=l>Always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>securityContext</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>runAsUser</span><span class=p>:</span><span class=w> </span><span class=m>1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>runAsGroup</span><span class=p>:</span><span class=w> </span><span class=m>1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>fsGroup</span><span class=p>:</span><span class=w> </span><span class=m>1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/database</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>subPath</span><span class=p>:</span><span class=w> </span><span class=l>fb-database</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/srv</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>subPath</span><span class=p>:</span><span class=w> </span><span class=l>services</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>env</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>FB_NOAUTH</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;true&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>FB_DATABASE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=l>/database/database.db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>FB_PORT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;8080&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c># SFTP 컨테이너(선택)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>sftp-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>jmcombs/sftp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>imagePullPolicy</span><span class=p>:</span><span class=w> </span><span class=l>Always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=l>sh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- -<span class=l>c</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>              chmod o+w /home/sftpuser/data
+</span></span></span><span class=line><span class=cl><span class=sd>              /entrypoint sftpuser::::data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>22</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>ssh-keys</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/home/sftpuser/.ssh/keys</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>readOnly</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/home/sftpuser/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>subPath</span><span class=p>:</span><span class=w> </span><span class=l>services</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>persistentVolumeClaim</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>claimName</span><span class=p>:</span><span class=w> </span><span class=l>nfs-pvc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>ssh-keys</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>configMap</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-system-sftp-config</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><strong>컨테이너별 역할</strong></p><ol><li><strong>NFS 서버</strong>: Alpine 기반 NFS 서버로 <code>/exports</code> 디렉토리 공유</li><li><strong>File Browser</strong>: 웹 기반 파일 관리 인터페이스 제공 (선택)</li><li><strong>SFTP 서버</strong>: SSH 키 기반 파일 전송 서비스 (선택)</li></ol><br><h4 id=filebrowser-ingress-구성-선택>FileBrowser Ingress 구성 (선택)</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># ingress.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>networking.k8s.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Ingress</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-ingress</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>nfs-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>annotations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>nginx.ingress.kubernetes.io/backend-protocol</span><span class=p>:</span><span class=w> </span><span class=l>HTTP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>nginx.ingress.kubernetes.io/rewrite-target</span><span class=p>:</span><span class=w> </span><span class=l>/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingressClassName</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rules</span><span class=p>:</span><span class=w>   
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>files.example.com</span><span class=w> </span><span class=c># 소유한 도메인으로 변경 </span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>http</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>paths</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>pathType</span><span class=p>:</span><span class=w> </span><span class=l>Prefix</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>backend</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>port</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><h4 id=k8s-리소스-배포>k8s 리소스 배포</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># 네임스페이스 생성</span>
+</span></span><span class=line><span class=cl>kubectl apply -f namespace.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># ConfigMap 생성</span>
+</span></span><span class=line><span class=cl>kubectl apply -f configmap.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># PersistentVolume 생성</span>
+</span></span><span class=line><span class=cl>kubectl apply -f persistentvolume.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># PersistentVolumeClaim 생성</span>
+</span></span><span class=line><span class=cl>kubectl apply -f persistentvolumeclaim.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Service 생성</span>
+</span></span><span class=line><span class=cl>kubectl apply -f service.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Deployment 생성</span>
+</span></span><span class=line><span class=cl>kubectl apply -f deployment.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Ingress 생성 (선택)</span>
+</span></span><span class=line><span class=cl>kubectl apply -f ingress.yaml
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=helm>Helm</h3><h4 id=helm-저장소-추가>Helm 저장소 추가</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+</span></span><span class=line><span class=cl>helm repo update
+</span></span></code></pre></td></tr></table></div></div><br><h4 id=nfs-subdir-external-provisioner-values-파일>NFS Subdir External Provisioner Values 파일</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>nfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>server</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;nfs-service.nfs-system.svc.cluster.local&#39;</span><span class=w> </span><span class=c># NFS 서버 서비스 주소</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;/services&#39;</span><span class=w> </span><span class=c># NFS 공유 경로</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># StorageClass 설정</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>storageClass</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>storageClassName</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;nfs-client&#39;</span><span class=w> </span><span class=c># StorageClass 이름은 본인이 원하는데로 사용하면 된다</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>accessModes</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;ReadWriteMany&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># PVC 할당시 Storage에 어떤 경로로 저장 될 지 지정한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># 예시의 경우 my-namespace에서 my-pvc라는 이름의 PVC 생성시 ./pvc/my-namespace/my-pvc로 저장</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pathPattern</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;.pvc/$${.PVC.namespace}/$${.PVC.name}&#39;</span><span class=p>,</span><span class=w> 
+</span></span></span></code></pre></td></tr></table></div></div><br><h4 id=helm-chart-배포>Helm Chart 배포</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --namespace nfs-system <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --values values.yaml <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --wait
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 설치 상태 확인</span>
+</span></span><span class=line><span class=cl>helm list -n nfs-system
+</span></span><span class=line><span class=cl>helm status nfs-subdir-external-provisioner -n nfs-system
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=검증-및-테스트>검증 및 테스트</h3><h4 id=리소스-상태-확인>리소스 상태 확인</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Pod 상태 확인</span>
+</span></span><span class=line><span class=cl>kubectl get pods -n nfs-system
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Service 확인</span>
+</span></span><span class=line><span class=cl>kubectl get svc -n nfs-system
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># PVC 상태 확인</span>
+</span></span><span class=line><span class=cl>kubectl get pvc -n nfs-system
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># StorageClass 확인</span>
+</span></span><span class=line><span class=cl>kubectl get storageclass
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h2 id=마치며>마치며</h2><p>이제 다른 네임스페이스에서 PVC를 생성해보자.</p><p>FileBrowser와 ingress까지 설정했다면 웹상으로 접근해서 확인 할 수 있다.</p><p>ingress가 별도로 없다면 다음 명령어로 포트포워딩 해서 <code>localhost:8080</code>으로 접근해보자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl port-forward --address localhost -n nfs-system svc/nfs-service 8080:8080
+</span></span></code></pre></td></tr></table></div></div><p align=center><img src=cover.png alt>
+<em>PVC가 지정된 경로 (.pvc/namespace/pvc-name)에 생성됨을 알 수 있다.</em></p><p><br><br></p><h2 id=추후-계획>추후 계획</h2><p>현재 <a class=link href=https://www.hashicorp.com/en/products/vault target=_blank rel=noopener>Hashicrop Vault</a>가 배포되어 있는데, Node의 수가 2개 뿐이라 HA 구성이 안 되고 있다.</p><p>NFS Provisioner는 당연히 외부에 존재하는 NFS Storage를 사용할 수도 있다. 굳이 NFS 서버가 클러스터 내부에 존재 할 필요는 없다.</p><p>조만간 아예 독립적인 NAS 컴퓨터 한 대를 구매해서 NFS 서버를 구동, NFS Provisioner의 Source Stoarge로 사용할 예정이다. <sub>그래서 열심히 돈을 모으는 중이다&mldr;</sub></p><p>이는 또 다른 클러스터인 On-Premise에도 적용 될 예정이다. On-Premise 클러스터는 <a class=link href=https://longhorn.io/ target=_blank rel=noopener>Longhorn</a>을 설치해서 PVC를 제공하고 있는데, 이래저래 마음에 안 드는 구석이 많아 심플하게 외부 NAS로 통합려고 한다.</p><p>Longhorn에 대해서는 조만간 포스팅 할 예정이다.</p></section><footer class=article-footer><section class=article-tags><a href=/tags/kubernetes/>Kubernetes</a>
+<a href=/tags/oci/>OCI</a>
+<a href=/tags/nfs/>NFS</a>
+<a href=/tags/storageclass/>StorageClass</a>
+<a href=/tags/pvc/>PVC</a>
+<a href=/tags/loadbalancer/>LoadBalancer</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>관련 글</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/dev/install-metallb-to-on-premise-k8s/><div class=article-image><img src=/p/dev/install-metallb-to-on-premise-k8s/cover.2c0e356b72e9a7a9380e959e98ea4e20_hu_605c6a090051f8f9.png width=250 height=150 loading=lazy alt="Featured image of post On-Premise k8s에 Metallb 설치" data-key=dev/install-metallb-to-on-premise-k8s data-hash="md5-LA41a3Lpp6k4DpWemOpOIA=="></div><div class=article-details><h2 class=article-title>On-Premise k8s에 Metallb 설치</h2></div></a></article><article class=has-image><a href=/p/dev/torrenting-with-vpn-on-k8s/><div class=article-image><img src=/p/dev/torrenting-with-vpn-on-k8s/cover.c665819bfcbea04dd3d62876855e0077_hu_6cecdffce5d986eb.png width=250 height=150 loading=lazy alt="Featured image of post VPN + qBittorrent 설치" data-key=dev/torrenting-with-vpn-on-k8s data-hash="md5-xmWBm/y+oE3T1ih2hV4Adw=="></div><div class=article-details><h2 class=article-title>VPN + qBittorrent 설치</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2025 ApexCaptain의 기술 블로그</section><section class=powerby><a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a>로 만듦<br><a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a>의 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.31.0>Stack</a></b> 테마 사용 중</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
