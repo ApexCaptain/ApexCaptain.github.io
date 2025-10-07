@@ -3,7 +3,7 @@ title: VPN + qBittorrent 설치
 description: K8S에 NordVPN으로 우회되는 원격 qBittorrent 서버 만들기
 slug: dev/torrenting-with-vpn-on-k8s
 date: 2025-09-29 00:00:00+0900
-image: cover.png
+image: images/cover.png
 categories:
     - 개발
 tags:
@@ -36,11 +36,11 @@ weight: 1
 - qBittorrent의 기본 UI는 너무 못생겼으므로 UI도 VueTorrent로 변경 (선택)
 
   <p align='center'>
-      <img src="qbittorrent-web-ui.png" alt>
+      <img src="images/qbittorrent-web-ui.png" alt>
       <em>참고로 기본 UI는 이렇게 생겼다.</em>
   </p>
   <p align='center'>
-      <img src="vuetorrent-web-ui.png" alt>
+      <img src="images/vuetorrent-web-ui.png" alt>
       <em>VueTorrent UI는 이렇게 생겼다. 이쁘다!</em>
   </p>
 
@@ -74,19 +74,19 @@ kubectl create namespace torrent
 
   1. [NordVPN Dashboard](https://my.nordaccount.com/dashboard/)에 접속 후 좌상단 `NordVPN`을 클릭한다.
   <p align='left'>
-      <img src="nordlynx-generate-token-1.png" alt>
+      <img src="images/nordlynx-generate-token-1.png" alt>
   </p>
   2. 하단에 Get Access Token 버튼 클릭
   <p align='left'>
-      <img src="nordlynx-generate-token-2.png" alt>
+      <img src="images/nordlynx-generate-token-2.png" alt>
   </p>
   3. 등록된 이메일로 인증코드 전송
   <p align='left'>
-      <img src="nordlynx-generate-token-3.png" alt>
+      <img src="images/nordlynx-generate-token-3.png" alt>
   </p>
   4. 새 토큰을 생성한다
   <p align='left'>
-      <img src="nordlynx-generate-token-4.png" alt>
+      <img src="images/nordlynx-generate-token-4.png" alt>
   </p>
 
 <br><br>
@@ -384,11 +384,11 @@ kubectl apply -f ingress-qbittorrent.yaml
 ## 마치며
 
 <p align='center'>
-    <img src="logs.png" alt>
+    <img src="images/logs.png" alt>
     <em>WebUI에서 로그를 검색해보면 정상적으로 VPN IP가 할당되었음을 알 수 있다.</em>
 </p>
 
 <p align='center'>
-    <img src="final.png" alt>
+    <img src="images/final.png" alt>
     <em>최종적으론 이렇게 나온다</em>
 </p>

@@ -1,9 +1,9 @@
 ---
-title: OKE에 NFS 서버 및 NFS PVC 공급자 설치하기
-description: OCI Block Volume 효율 최대로!!
+title: Nfs subdir external provisioner
+description: OCI 블록 볼륨 최소 크기 제한 해결하기
 slug: dev/nfs-subdir-external-provisioner
 date: 2025-10-04 00:00:00+0900
-image: cover.png
+image: images/cover.png
 categories:
     - 개발
 tags:
@@ -16,115 +16,59 @@ tags:
 weight: 1
 ---
 
-## 들어가기 앞서
+# 연관 포스트
+- [Oracle Cloud Infrastructure](../oracle-cloud-infrastructure/)
 
-### 자체 k8s를 운영하는 이유
-
-
-
-
-- 다양한 기술을 테스트 & 학습
-- 개인적으로 쓸 앱 배포
-
-회사 자원을 사용해서 이런걸 해볼 순 없는 노릇이었고, 직접 k8s 클러스터를 보유 & 운영 하는 것이 가장 현실적인 해결책이었다.
-
-
-<br><br>
-
-### Oracle을 선택한 이유
-
-현재 클러스터는 총 2개로, 하나는 On-Premise, 나머지 하나는 [OCI (Oracle Cloud Infrastructure)](https://www.oracle.com/kr/cloud/)에서 운영한다.
-
-`OCI`는 `Oracle`에서 운영하는 `CP(Cloud Provider)`로 `Amazon`의 `AWS`, `Microsoft`의 `Azure`와 같은 서비스이다.
-
-
-여느 클라우드와 마찬가지로 OCI에서도 `KaaS`를 제공하는데, 이를 [OKE (Oracle Kubernetes Engine)](https://www.oracle.com/kr/cloud/cloud-native/kubernetes-engine/)라고 부른다.
-
-별로 특별할 건 없다. [EKS](https://aws.amazon.com/ko/eks/)나 [AKS](https://learn.microsoft.com/ko-kr/azure/aks/what-is-aks)에 비해 특별히 더 좋은 점이 있는 것도 아니다.
-
-하지만 OCI에는 다른 CP들과는 다른 엄청난 장점이 하나 있다.
-
-> Oracle에는 무려 `상시 무료 서비스`가 존재한다!
-
-<p align='center'>
-    <img src="oci-free-tier.png" alt>
-    <em>클러스터 하나를 운영하기에는 부족함이 없다. 정말 혜자다.</em>
-</p>
-
-예상컨데 Cloud 후발주자인 Oracle에서 사용자 좀 끌어 모아 보겠다고 일종의 프로모션의 개념으로 나온 것일테지만, 아무렴 어떠한가? 
-
-AWS도 무료로 사용 가능한 건 1년이 한계이고, 그마저도 EKS는 Node 하나 없이 깡통 클러스터만 만들어놓고 숨만 쉬고 있어도 시간당 $0.1씩 과금 된다.
-
-별 거 아닌거 같다고? 
- 
-**환율 1400원 기준으로 계산하면 한 달에 무려 10만원씩 나간다!**
-
-적어도 내가 알기로 상시 무료 + k8s 운영이 가능한 CP는 Oracle이 유일하다.
-
-이것이 내가 OCI를 택한 이유이다.
-
-<br><br>
-
-### 단점은?
-
-당연히 단점도 있다. 크게 2가지이다.
-
-- 레퍼런스가 너무 없다. 대부분의 개발자들은 그 존재조차 모르는 것 같다.
-- 그럼 공식 문서라도 잘 되어 있어야 하는데 그것도 아니다.
-
-  AWS에 익숙해져서 그런 것도 있겠지만 OCI의 공식 문서는 객관적으로 봐도 가독성이 매우 떨어진다.
-  
-  [공식 문서 사이트 링크](https://docs.oracle.com/en/)가 있으니 궁금한 사람은 부디 들어가서 탐험 해보길 바란다.
-
-<br><br>
-
-### OCI Always Free 제한사항
-
-[OCI Free Tier](https://www.oracle.com/kr/cloud/free/#always-free)페이지에도 나와있는데, 모든 서비스가 무제한으로 사용 가능한 건 당연히 아니다.
-
-클라스터 1개를 운영한다고 가정하고, k8s에서 가용 가능한 자원을 간단한게 요약하면 다음과 같다.
-
-| 자원 유형 | 제한사항 |
-|---------|----------|
-| **Node** | Arm 기반 Ampere A1 코어 4개, 24GB 메모리 |
-| **Persistent Volume** | 200GB | 
-| **Load Balancer** | Flexible Network Load Balancer 1개 |
-
-Node의 경우 Node 1개당 최소 1개의 코어는 필요하므로 최대 사용 가능한 Node 수는 4개이다. AMD Node도 있긴 한데, 사이즈가 너무 작아서 여기선 무시한다.
-
-OKE로 만드는 클러스터도 1개까지는 무료이다. OKE는 KaaS이기 때문에 Control-Plane Node가 따로 필요 없다. 
-
-> **따라서, 4개의 Arm Node는 모두 Worker Node로 쓸 수 있다! 그것도 공짜로!** <sub>_아마존, 보고 있나?_</sub>
-
-위의 리소스 제한 안에서 클러스터를 구성하는 게 목표다.
-
-<br><br>
+<br>
 
 ## 문제의 시작
 
-### Boot Volume 최소값 제한
+### OCI Instance(Node)의 Boot Volume 최소값 제한
 
-당초 계획했던 대로 OKE로 클러스터와 ARM Node Pool을 생성했다. Node 수는 4개로 각각 1개의 OCPU와 6GB의 메모리를 할당했다.
+[OCI Free Tier](https://www.oracle.com/kr/cloud/free/#always-free)에 따르면 OKE에서 가용할 수 있는 자원은 다음과 같다.
 
-<p align='center'>
-    <img src="instance-detail.png" alt>
-    <em>k8s Node의 역할을 하는 Oracle Instance 중 하나의 Storage 정보</em>
-</p>
+1. CPU : 4개
+2. 메모리 : 24GB
+3. 블록 스토리지 : 200GB
+
+이에 맞춰 Terraform으로 OKE 클러스터와 4개의 인스턴스를 가지는 ARM Node Pool을 생성했다. 
+
+각 Node는 1개의 CPU와 6GB의 메모리를 가진다.
+
+스토리지의 경우 추후 PVC 생성을 위해서도 쓰이므로, 최대한 작게 잡아주려고 했다.
+
+  <p align='center'>
+      <img src="images/storage-plan-1.png" alt>
+      <em>Node에는 최소한의 용량만, 나머지 대부분은 PVC로 할당</em>
+  </p>
+
+<br>
 
 
+그런데 실제로 생성된 Instance의 정보를 보니 Boot Volume이 비정상적으로 크게 생성되었다.
+  <p align='center'>
+      <img src="images/instance-detail.png" alt>
+      <em>k8s Node의 역할을 하는 Oracle Instance 중 하나의 Boot Volume 정보</em>
+  </p>
 Boot Volume은 문자 그대로 Linux 시스템이 부팅하는데 필요한 기본 디스크로, 윈도우로 치면 C드라이브 같은 존재이다.
 
-문제는 다음과 같다.
+확인 결과, 다음과 같은 이슈가 발생했다.
 
-- Boot Volume의 크기는 최소 47Gi (50GB) 이상 할당 해줘야 한다.
+- Instance의 Boot Volume의 크기는 `최소 47Gi (50GB) 이상` 할당 해줘야 한다.
 
-- 이 용량은 당초 Free Tier에서 제공되는 200GB에서 차감된다.
+- 당연히 이 용량은 Free Tier에서 제공되는 `200GB에서 차감`된다.
 
-> **결론: 단순하게 Node 4개를 만든 것 만으로도 Free Tier의 200GB를 다 써버리게 된다.** 
+- 이러면 단순히 Node 4개를 만드는 것 만으로도 Free Tier의 200GB를 다 써버리게 된다.
+
+  <p align='center'>
+      <img src="images/storage-plan-2.png" alt>
+      <em>단 1개의 PVC도 생성할 수 없다.</em>
+  </p>
+
 
 <br><br>
 
-### 심지어 PVC도 마찬가지
+### Persistent Volume도 마찬가지
 
 ```yaml
 apiVersion: v1
@@ -148,48 +92,12 @@ spec:
 
 어림도 없다. 여기도 크기 제약이 걸려있어서 최소 47Gi(50GB) 이상을 할당 해줘야 한다.
 
-> **결론: 극단적으로 Node를 1개만 쓴다고 가정해도, PVC는 3개가 한계이다. 각각 50GB씩...** <sub>_오라클, 보고 있나?_</sub>
->
-> **심지어 Access Mode도 `ReadWriteOnce`만 사용 가능하다.**
+> **극단적으로 Node를 1개만 쓴다고 가정해도, PVC는 3개가 한계이다. 각각 50GB씩...** <sub>_오라클, 보고 있나?_</sub>
 
-<br><br>
-
-### 상황을 정리하자면
-
-1. **당초 계획**
-   
-    Node에는 최소한의 용량만, 나머지 대부분은 PVC로 할당
-
-    <p align='center'>
-        <img src="storage-plan-1.png" alt>
-    </p>
-
-<br>
-
-2. **Boot Volume 최소 크기 제한 50GB**
-
-    Node 자체가 50GB씩 잡아먹는다.
-    
-    때문에, Node 수가 4개라면 그 자체만으로도 이미 200GB가 다 차버린다.
-
-    <p align='center'>
-        <img src="storage-plan-2.png" alt>
-        <em>심지어 PVC는 낄 틈도 없다 </em>
-    </p>
-
-<br>
-
-3. **Block Volume(PVC)에도 최소 크기 제한 50GB**
-
-    PVC도 최소 크기가 50GB이다.
-
-    그러면 만일 Node를 하나만 둬서 Single Node Cluster로 구성한다 손 쳐도,
-
-    할당 가능한 PVC는 3개가 한계이다.
-
-    <p align='center'>
-        <img src="storage-plan-3.png" alt>
-    </p>
+<p align='center'>
+    <img src="images/storage-plan-3.png" alt>
+    <em>PVC 자체도 50GB가 최소라 노드 1개 PVC 3개가 한계이다.</em>
+</p>
 
 <br><br>
 
@@ -200,10 +108,10 @@ spec:
 
 클러스터로써 구색은 맞춰야 하므로 기존 4개에서 2개로 줄였다.
 
-각각 OCPU는 2개, 메모리는 12GB씩 할당 해줬다.
+각각 CPU는 2개, 메모리는 12GB씩 할당 해줬다.
 
 <p align='center'>
-    <img src="instance-list.png" alt>
+    <img src="images/instance-list.png" alt>
     <em>이걸로 벌써 100GB가 날아갔다</em>
 </p>
 
@@ -212,7 +120,7 @@ spec:
 ### 시스템 구성 요소
 
 <p align='center'>
-    <img src="nfs-provisioner.png" alt>
+    <img src="images/nfs-provisioner.png" alt>
 </p>
 
 [NFS Subdir External Provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)를 사용해서 별도의 `StorageClass`를 만들어줘야 한다.
@@ -228,7 +136,7 @@ PVC를 생성하면, NFS 서버에 볼륨이 생성되고 데이터가 저장되
     앞서 Node 2개를 배치했으므로, 사용 가능한 용량 제한은 100GB이다.
 
     <p align='center'>
-        <img src="block-volume-list.png" alt>
+        <img src="images/block-volume-list.png" alt>
     </p>
 
     남은 100GB를 모두 사용하는 OCI Block Volume 1개가 필요하다.
@@ -243,9 +151,15 @@ PVC를 생성하면, NFS 서버에 볼륨이 생성되고 데이터가 저장되
 
     이번 포스트의 핵심으로, 2에서 생성한 NFS 서버를 Source로 StorageClass를 제공한다.
 
+4. (선택) [FileBrowser](https://github.com/filebrowser/filebrowser), SFTP Container 
+
+    보다 편한 관리를 위한 것으로, 선택사항이다. 
+    
+    oci-bv가 제공하는 PVC는 `ReadWriteOnce`모드만 제공되므로 반드시 하나의 Pod에 NFS Container와 함께 정의 해줘야 한다.
+
+
 <br>
 
-(선택) 추가로 [FileBrowser](https://github.com/filebrowser/filebrowser)와 SFTP도 함께 설치했다.
 
 <br>
 
@@ -262,7 +176,11 @@ PVC를 생성하면, NFS 서버에 볼륨이 생성되고 데이터가 저장되
 
 ### Terraform 인프라 구성
 
-#### OCI 볼륨 생성
+OCI 인프라 구성은 [Terraform OCI Provider](https://registry.terraform.io/providers/oracle/oci/latest)를 사용했다.
+
+HCL 코드에 프로바이더를 연결하는 과정은 여기선 생략한다. (추후 별도 포스팅 예정)
+
+#### OCI 블록 볼륨
 
 ```hcl
 # main.tf
@@ -363,13 +281,13 @@ output "nfs_volume_id" {
 
 <br>
 
-#### `terraform.tfvars` 파일 생성
+#### 변수 파일 생성
 
 
 ```bash
 cat > terraform.tfvars << EOF
 compartment_id      = "<< 배포할 OCI Compartment의 ID >>"
-availability_domain = "<< AD 이름, 가령 ibHX:AP-CHUNCHEON-1-AD-1 >>"
+availability_domain = "<< AD 이름, 예시: ibHX:AP-CHUNCHEON-1-AD-1 >>"
 EOF
 ```
 
@@ -462,7 +380,7 @@ spec:
 
 <br>
 
-#### ConfigMap (SFTP Pod용 SSH 키 관리, 선택사항)
+#### ConfigMap (Pod의 SFTP 컨테이너용 SSH 키 관리, 선택사항)
 
 ```yaml
 # configmap.yaml
@@ -767,7 +685,7 @@ kubectl port-forward --address localhost -n nfs-system svc/nfs-service 8080:8080
 
 
 <p align='center'>
-    <img src="cover.png" alt>
+    <img src="images/cover.png" alt>
     <em>PVC가 지정된 경로 (.pvc/namespace/pvc-name)에 생성됨을 알 수 있다.</em>
 </p>
 
@@ -775,11 +693,9 @@ kubectl port-forward --address localhost -n nfs-system svc/nfs-service 8080:8080
 
 ## 추후 계획
 
-현재 [Hashicrop Vault](https://www.hashicorp.com/en/products/vault)가 배포되어 있는데, Node의 수가 2개 뿐이라 HA 구성이 안 되고 있다.
+현재 k8s 클러스터에 [Vault](https://www.hashicorp.com/en/products/vault)가 배포되어 있는데, Node의 수가 2개 뿐이라 HA(High-Availability) 구성이 안 되고 있다. (최소 3개 이상 필요)
 
-NFS Provisioner는 당연히 외부에 존재하는 NFS Storage를 사용할 수도 있다. 굳이 NFS 서버가 클러스터 내부에 존재 할 필요는 없다.
-
-조만간 아예 독립적인 NAS 컴퓨터 한 대를 구매해서 NFS 서버를 구동, NFS Provisioner의 Source Stoarge로 사용할 예정이다. <sub>그래서 열심히 돈을 모으는 중이다...</sub>
+NFS Provisioner는 외부에 존재하는 NFS Storage를 사용할 수도 있으므로, NAS용 컴퓨터 한 대를 구매해서 NFS 서버를 구축한 뒤 NFS Provisioner의 Source로 활용할 예정이다.
 
 이는 또 다른 클러스터인 On-Premise에도 적용 될 예정이다. On-Premise 클러스터는 [Longhorn](https://longhorn.io/)을 설치해서 PVC를 제공하고 있는데, 이래저래 마음에 안 드는 구석이 많아 심플하게 외부 NAS로 통합려고 한다.
 

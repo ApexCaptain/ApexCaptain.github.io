@@ -3,7 +3,7 @@ title: On-Premise k8s에 Metallb 설치
 description: 방구석 k8s도 로드 밸런서는 필요해요
 slug: dev/install-metallb-to-on-premise-k8s
 date: 2025-09-29 00:00:00+0900
-image: cover.png
+image: images/cover.png
 categories:
     - 개발
 tags:
@@ -21,7 +21,7 @@ weight: 1
   - 온프레미스: 집에서 운영하는 싱글 노드로 시작한 k8s, 리소스 집약적 워크로드 배치(Jellyfin, 7 Days To Die, Ollama, QBittorrent 등)
   <br>
   <p align='center'>
-      <img src="jellyfin.png" alt>
+      <img src="images/jellyfin.png" alt>
       <em>Jellyfin같은 앱은 클라우드에 설치하기엔 자원 소모량이 너무 크다.</em>
   </p>
 
@@ -49,7 +49,7 @@ weight: 1
 
 - 초기에는 단일 노드(`93.5.22.44`)로 포워딩하면 충분했지만, 노드가 추가되면 단일 대상 포워딩만으로는 고가용성/확장성 확보 불가
   <p align='center'>
-    <img src="cannot-route.png" alt>
+    <img src="images/cannot-route.png" alt>
     <em>이런 상황이라면 공유기는 대체 어느 Node로 포워딩을 해야하는가?</em>
   </p>
 - Kubernetes의 `LoadBalancer` 타입이 클라우드 밖에서는 기본 제공되지 않아, 외부에서 접근 가능한 VIP가 부재
@@ -163,7 +163,7 @@ kubectl get svc -A | grep LoadBalancer || true
 
 - 외부 `80/443` → VIP `93.5.22.100:80/443`로 설정
   <p align='left'>
-    <img src="forward-http-to-lb.png" alt>
+    <img src="images/forward-http-to-lb.png" alt>
   </p>
 
 
