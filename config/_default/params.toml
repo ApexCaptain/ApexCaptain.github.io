@@ -79,13 +79,6 @@ enabled = true
 enabled = true
 provider = "utterances"
 
-[comments.gitalk]
-owner = "ApexCaptain"
-admin = "ApexCaptain"
-repo = "ApexCaptain.github.io"
-clientID = "Ov23likPLGDWmB3Mv3qn"
-clientSecret = "e6cfd6c81bf2d38c8c76a99098d2a38a56df238b"
-
 [comments.utterances]
 repo = "ApexCaptain/ApexCaptain.github.io"
 issueTerm = "pathname"
