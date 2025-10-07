@@ -31,11 +31,11 @@ weight: 1
 2. 메모리 : 24GB
 3. 블록 스토리지 : 200GB
 
-이에 맞춰 Terraform으로 OKE 클러스터와 4개의 인스턴스를 가지는 ARM Node Pool을 생성했다. 
+이에 맞춰 Terraform으로 OKE 클러스터와 4개의 인스턴스를 가지는 ARM Node Pool을 생성했다.
 
 각 Node는 1개의 CPU와 6GB의 메모리를 가진다.
 
-스토리지의 경우 추후 PVC 생성을 위해서도 쓰이므로, 최대한 작게 잡아주려고 했다.
+스토리지의 경우 추후 PVC 생성을 위해서도 쓰이므로 최대한 작게 잡아주려고 했다.
 
   <p align='center'>
       <img src="images/storage-plan-1.png" alt>
@@ -46,19 +46,21 @@ weight: 1
 
 
 그런데 실제로 생성된 Instance의 정보를 보니 Boot Volume이 비정상적으로 크게 생성되었다.
-  <p align='center'>
-      <img src="images/instance-detail.png" alt>
-      <em>k8s Node의 역할을 하는 Oracle Instance 중 하나의 Boot Volume 정보</em>
-  </p>
+
+<p align='center'>
+    <img src="images/instance-detail.png" alt>
+    <em>k8s Node의 역할을 하는 Oracle Instance 중 하나의 Boot Volume 정보</em>
+</p>
+
 Boot Volume은 문자 그대로 Linux 시스템이 부팅하는데 필요한 기본 디스크로, 윈도우로 치면 C드라이브 같은 존재이다.
 
 확인 결과, 다음과 같은 이슈가 발생했다.
 
-- Instance의 Boot Volume의 크기는 `최소 47Gi (50GB) 이상` 할당 해줘야 한다.
+- Instance의 Boot Volume의 크기는 `최소 47Gi (50GB) 이상` 할당해줘야 한다.
 
 - 당연히 이 용량은 Free Tier에서 제공되는 `200GB에서 차감`된다.
 
-- 이러면 단순히 Node 4개를 만드는 것 만으로도 Free Tier의 200GB를 다 써버리게 된다.
+- 이러면 단순히 Node 4개를 만드는 것만으로도 Free Tier의 200GB를 다 써버리게 된다.
 
   <p align='center'>
       <img src="images/storage-plan-2.png" alt>
@@ -90,7 +92,7 @@ spec:
 
 약 100MB 정도의 크기를 가지는 작은 PVC이다. 그럼 실제 만들어지는 OCI Block Volume의 크기도 100MB 정도여야 하지 않을까?
 
-어림도 없다. 여기도 크기 제약이 걸려있어서 최소 47Gi(50GB) 이상을 할당 해줘야 한다.
+어림도 없다. 여기도 크기 제약이 걸려있어서 최소 47Gi (50GB) 이상을 할당해줘야 한다.
 
 > **극단적으로 Node를 1개만 쓴다고 가정해도, PVC는 3개가 한계이다. 각각 50GB씩...** <sub>_오라클, 보고 있나?_</sub>
 
@@ -108,7 +110,7 @@ spec:
 
 클러스터로써 구색은 맞춰야 하므로 기존 4개에서 2개로 줄였다.
 
-각각 CPU는 2개, 메모리는 12GB씩 할당 해줬다.
+각각 CPU는 2개, 메모리는 12GB씩 할당해줬다.
 
 <p align='center'>
     <img src="images/instance-list.png" alt>
@@ -125,9 +127,7 @@ spec:
 
 [NFS Subdir External Provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)를 사용해서 별도의 `StorageClass`를 만들어줘야 한다.
 
-NFS Storage, 즉 NFS 서버를 Source로 해서 StorageClass를 만들고, 해당 StorageClass를 통해
-
-PVC를 생성하면, NFS 서버에 볼륨이 생성되고 데이터가 저장되는 구조이다.
+NFS Storage, 즉 NFS 서버를 Source로 해서 StorageClass를 만들고, 해당 StorageClass를 통해 PVC를 생성하면 NFS 서버에 볼륨이 생성되고 데이터가 저장되는 구조이다.
 
 주요 구성 요소를 배포 순서에 따라 나열하면 다음과 같다.
 
@@ -155,7 +155,7 @@ PVC를 생성하면, NFS 서버에 볼륨이 생성되고 데이터가 저장되
 
     보다 편한 관리를 위한 것으로, 선택사항이다. 
     
-    oci-bv가 제공하는 PVC는 `ReadWriteOnce`모드만 제공되므로 반드시 하나의 Pod에 NFS Container와 함께 정의 해줘야 한다.
+    oci-bv가 제공하는 PVC는 `ReadWriteOnce` 모드만 제공되므로 반드시 하나의 Pod에 NFS Container와 함께 정의해줘야 한다.
 
 
 <br>
@@ -164,13 +164,14 @@ PVC를 생성하면, NFS 서버에 볼륨이 생성되고 데이터가 저장되
 <br>
 
 ### 사용하는 도구
+
 - **Terraform**: 인프라 자원 관리 (OCI 볼륨, 백업 정책)
 - **Kubernetes Manifests**: NFS 서버, File Browser, SFTP 서비스
 - **Helm**: NFS Subdir External Provisioner 설치
 
-> 실제 구현은 CDKTF를 써서 하나의 Stack 파일로 구성했었다.
+> 실제 구현은 CDKTF를 써서 하나의 Stack 파일로 구성했다.
 >
-> [GitHub 링크](https://github.com/ApexCaptain/ApexCaptain.IaC/blob/main/src/terraform/stacks/k8s/oke/apps/nfs.stack.ts)로 들어가서 확인 가능하다.
+> [GitHub 링크](https://github.com/ApexCaptain/ApexCaptain.IaC/blob/main/src/terraform/stacks/k8s/oke/apps/nfs.stack.ts)에서 확인 가능하다.
 
 <br><br>
 
@@ -219,7 +220,7 @@ resource "oci_core_volume_backup_policy" "nfs_core_volume_backup_policy" {
   schedules {
     backup_type        = "FULL"
     period             = "ONE_MONTH"
-    retention_seconds  = 60 * 60 * 24 * 30 * 2  # 2달 보관
+    retention_seconds  = 60 * 60 * 24 * 30 * 2  # 2개월 보관
     day_of_month       = 1
     hour_of_day        = 3
     offset_seconds     = 0
@@ -232,7 +233,7 @@ resource "oci_core_volume_backup_policy" "nfs_core_volume_backup_policy" {
 **백업 스케줄:**
 
 - **증분 백업**: 매주 일요일 2시, 3주 보관
-- **전체 백업**: 매월 1일 3시, 2달 보관
+- **전체 백업**: 매월 1일 3시, 2개월 보관
 
 <br>
 
@@ -277,7 +278,7 @@ output "nfs_volume_id" {
 
 ```
 
-`nfs_volume_id` 값은 PV를 만들 때 필요하다
+`nfs_volume_id` 값은 PV를 만들 때 필요하다.
 
 <br>
 
@@ -369,7 +370,7 @@ metadata:
   name: nfs-pvc
   namespace: nfs-system
 spec:
-  volumeName: nfs-pv # 위에서 생서한 PV의 이름이다
+  volumeName: nfs-pv # 위에서 생성한 PV의 이름이다
   accessModes:
     - ReadWriteOnce
   resources:
@@ -627,11 +628,11 @@ nfs:
 
 # StorageClass 설정
 storageClass:
-  storageClassName: 'nfs-client' # StorageClass 이름은 본인이 원하는데로 사용하면 된다
+  storageClassName: 'nfs-client' # StorageClass 이름은 본인이 원하는대로 사용하면 된다
   accessModes: 'ReadWriteMany'
-  # PVC 할당시 Storage에 어떤 경로로 저장 될 지 지정한다.
-  # 예시의 경우 my-namespace에서 my-pvc라는 이름의 PVC 생성시 ./pvc/my-namespace/my-pvc로 저장
-  pathPattern: '.pvc/$${.PVC.namespace}/$${.PVC.name}', 
+  # PVC 할당 시 Storage에 어떤 경로로 저장될 지 지정한다.
+  # 예시의 경우 my-namespace에서 my-pvc라는 이름의 PVC 생성 시 ./pvc/my-namespace/my-pvc로 저장
+  pathPattern: '.pvc/$${.PVC.namespace}/$${.PVC.name}' 
 ```
 
 <br>
@@ -675,9 +676,9 @@ kubectl get storageclass
 
 이제 다른 네임스페이스에서 PVC를 생성해보자.
 
-FileBrowser와 ingress까지 설정했다면 웹상으로 접근해서 확인 할 수 있다.
+FileBrowser와 ingress까지 설정했다면 웹상으로 접근해서 확인할 수 있다.
 
-ingress가 별도로 없다면 다음 명령어로 포트포워딩 해서 `localhost:8080`으로 접근해보자.
+ingress가 별도로 없다면 다음 명령어로 포트포워딩해서 `localhost:8080`으로 접근해보자.
 
 ```bash
 kubectl port-forward --address localhost -n nfs-system svc/nfs-service 8080:8080
@@ -693,13 +694,13 @@ kubectl port-forward --address localhost -n nfs-system svc/nfs-service 8080:8080
 
 ## 추후 계획
 
-현재 k8s 클러스터에 [Vault](https://www.hashicorp.com/en/products/vault)가 배포되어 있는데, Node의 수가 2개 뿐이라 HA(High-Availability) 구성이 안 되고 있다. (최소 3개 이상 필요)
+현재 k8s 클러스터에 [Vault](https://www.hashicorp.com/en/products/vault)가 배포되어 있는데, Node의 수가 2개뿐이라 HA (High-Availability) 구성이 안 되고 있다. (최소 3개 이상 필요)
 
 NFS Provisioner는 외부에 존재하는 NFS Storage를 사용할 수도 있으므로, NAS용 컴퓨터 한 대를 구매해서 NFS 서버를 구축한 뒤 NFS Provisioner의 Source로 활용할 예정이다.
 
-이는 또 다른 클러스터인 On-Premise에도 적용 될 예정이다. On-Premise 클러스터는 [Longhorn](https://longhorn.io/)을 설치해서 PVC를 제공하고 있는데, 이래저래 마음에 안 드는 구석이 많아 심플하게 외부 NAS로 통합려고 한다.
+이는 또 다른 클러스터인 On-Premise에도 적용될 예정이다. On-Premise 클러스터는 [Longhorn](https://longhorn.io/)을 설치해서 PVC를 제공하고 있는데, 이래저래 마음에 안 드는 구석이 많아 심플하게 외부 NAS로 통합하려고 한다.
 
-Longhorn에 대해서는 조만간 포스팅 할 예정이다.
+Longhorn에 대해서는 조만간 포스팅할 예정이다.
 
 
 
