@@ -1,6 +1,5 @@
 # Change baseurl before deploy
-# baseurl = "https://blog.ayteneve93.com"
-baseurl = "https://apexcaptain.github.io"
+baseurl = "https://blog.ayteneve93.com"
 languageCode = "ko-kr"
 title = "ApexCaptain의 기술 블로그"
 
