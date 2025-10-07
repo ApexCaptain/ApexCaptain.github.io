@@ -7,12 +7,10 @@ image: images/cover.png
 categories:
     - 블로그
 tags:
-    - Kubernetes
-    - OCI
-    - NFS
-    - StorageClass
-    - PVC
-    - LoadBalancer
+    - Hugo
+    - Stack Theme
+    - Comment
+    - Utterances
 weight: 1
 ---
 
@@ -26,7 +24,7 @@ weight: 1
 
 ## 댓글 시스템의 종류
 
-[Hugo Stack Theme의 가이드라인인](https://stack.jimmycai.com/config/comments)에 따르면 지원되는 댓글 시스템은 다음과 같다.
+[Hugo Stack Theme의 가이드라인](https://stack.jimmycai.com/config/comments)에 따르면 지원되는 댓글 시스템은 다음과 같다.
 
 <p align='center'>
     <img src="images/available-comment-systems.png" alt>
@@ -48,6 +46,7 @@ weight: 1
 | **Vssue** | **다중 Git 플랫폼** | **GitHub 외 GitLab/Bitbucket 지원**, 서버 불필요. | Git 계정 필수. |
 | **Waline** | 서버리스 DB | 라이트웨이트, 쉬운 배포, 다양한 형식 지원. | 별도의 서버리스 백엔드 필요. |
 
+
 이 중 가장 경량화 된 방식인 `utterances`를 사용해서 댓글 시스템을 추가하고자 한다.
 
 추후 여유가 되면 `Remark42` 방식으로 k8s에 자체 호스팅을 할 계획이다.
@@ -59,14 +58,12 @@ weight: 1
 ### Utterances 앱 설치
 
 [GitHub Marketplace 링크](https://github.com/apps/utterances)로 들어가 애플리케이션을 설치한다.
-    
-- `Only select repositories` 선택 -> 댓글을 저장할 Public Repository (보통 블로그 repo와 동일한 것으로 한다.)
 
-    <p align='center'>
-        <img src="images/install-utterances.png" alt>
-    </p>
+`Only select repositories` 선택 → 댓글을 저장할 Public Repository (보통 블로그 repo와 동일한 것으로 한다.)
 
-<br>
+<p align='center'>
+    <img src="images/install-utterances.png" alt>
+</p>
 
 <br><br>
 
@@ -86,13 +83,11 @@ issueTerm = "pathname"
 label = "comments"
 ```
 
-<br><br>
-
 ### 로컬에서 블로그 가동 및 테스트
 
 - hugo 커맨드로 로컬 서버를 구동한다
 
-    `--cleanDestinationDir` 플래그를 함께 넣어줘서 기존에 생성된 `public`, `resources` 폴더를 지우고 재생성 해주자. 
+    `--cleanDestinationDir` 플래그를 함께 넣어줘서 기존에 생성된 `public`, `resources` 폴더를 지우고 재생성 해주자.
 
     ```bash
     hugo server --cleanDestinationDir
