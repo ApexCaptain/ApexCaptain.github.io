@@ -74,7 +74,7 @@ enabled = true
 [imageProcessing.content]
 enabled = true
 
-## Comments
+# Comments
 [comments]
 enabled = true
 provider = "gitalk"
