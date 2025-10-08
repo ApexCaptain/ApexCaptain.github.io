@@ -53,16 +53,14 @@ Kubernetes를 클라우드에서 관리형 서비스로 제공하는 모델이�
 
 ## Oracle Cloud Infrastructure
 
-[Oracle Cloud Infrastructure(이하 OCI)](https://www.oracle.com/kr/cloud/)는 Oracle에서 운영하는 Cloud Provider이다.
-
+[Oracle Cloud Infrastructure(이하 OCI)](https://www.oracle.com/kr/cloud/)는 Oracle에서 운영하는 Cloud Provider이다.  
 AWS, Azure 등과 마찬가지로 OCI 역시 [Oracle Kubernetes Engine(이하 OKE)](https://www.oracle.com/kr/cloud/cloud-native/kubernetes-engine/)라는 KaaS를 제공한다. 
  
 <br>
 
 ### Oracle을 선택한 이유
 
-OCI 자체는 다른 Cloud Provider들에 비해 특별한 장점이 있는 것은 아니다.
-
+OCI 자체는 다른 Cloud Provider들에 비해 특별한 장점이 있는 것은 아니다.  
 하지만 개인적으로 Cloud에 k8s를 구성하길 희망한다면, 그에 부합하는 한 가지 커다란 이점이 있다.
 
 > Oracle에는 무려 **상시 무료 서비스**가 존재한다!
@@ -72,23 +70,25 @@ OCI 자체는 다른 Cloud Provider들에 비해 특별한 장점이 있는 것�
     <em>클러스터 하나를 운영하기에는 부족함이 없다.</em>
 </p>
 
-AWS를 무료로 사용할 수 있는 기간은 1년이 한계이고, 그마저도 EKS는 포함되지도 않는다.
-
-EKS로 Node 하나 없는 깡통 클러스터만 만들어 놔도 시간당 $0.1씩 과금된다. 
+AWS를 무료로 사용할 수 있는 기간은 1년이 한계이고, 그마저도 EKS는 포함되지도 않는다.  
+EKS로는 Node 하나 없이 깡통 클러스터만 만들어 놔도 시간당 $0.1씩 과금된다. 
 
 > **환율 1,400원 기준으로 계산하면 한 달에 무려 10만원씩 나간다!**
 
-회사 차원에서 도입을 고려하는 경우라면, 이 정도 비용 격차는 큰 메리트는 아니다.
+회사 차원에서 도입을 고려하는 경우라면, 이 정도 비용 격차는 그다지 큰 메리트는 아닐 것이다.  
+오히려 후술한 단점들을 생각한다면 AWS나 Azure를 선택하는 것이 훨씬 합리적이다.
 
-하지만 개인 용도 + 학습을 목표로 하는 나와 같은 상황의 방문자가 있다면, 나쁘지 않은 선택이라고 본다.
+하지만 `개인 용도` + `학습`을 목표로 하는 나와 같은 입장의 방문자가 있다면 썩 괜찮은 선택지이다.
 
 <br><br>
 
 ### 단점
 
-- **레퍼런스 부족**: 대부분의 개발자들은 그 존재조차 모르는 것 같다.
+- **레퍼런스 부족**: 어디서 정보를 찾기가 너무 힘들다. 대부분의 개발자들은 그 존재조차 모르는 것 같다.
 
-- **부실한 공식 문서**: AWS에 익숙해져서 그런 것도 있겠지만, OCI의 공식 문서는 객관적으로 봐도 가독성이 매우 떨어진다.
+- **부실한 공식 문서**: 그럼 공식 문서라도 깔끔하게 되어있어야 하는데 그것도 아니다.
+
+  AWS에 익숙해져서 그런 것도 있겠지만, OCI의 공식 문서는 객관적으로 봐도 가독성이 매우 떨어진다.
   
   [공식 문서 사이트 링크](https://docs.oracle.com/en/)가 있으니 궁금한 사람은 부디 들어가서 탐험 해보길 바란다.
 
@@ -96,8 +96,7 @@ EKS로 Node 하나 없는 깡통 클러스터만 만들어 놔도 시간당 $0.1
 
 ### OCI Always Free 제한사항
 
-[OCI Free Tier](https://www.oracle.com/kr/cloud/free/#always-free) 페이지에도 나와있는데, 모든 서비스가 무제한으로 사용 가능한 건 당연히 아니다.
-
+[OCI Free Tier](https://www.oracle.com/kr/cloud/free/#always-free) 페이지에도 나와있는데, 모든 서비스가 무제한으로 사용 가능한 건 당연히 아니다.  
 클러스터 1개를 운영한다고 가정하고, k8s에서 가용 가능한 자원을 간단하게 요약하면 다음과 같다.
 
 | 자원 유형 | 제한사항 |
@@ -106,13 +105,11 @@ EKS로 Node 하나 없는 깡통 클러스터만 만들어 놔도 시간당 $0.1
 | **Persistent Volume** | 200GB | 
 | **Load Balancer** | Flexible Network Load Balancer 1개 |
 
-Node의 경우 Node 1개당 최소 1개의 코어는 필요하므로 최대 사용 가능한 Node 수는 4개이다.
-
+Node의 경우 Node 1개당 최소 1개의 코어는 필요하므로 최대 `사용 가능한 Arm Node 수는 4개`이다.  
 AMD Node도 있긴 한데, 사이즈가 너무 작아서 여기선 무시한다.
 
-OKE로 만드는 클러스터도 1개까지는 무료이다.
-
-OKE는 KaaS이기 때문에 Control-Plane Node가 따로 필요 없다. 
+OKE로 만드는 클러스터는 1개까지 무료로 사용 가능하다.  
+OKE는 KaaS이기 때문에 별도로 Control-Plane Node가 필요 없다. 
 
 > **따라서 4개의 Arm Node는 모두 Worker Node로 쓸 수 있다! 그것도 공짜로!** <sub>_아마존, 보고 있나?_</sub>
 
@@ -120,4 +117,4 @@ OKE는 KaaS이기 때문에 Control-Plane Node가 따로 필요 없다.
 
 - OCI Free Tier에 제한된 리소스 안에서 k8s 클러스터를 자체적으로 운영
 - 추가 비용 X
-- On-Premise 클러스터와 함께 하이브리드 클러스터 구성
+- On-Premise 클러스터와 함께 멀티 클러스터 구성

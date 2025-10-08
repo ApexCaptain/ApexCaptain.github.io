@@ -45,7 +45,7 @@ weight: 1
 <br>
 
 
-그런데 실제로 생성된 Instance의 정보를 보니 Boot Volume이 비정상적으로 크게 생성되었다.
+그런데 실제로 생성된 Instance의 정보를 보니 Boot Volume이 비정상적으로 크게 만들어져 있다.
 
 <p align='center'>
     <img src="images/instance-detail.png" alt>
@@ -78,7 +78,7 @@ kind: PersistentVolumeClaim
 metadata:
     name: my-pvc
 spec:
-    storageClassName: oci-bv # 이게 OCI에서 기본적으로 제공하는 Storage Class이다.
+    storageClassName: oci-bv #OCI에서 기본적으로 제공하는 Storage Class
     accessModes:
         - ReadWriteOnce
     resources:
@@ -86,13 +86,12 @@ spec:
             storage: 100Mi 
 ```
 
-이처럼 OKE k8s 클러스터에 pvc 하나를 만든다고 가정해보자.
-
+이처럼 OKE k8s 클러스터에 pvc 하나를 만든다고 가정해보자.  
 `oci-bv`는 Oracle에서 기본적으로 제공되는 Storage class로 OCI Block Volume을 저장소로 쓴다.
 
 약 100MB 정도의 크기를 가지는 작은 PVC이다. 그럼 실제 만들어지는 OCI Block Volume의 크기도 100MB 정도여야 하지 않을까?
 
-어림도 없다. 여기도 크기 제약이 걸려있어서 최소 47Gi (50GB) 이상을 할당해줘야 한다.
+어림도 없다. 여기도 크기 제약이 걸려있어서 `최소 47Gi (50GB) 이상`을 할당해줘야 한다.
 
 > **극단적으로 Node를 1개만 쓴다고 가정해도, PVC는 3개가 한계이다. 각각 50GB씩...** <sub>_오라클, 보고 있나?_</sub>
 
@@ -106,10 +105,8 @@ spec:
 ## 해결방안
 
 ### NodePool의 스펙 및 수 조정
-우선 Node에 50GB씩 기본 할당 되는 건 어쩔 도리가 없기 때문에 Node 수를 타협해야 한다.
-
-클러스터로써 구색은 맞춰야 하므로 기존 4개에서 2개로 줄였다.
-
+우선 Node에 50GB씩 기본 할당 되는 건 어쩔 도리가 없기 때문에 Node 수를 타협해야 한다.  
+클러스터로써 구색은 맞춰야 하므로 기존 4개에서 2개로 줄였다.  
 각각 CPU는 2개, 메모리는 12GB씩 할당해줬다.
 
 <p align='center'>
@@ -153,8 +150,7 @@ NFS Storage, 즉 NFS 서버를 Source로 해서 StorageClass를 만들고, 해�
 
 4. (선택) [FileBrowser](https://github.com/filebrowser/filebrowser), SFTP Container 
 
-    보다 편한 관리를 위한 것으로, 선택사항이다. 
-    
+    보다 편한 관리를 위한 것으로, 선택사항이다.   
     oci-bv가 제공하는 PVC는 `ReadWriteOnce` 모드만 제공되므로 반드시 하나의 Pod에 NFS Container와 함께 정의해줘야 한다.
 
 
@@ -232,8 +228,8 @@ resource "oci_core_volume_backup_policy" "nfs_core_volume_backup_policy" {
 
 **백업 스케줄:**
 
-- **증분 백업**: 매주 일요일 2시, 3주 보관
-- **전체 백업**: 매월 1일 3시, 2개월 보관
+- **증분(INCREMENTAL) 백업**: 매주 일요일 2시, 3주 보관
+- **전체(FULL) 백업**: 매월 1일 3시, 2개월 보관
 
 <br>
 
@@ -287,8 +283,8 @@ output "nfs_volume_id" {
 
 ```bash
 cat > terraform.tfvars << EOF
-compartment_id      = "<< 배포할 OCI Compartment의 ID >>"
-availability_domain = "<< AD 이름, 예시: ibHX:AP-CHUNCHEON-1-AD-1 >>"
+compartment_id      = "< 배포할 OCI Compartment의 ID >"
+availability_domain = "< AD 이름, 예시: ibHX:AP-CHUNCHEON-1-AD-1 >"
 EOF
 ```
 
@@ -623,17 +619,23 @@ helm repo update
 
 ```yaml
 nfs:
-  server: 'nfs-service.nfs-system.svc.cluster.local' # NFS 서버 서비스 주소
-  path: '/services' # NFS 공유 경로
+  # NFS 서버 서비스 주소
+  # 위 k8s manifest에서 생성한 nfs service의 k8s service dns를 사용했다.
+  server: 'nfs-service.nfs-system.svc.cluster.local' 
+  path: '/services' # 공유 경로
 
 # StorageClass 설정
 storageClass:
-  storageClassName: 'nfs-client' # StorageClass 이름은 본인이 원하는대로 사용하면 된다
+  # StorageClass 이름은 본인이 원하는대로 사용하면 된다
+  storageClassName: 'nfs-client' 
+
   accessModes: 'ReadWriteMany'
-  # PVC 할당 시 Storage에 어떤 경로로 저장될 지 지정한다.
-  # 예시의 경우 my-namespace에서 my-pvc라는 이름의 PVC 생성 시 ./pvc/my-namespace/my-pvc로 저장
-  pathPattern: '.pvc/$${.PVC.namespace}/$${.PVC.name}' 
+  # PVC 할당 시 Storage에 저장 될 경로 패턴을 의미한다.
+  # 예시의 경우 ./pvc/<네임스페이스 명>/<PVC 명>으로 저장된다.
+  pathPattern: '.pvc/${.PVC.namespace}/${.PVC.name}' 
 ```
+
+- 보다 구체적인 Values 설정은 [다음의 링크](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)를 참조하길 바란다.
 
 <br>
 

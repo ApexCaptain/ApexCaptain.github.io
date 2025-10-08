@@ -17,7 +17,7 @@ weight: 1
 
 ## 주요 목표
 
-- **하이브리드 멀티 클러스터**: OCI OKE(클라우드) + Workstation microk8s(온프레미스)
+- **멀티 클러스터**: OCI OKE(클라우드) + Workstation microk8s(온프레미스)
 - **GitOps 파이프라인**: ArgoCD 중심의 선언적 배포 자동화
 - **보안·신뢰**: Bastion, OAuth2 Proxy, Cert-Manager, Vault 중심 시크릿·인증 체계
 - **관찰성**: Prometheus + Grafana 모니터링 스택
