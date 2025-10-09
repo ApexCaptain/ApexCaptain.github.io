@@ -279,7 +279,8 @@ services:
   # ...... #
 ```
 
-`build` 디렉토리는 `docker-compose.yml`과 같은 경로에 배치 해두었다.  
+`build` 디렉토리는 `docker-compose.yml`과 같은 경로에 배치 해두었다.
+
 `build` 디렉토리 내부 구조는 다음과 같다.
 ```bash
 build
