@@ -5,7 +5,10 @@ slug: dev/install-metallb-to-on-premise-k8s
 date: 2025-09-29 00:00:00+0900
 image: images/cover.png
 categories:
-    - 개발
+    - Development
+subcategories:
+    - Infrastructure
+    - Kubernetes
 tags:
     - Kubernetes
     - On-Premise

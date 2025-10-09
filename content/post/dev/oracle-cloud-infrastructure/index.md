@@ -5,7 +5,9 @@ slug: dev/oracle-cloud-infrastructure
 date: 2025-10-03 00:00:00+0900
 image: images/cover.png
 categories:
-    - 개발
+    - Development
+subcategories:
+    - Infrastructure
 tags:
     - OCI
     - OKE

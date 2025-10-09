@@ -5,7 +5,7 @@ slug: etc/how-to-add-workspace-to-win11-taskbar
 date: 2025-09-30 00:00:00+0900
 image: images/cover.png
 categories:
-    - 기타
+    - ETC
 tags:
     - Windows11
     - Cursor

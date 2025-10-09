@@ -5,7 +5,9 @@ slug: dev/torrenting-with-vpn-on-k8s
 date: 2025-09-29 00:00:00+0900
 image: images/cover.png
 categories:
-    - 개발
+    - Development
+subcategories:
+    - Kubernetes
 tags:
     - Kubernetes
     - NordVPN

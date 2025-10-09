@@ -5,7 +5,10 @@ slug: dev/apexcaptain.iac
 date: 2025-09-28 18:05:00+0900
 image: images/cover.png
 categories:
-    - 개발
+    - Development
+subcategories:
+    - Infrastructure
+    - Kubernetes
 tags:
     - Terraform
     - Kubernetes

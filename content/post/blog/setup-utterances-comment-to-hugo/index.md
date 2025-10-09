@@ -5,7 +5,7 @@ slug: blog/hugo
 date: 2025-10-08 00:00:00+0900
 image: images/cover.png
 categories:
-    - 블로그
+    - Blog
 tags:
     - Hugo
     - Stack Theme
