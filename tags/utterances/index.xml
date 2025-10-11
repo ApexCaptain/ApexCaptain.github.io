@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Utterances on ApexCaptain의 기술 블로그</title><link>https://blog.ayteneve93.com/tags/utterances/</link><description>Recent content in Utterances on ApexCaptain의 기술 블로그</description><generator>Hugo -- gohugo.io</generator><language>ko-kr</language><lastBuildDate>Wed, 08 Oct 2025 00:00:00 +0900</lastBuildDate><atom:link href="https://blog.ayteneve93.com/tags/utterances/index.xml" rel="self" type="application/rss+xml"/><item><title>Utterances로 블로그에 댓글 기능 추가하기</title><link>https://blog.ayteneve93.com/p/blog/hugo/</link><pubDate>Wed, 08 Oct 2025 00:00:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/blog/hugo/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/blog/hugo/images/cover.png" alt="Featured image of post Utterances로 블로그에 댓글 기능 추가하기" /&gt;&lt;h2 id="개요"&gt;개요
+&lt;/h2&gt;&lt;p&gt;현재 이 블로그는 &lt;a class="link" href="https://gohugo.io/" target="_blank" rel="noopener"
+&gt;Hugo&lt;/a&gt; 프레임워크의 &lt;a class="link" href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+&gt;Stack Theme&lt;/a&gt;을 적용해서 빌드 되었다.&lt;/p&gt;
+&lt;p&gt;이 글을 쓰고 있는 시간 기준으로 아직까지 포스트 된 글의 수가 많지는 않지만 추후 방문자 분들과 소통 해야 할 필요성이 있어 댓글 기능을 추가하고자 한다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="댓글-시스템의-종류"&gt;댓글 시스템의 종류
+&lt;/h2&gt;&lt;p&gt;&lt;a class="link" href="https://stack.jimmycai.com/config/comments" target="_blank" rel="noopener"
+&gt;Hugo Stack Theme의 가이드라인&lt;/a&gt;에 따르면 지원되는 댓글 시스템은 다음과 같다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/available-comment-systems.png" alt&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style="text-align: left"&gt;시스템&lt;/th&gt;
+&lt;th style="text-align: left"&gt;데이터 저장소&lt;/th&gt;
+&lt;th style="text-align: left"&gt;주요 장점&lt;/th&gt;
+&lt;th style="text-align: left"&gt;주요 단점&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;Disqus&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;Disqus 서버&lt;/td&gt;
+&lt;td style="text-align: left"&gt;기능 풍부, 사용자 익숙도 높음, 스팸 방지.&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;광고 (무료)&lt;/strong&gt;, 로딩 지연 가능성, 데이터 종속.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;DisqusJS&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;Disqus 서버&lt;/td&gt;
+&lt;td style="text-align: left"&gt;Disqus 기능 + &lt;strong&gt;성능 개선 (클릭 시 로드).&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;설정 복잡, 결국 Disqus에 의존.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;Cusdis&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;Cusdis 서버/자체 호스팅&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;매우 경량&lt;/strong&gt;, &lt;strong&gt;프라이버시 우선 (광고/추적 없음).&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;기능 단순, UI 커스터마이징 제한.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;Twikoo&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;서버리스 DB&lt;/td&gt;
+&lt;td style="text-align: left"&gt;다양한 기능(이미지/Katex), &lt;strong&gt;쉬운 서버리스 배포.&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;별도 서버리스 환경 구성 필요.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;Remark42&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;내 서버 (Boltdb)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;K8s/Docker에 최적화&lt;/strong&gt;, &lt;strong&gt;데이터 완전 소유&lt;/strong&gt;, 프라이버시 보호.&lt;/td&gt;
+&lt;td style="text-align: left"&gt;초기 &lt;strong&gt;서버 설치 및 관리 필요&lt;/strong&gt;.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;Cactus&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;Matrix 네트워크&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;탈중앙화&lt;/strong&gt;, 데이터 호스팅 주체 선택 가능.&lt;/td&gt;
+&lt;td style="text-align: left"&gt;Matrix 계정 필요, 낮은 인지도.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;Giscus&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;GitHub Discussions&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;서버 불필요&lt;/strong&gt;, &lt;strong&gt;GitHub 리액션&lt;/strong&gt; 활용, 경량.&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;GitHub 계정 필수&lt;/strong&gt;, 비기술 사용자 접근 어려움.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;Gitalk&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;GitHub Issues&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;서버 불필요&lt;/strong&gt;, 경량, 데이터 소유권.&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;GitHub 계정 필수&lt;/strong&gt;, 기능 단순.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;utterances&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;GitHub Issues&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;가장 경량화&lt;/strong&gt;, 깔끔한 GitHub 스타일 UI.&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;GitHub 계정 필수&lt;/strong&gt;, 기능 단순.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;Vssue&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;다중 Git 플랫폼&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;GitHub 외 GitLab/Bitbucket 지원&lt;/strong&gt;, 서버 불필요.&lt;/td&gt;
+&lt;td style="text-align: left"&gt;Git 계정 필수.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;Waline&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left"&gt;서버리스 DB&lt;/td&gt;
+&lt;td style="text-align: left"&gt;라이트웨이트, 쉬운 배포, 다양한 형식 지원.&lt;/td&gt;
+&lt;td style="text-align: left"&gt;별도의 서버리스 백엔드 필요.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;이 중 가장 경량화 된 방식인 &lt;code&gt;utterances&lt;/code&gt;를 사용해서 댓글 시스템을 추가하고자 한다.&lt;/p&gt;
+&lt;p&gt;추후 여유가 되면 &lt;code&gt;Remark42&lt;/code&gt; 방식으로 k8s에 자체 호스팅을 할 계획이다.&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h2 id="적용"&gt;적용
+&lt;/h2&gt;&lt;h3 id="utterances-앱-설치"&gt;Utterances 앱 설치
+&lt;/h3&gt;&lt;p&gt;&lt;a class="link" href="https://github.com/apps/utterances" target="_blank" rel="noopener"
+&gt;GitHub Marketplace 링크&lt;/a&gt;로 들어가 애플리케이션을 설치한다.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Only select repositories&lt;/code&gt; 선택 → 댓글을 저장할 Public Repository (보통 블로그 repo와 동일한 것으로 한다.)&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/install-utterances.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h3 id="블로그-설정-파일-수정"&gt;블로그 설정 파일 수정
+&lt;/h3&gt;&lt;p&gt;&lt;code&gt;Stack&lt;/code&gt; 테마의 경우 &lt;code&gt;config/_default/params.toml&lt;/code&gt; 파일을 다음과 같이 수정해주면 된다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;span class="lnt"&gt;9
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-toml" data-lang="toml"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;# config/_default/params.toml&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nx"&gt;comments&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;enabled&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="kc"&gt;true&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;provider&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;utterances&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nx"&gt;comments&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;utterances&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;repo&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;ApexCaptain/ApexCaptain.github.io&amp;#34;&lt;/span&gt; &lt;span class="c"&gt;# utterances 댓글이 저장될 저장소&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;issueTerm&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;pathname&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;label&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;comments&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id="로컬에서-블로그-가동-및-테스트"&gt;로컬에서 블로그 가동 및 테스트
+&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;hugo 커맨드로 로컬 서버를 구동한다&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;--cleanDestinationDir&lt;/code&gt; 플래그를 함께 넣어줘서 기존에 생성된 &lt;code&gt;public&lt;/code&gt;, &lt;code&gt;resources&lt;/code&gt; 폴더를 지우고 재생성 해주자.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;hugo server --cleanDestinationDir
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;localhost:1313&lt;/code&gt;으로 접속해 아무 포스트나 들어가서 하단을 보면 다음과 같이 나온다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/comment-section-1.png" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;테스트로 댓글 하나를 달아보자.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/comment-section-2.png" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;그러면 다음과 같이 &lt;code&gt;markdown&lt;/code&gt;이 적용되어 h1 크기의 큼지막한 댓글이 달린 걸 확인 할 수 있다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/comment-section-3.png" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;위에서 지정한 대상 Repository의 Issue 탭을 확인 해보면 다음과 같이 Issue에 댓글이 추가되어 있다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/comment-in-issue.png" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

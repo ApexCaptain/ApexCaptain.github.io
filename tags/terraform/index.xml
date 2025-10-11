@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Terraform on ApexCaptain의 기술 블로그</title><link>https://blog.ayteneve93.com/tags/terraform/</link><description>Recent content in Terraform on ApexCaptain의 기술 블로그</description><generator>Hugo -- gohugo.io</generator><language>ko-kr</language><lastBuildDate>Sun, 28 Sep 2025 18:05:00 +0900</lastBuildDate><atom:link href="https://blog.ayteneve93.com/tags/terraform/index.xml" rel="self" type="application/rss+xml"/><item><title>ApexCaptain.IaC</title><link>https://blog.ayteneve93.com/p/dev/apexcaptain.iac/</link><pubDate>Sun, 28 Sep 2025 18:05:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/dev/apexcaptain.iac/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/dev/apexcaptain.iac/images/cover.png" alt="Featured image of post ApexCaptain.IaC" /&gt;&lt;h1 id="github"&gt;&lt;a class="link" href="https://github.com/ApexCaptain/ApexCaptain.IaC" target="_blank" rel="noopener"
+&gt;GitHub&lt;/a&gt;
+&lt;/h1&gt;&lt;h2 id="주요-목표"&gt;주요 목표
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;멀티 클러스터&lt;/strong&gt;: OCI OKE(클라우드) + Workstation microk8s(온프레미스)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;GitOps 파이프라인&lt;/strong&gt;: ArgoCD 중심의 선언적 배포 자동화&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;보안·신뢰&lt;/strong&gt;: Bastion, OAuth2 Proxy, Cert-Manager, Vault 중심 시크릿·인증 체계&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;관찰성&lt;/strong&gt;: Prometheus + Grafana 모니터링 스택&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;개인 미디어 인프라&lt;/strong&gt;: Jellyfin, qBittorrent, 게임 서버 등&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="아키텍처-개요"&gt;아키텍처 개요
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;네트워크(OCI)&lt;/strong&gt;: VCN + Public/Private/DB Subnet, LB/Bastion, K8s 노드, 데이터 계층&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;클러스터 계층&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;OKE(클라우드): System(NS)에 Istio, ArgoCD(개발 중), Vault(개발 중), 모니터링(개발 중), Ingress&lt;/li&gt;
+&lt;li&gt;Workstation(microk8s): System(NS)에 Istio/모니터링/Longhorn, Application(NS)에 Dev/Media/Game/File 서비스&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="현재-성과핵심"&gt;현재 성과(핵심)
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;인프라 자동화&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;OKE 및 Workstation 클러스터 구성 정의, 선택적 스택 배포/병렬화, 상태 백업 스크립트 제공&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;보안/신뢰&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;Bastion 접근 제어, OAuth2 Proxy, Cert-Manager 자동 인증서 발급 구성&lt;/li&gt;
+&lt;li&gt;Vault 기반 시크릿 관리 체계 설계(개발 중)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;운영 효율&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;Prometheus/Grafana 관찰성 스택 구성(개발 중), 로그 중앙화 계획&lt;/li&gt;
+&lt;li&gt;개인 미디어/유틸 서비스(Jellyfin, qBittorrent, SFTP, 7 Days to Die) 구성&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;개발 생산성&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;src/terraform/stacks&lt;/code&gt; 중심 스택화 구조, &lt;code&gt;scripts/&lt;/code&gt; 내 배포 선택/백업/터미널 도구&lt;/li&gt;
+&lt;li&gt;Projen, ESLint/Prettier, Yarn 워크플로우 정착&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="진행-현황요약"&gt;진행 현황(요약)
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;OKE 클러스터 자동 프로비저닝: 구성&lt;/li&gt;
+&lt;li&gt;Workstation microk8s 클러스터: 구성&lt;/li&gt;
+&lt;li&gt;Istio 서비스 메시: 구성&lt;/li&gt;
+&lt;li&gt;ArgoCD(GitOps): 개발 중&lt;/li&gt;
+&lt;li&gt;Vault(시크릿): 개발 중&lt;/li&gt;
+&lt;li&gt;Prometheus/Grafana(모니터링): 개발 중&lt;/li&gt;
+&lt;li&gt;Bastion/인증·인증서(Cert-Manager, OAuth2 Proxy): 구성&lt;/li&gt;
+&lt;li&gt;미디어/게임/SFTP 서비스: 구성&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

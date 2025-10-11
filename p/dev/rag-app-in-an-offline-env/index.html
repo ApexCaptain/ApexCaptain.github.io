@@ -1,0 +1,221 @@
+<!doctype html><html lang=ko-kr dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="연관 포스트 Docling이란? 문제의 시작 회사에서 간단한 RAG 애플리케이션 을 하나 만들라는 지시를 받았다.\n여기엔 몇 가지 단서조항이 포함되어 있었는데, 문제가 되는 부분은 다음과 같다.\n"><title>오프라인 환경에서 RAG 앱 동작시키기</title><link rel=canonical href=https://blog.ayteneve93.com/p/dev/rag-app-in-an-offline-env/><link rel=stylesheet href=/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="오프라인 환경에서 RAG 앱 동작시키기"><meta property='og:description' content="연관 포스트 Docling이란? 문제의 시작 회사에서 간단한 RAG 애플리케이션 을 하나 만들라는 지시를 받았다.\n여기엔 몇 가지 단서조항이 포함되어 있었는데, 문제가 되는 부분은 다음과 같다.\n"><meta property='og:url' content='https://blog.ayteneve93.com/p/dev/rag-app-in-an-offline-env/'><meta property='og:site_name' content='ApexCaptain의 기술 블로그'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='AI'><meta property='article:tag' content='RAG'><meta property='article:tag' content='Embeddings'><meta property='article:tag' content='Docling'><meta property='article:published_time' content='2025-10-09T12:00:00+09:00'><meta property='article:modified_time' content='2025-10-09T12:00:00+09:00'><meta property='og:image' content='https://blog.ayteneve93.com/p/dev/rag-app-in-an-offline-env/images/cover.png'><meta name=twitter:title content="오프라인 환경에서 RAG 앱 동작시키기"><meta name=twitter:description content="연관 포스트 Docling이란? 문제의 시작 회사에서 간단한 RAG 애플리케이션 을 하나 만들라는 지시를 받았다.\n여기엔 몇 가지 단서조항이 포함되어 있었는데, 문제가 되는 부분은 다음과 같다.\n"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://blog.ayteneve93.com/p/dev/rag-app-in-an-offline-env/images/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="메뉴 여닫기">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_7c3bd1d4d98bb2c4.png width=300 height=298 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>👋</span></figure><div class=site-meta><h1 class=site-name><a href=/>ApexCaptain의 기술 블로그</a></h1><h2 class=site-description></h2></div></header><ol class=menu-social><li><a href=https://github.com/ApexCaptain target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>다크 모드</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">목차</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#문제의-시작>문제의 시작</a><ol><li><a href=#노트북-사양>노트북 사양</a></li><li><a href=#폐쇄망>폐쇄망</a></li></ol></li><li><a href=#해결방안>해결방안</a><ol><li><a href=#컨테이너-구성>컨테이너 구성</a></li><li><a href=#이미지에-ai-model을-내장하기>이미지에 AI Model을 내장하기</a><ol><li><a href=#방법-1-docker-image에-모델-내장해서-올리기>방법 1) Docker Image에 모델 내장해서 올리기</a></li><li><a href=#방법-2-빌드-타임에-ai-모델을-다운받도록-변경>방법 2) 빌드 타임에 AI 모델을 다운받도록 변경</a></li></ol></li></ol></li><li><a href=#마치며>마치며</a></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/dev/rag-app-in-an-offline-env/><img src=/p/dev/rag-app-in-an-offline-env/images/cover_hu_c53b52501f7c08d5.png srcset="/p/dev/rag-app-in-an-offline-env/images/cover_hu_c53b52501f7c08d5.png 800w, /p/dev/rag-app-in-an-offline-env/images/cover_hu_cd62a5fcc3de15df.png 1600w" width=800 height=418 loading=lazy alt="Featured image of post 오프라인 환경에서 RAG 앱 동작시키기"></a></div><div class=article-details><header class=article-category><a href=/categories/development/>Development</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/dev/rag-app-in-an-offline-env/>오프라인 환경에서 RAG 앱 동작시키기</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>10월 09, 2025</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>4 분 정도</time></div></footer></div></header><section class=article-content><h1 id=연관-포스트>연관 포스트</h1><ul><li><a class=link href=../docling/>Docling이란?</a></li></ul><br><h2 id=문제의-시작>문제의 시작</h2><p>회사에서 <em>간단한 RAG 애플리케이션</em> 을 하나 만들라는 지시를 받았다.</p><p>여기엔 몇 가지 단서조항이 포함되어 있었는데, 문제가 되는 부분은 다음과 같다.</p><ol><li><p>운영 환경은 <strong><code>Windows 11 노트북</code></strong></p></li><li><p><strong><code>네트워크에 연결되지 않은 상태</code></strong> 에서 동작해야 함</p></li><li><p>Docker Desktop 설치하면 안 됨</p></li><li><p>중국 기업에서 나온 모델은 사용하면 안 됨</p><ul><li>예를들어<ol><li><a class=link href=https://www.deepseek.com/ target=_blank rel=noopener>DeepSeek</a></li><li><a class=link href=https://chat.qwen.ai/ target=_blank rel=noopener>QWEN</a></li></ol></li></ul></li></ol><p align=center><img src=images/laptop.png alt>
+<em>추석 연휴동안 작업 하려고 허락 받고 아예 집에 가져왔다.</em></p><br><h3 id=노트북-사양>노트북 사양</h3><p align=center><img src=images/laptop-spec.png alt></p><ul><li>CPU/메모리는 괜찮다. 특히 메모리는 무려 64GB나 된다!</li><li>문제는 그래픽 카드인데, VRAM이 <code>8GB</code> 밖에 되지 않는다.</li></ul><br><h3 id=폐쇄망>폐쇄망</h3><p>이번 프로젝트에서 가장 큰 걸림돌이 바로 이것이다.</p><blockquote><p>네트워크가 안 되는 환경에서 구동 되어야 할 것</p></blockquote><p>Ollama처럼 단순히 LLM을 설치하고 명령 받아서 처리만 해주는 컨테이너의 경우,
+외부에서 제어만 잘 해주면 별다른 문제가 없겠으나 Docling처럼 AI가 애플리케이션
+내부로 들어가서 겉에서 한 번 Wrapping된 형태라면 Offline 기능을 제공해주지 않는 이상 구현이 요원해진다.</p><br><h2 id=해결방안>해결방안</h2><h3 id=컨테이너-구성>컨테이너 구성</h3><p>우선 전체적으로 컨테이너가 어떻게 구성되어 있는지 정리해두었다.</p><p>Host OS가 Windows인 관계로, WSL 및 Docker와 Docker-Compose를 사용해서 컨테이너 환경을 마련했다.</p><p>단서조항에 <code>Docker Desktop은 설치하면 안 됨</code>이 있어서 Ubuntu 위에 직접 설치했다.</p><ul><li><strong>Application</strong><ul><li><strong>Web</strong>: React 기반의 웹 애플리케이션</li><li><strong>Backend</strong>: NestJs 기반의 API 서버</li></ul></li><li><strong>Infrastructure</strong><ul><li><strong>Ollama</strong><ul><li>Image: <a class=link href=https://hub.docker.com/r/ollama/ollama target=_blank rel=noopener>ollama/ollama</a></li><li>용도: 텍스트 생성 / Embedding</li><li>사용된 모델<ul><li>텍스트 생성: <a class=link href=https://ollama.com/joonoh/HyperCLOVAX-SEED-Text-Instruct-1.5B:latest target=_blank rel=noopener>joonoh/HyperCLOVAX-SEED-Text-Instruct-1.5B:latest</a></li><li>임베딩: <a class=link href=https://ollama.com/bona/bge-m3-korean target=_blank rel=noopener>bona/bge-m3-korean:latest</a></li></ul></li><li>GPU 가속 : <code>O</code></li></ul></li><li><strong>Docling</strong><ul><li><p>Image: <a class=link href=https://quay.io/repository/docling-project/docling-serve target=_blank rel=noopener>quay.io/docling-project/docling-serve</a></p><p>이 이미지는 CPU Only 모드로만 동작하는 Docling 컨테이너 이미지이다.<br>GPU 가속이 가능한 이미지로도 써봤는데, VRAM 제한 때문에 <code>CUDA Out of Memory</code> 이슈와 함께 먹통이 되어버렸다.</p><p>결국 이 프로젝트에서 GPU는 Ollama 컨테이너만 쓰는 것으로 타협을 봤다.<br>VRAM에 여유가 있다면 다음의 Docker Image 중 하나를 골라 쓰면 된다.</p><ul><li><a class=link href=https://quay.io/repository/docling-project/docling-serve-cu126 target=_blank rel=noopener>quay.io/docling-project/docling-serve-cu126</a>: CUDA 12.6</li><li><a class=link href=https://quay.io/repository/docling-project/docling-serve-cu128 target=_blank rel=noopener>quay.io/docling-project/docling-serve-cu128</a>: CUDA 12.8</li></ul></li><li><p>용도: Embedding 전처리</p></li><li><p>사용된 모델</p><ul><li><a class=link href=https://huggingface.co/ds4sd/CodeFormulaV2 target=_blank rel=noopener>ds4sd/CodeFormulaV2</a>: 수학 공식 분석</li><li><a class=link href=https://huggingface.co/HuggingFaceTB/SmolVLM-256M-Instruct target=_blank rel=noopener>HuggingFaceTB/SmolVLM-256M-Instruct</a>: 이미지 분석</li><li><a class=link href=https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2 target=_blank rel=noopener>sentence-transformers/all-MiniLM-L6-v2</a>: 문서 Chunking</li></ul></li><li><p>GPU 가속 : <code>X</code></p></li></ul></li><li><strong>Chroma</strong><ul><li>Image: <a class=link href=https://hub.docker.com/r/chromadb/chroma target=_blank rel=noopener>chromadb/chroma</a></li><li>용도: VectorStore</li></ul></li></ul></li><li><strong>Management</strong><ul><li><strong>Watchtower</strong>: 컨테이너 자동 업데이트</li><li><strong>AutoHeal</strong>: HealthCheck Fail시 컨테이너 자동 리스타트</li></ul></li></ul><br><h3 id=이미지에-ai-model을-내장하기>이미지에 AI Model을 내장하기</h3><p>이번 문제의 핵심을 다시 한 번 요약하면 다음과 같다.</p><ol><li><p>RAG 애플리케이션을 <code>Offline 상태</code>의 노트북 1개에서 동작시켜야 한다.</p></li><li><p>여기서 핵심이 되는 컨테이너는 <code>Ollama</code>와 <code>Docling</code>이다.</p></li><li><p>두 컨테이너는 모두 AI 모델을 동적으로 다운받아 동작하는 것을 기본으로 한다.</p></li></ol><p>그럼, Ollama와 Docling에서 사용할 모델을 Docker Image에 내장하면 그만인 것 아닐까?</p><br><h4 id=방법-1-docker-image에-모델-내장해서-올리기>방법 1) Docker Image에 모델 내장해서 올리기</h4><p>우선 아예 모델 다운로드가 포함된 Image를 만들어서 Registry에 올려보았다.</p><p align=center><img src=images/ocir.png alt>
+<em>10GB가 넘는다. 심지어 필요한 모든 모델을 다 담은 것도 아니다.</em></p><p>당연한 얘기지만, 모델이 포함된 만큼 정직하게 크기가 늘어나버렸다.<br>이게 비단 Docker 이미지가 좀 무거워졌다 수준의 문제가 아니다.</p><ol><li><p>CI/CD 파이프라인이 전반적으로 다 느려진다.</p></li><li><p>이렇게 생성된 Image는 클라우드에서 제공하는 Container Registry에 올라가는데, 용량 때문에 비용 걱정도 해야 한다.</p></li></ol><br><h4 id=방법-2-빌드-타임에-ai-모델을-다운받도록-변경>방법 2) 빌드 타임에 AI 모델을 다운받도록 변경</h4><p>생각해보니, 굳이 Image Registry에 올릴 필요는 없었다.</p><p><code>Offline 환경에서 동작해야 한다</code>이지,<br><code>Offline 환경에서 설치해야 한다</code>의 개념은 아니지 않은가.</p><p>Docker Compose에 <code>image</code> 대신 <code>build</code>를 넣고 아예 Dockerfile 자체를 정의해주면 그만이다.</p><p>그렇게 해서 나온 결과는 다음과 같다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># ...... #</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Infrastructure Services</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ollama</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>build</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>context</span><span class=p>:</span><span class=w> </span><span class=l>./build/ollama</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>dockerfile</span><span class=p>:</span><span class=w> </span><span class=l>Dockerfile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>ollama</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># Docker Compose에서 GPU를 할당할 땐 이런식으로 한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>reservations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>devices</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>nvidia</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>count</span><span class=p>:</span><span class=w> </span><span class=l>all</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>capabilities</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>gpu]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>Ollama.Data:/root/.ollama</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=l>50m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>docling</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>docling</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>build</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>context</span><span class=p>:</span><span class=w> </span><span class=l>./build/docling</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>dockerfile</span><span class=p>:</span><span class=w> </span><span class=l>Dockerfile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>DOCLING_SERVE_ENABLE_UI</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;false&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># (매우 중요!) 이 항목이 없으면 모델을 내장시켜도 Offline에서 자꾸 에러가 난다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>HF_HUB_OFFLINE</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w> 
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=l>50m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># ...... #</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>Ollama.Data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><code>build</code> 디렉토리는 <code>docker-compose.yml</code>과 같은 경로에 배치 해두었다.<br><code>build</code> 디렉토리 내부 구조는 다음과 같다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>build
+</span></span><span class=line><span class=cl>├── docling
+</span></span><span class=line><span class=cl>│   └── Dockerfile
+</span></span><span class=line><span class=cl>└── ollama
+</span></span><span class=line><span class=cl>    ├── Dockerfile
+</span></span><span class=line><span class=cl>    └── entrypoint.sh
+</span></span></code></pre></td></tr></table></div></div><p>각 파일들은 다음과 같이 작성했다.</p><ol><li><p><code>build/docling/Dockerfile</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-dockerfile data-lang=dockerfile><span class=line><span class=cl><span class=k>FROM</span><span class=w> </span><span class=s>quay.io/docling-project/docling-serve-cpu</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c># Docling의 기본 모델 다운로드</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> docling-tools models download<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c># Hybrid Chunker용 추가 모델 다운로드</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> python3 -c <span class=s2>&#34;from transformers import AutoTokenizer, AutoModel; \
+</span></span></span><span class=line><span class=cl><span class=s2>    AutoTokenizer.from_pretrained(&#39;sentence-transformers/all-MiniLM-L6-v2&#39;); \
+</span></span></span><span class=line><span class=cl><span class=s2>    AutoModel.from_pretrained(&#39;sentence-transformers/all-MiniLM-L6-v2&#39;);&#34;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c># 공식/이미지 분석용 모델 다운로드</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> docling-tools models <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    download-hf-repo  <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>        ds4sd/CodeFormulaV2 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>        HuggingFaceTB/SmolVLM-256M-Instruct <span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>EXPOSE</span><span class=w> </span><span class=s>5001</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div></li><li><p><code>build/ollama/Dockerfile</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-dockerfile data-lang=dockerfile><span class=line><span class=cl><span class=k>FROM</span><span class=w> </span><span class=s>ollama/ollama</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>COPY</span> ./entrypoint.sh /entrypoint.sh<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> chmod +x /entrypoint.sh<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>ENTRYPOINT</span> <span class=p>[</span><span class=s2>&#34;/entrypoint.sh&#34;</span><span class=p>]</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>EXPOSE</span><span class=w> </span><span class=s>11434</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><p>Ollama는 Ollama 서버가 실행되고 나서야 모델을 받을 수 있으므로, 별도의 Entrypoint를 추가해줬다.</p></li><li><p><code>build/ollama/entrypoint.sh</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span>
+</span></span><span class=line><span class=cl><span class=nb>set</span> -e
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;Starting Ollama server...&#34;</span>
+</span></span><span class=line><span class=cl>ollama serve <span class=p>&amp;</span> <span class=c1># 백그라운드에서 Ollama 실행</span>
+</span></span><span class=line><span class=cl><span class=nv>SERVER_PID</span><span class=o>=</span><span class=nv>$!</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;Waiting for Ollama server to be active...&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>until</span> ollama list &gt;/dev/null 2&gt;<span class=p>&amp;</span>1<span class=p>;</span> <span class=k>do</span> <span class=c1># Ollama process가 정상적으로 동작 될 때까지 대기</span>
+</span></span><span class=line><span class=cl>sleep <span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;Pulling models...&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># For embedding</span>
+</span></span><span class=line><span class=cl>ollama pull bona/bge-m3-korean:latest <span class=o>||</span> <span class=nb>true</span> 
+</span></span><span class=line><span class=cl><span class=c1># For text generation</span>
+</span></span><span class=line><span class=cl>ollama pull joonoh/HyperCLOVAX-SEED-Text-Instruct-1.5B:latest <span class=o>||</span> <span class=nb>true</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>trap</span> <span class=s2>&#34;kill -TERM </span><span class=nv>$SERVER_PID</span><span class=s2>&#34;</span> SIGTERM SIGINT
+</span></span><span class=line><span class=cl><span class=nb>wait</span> <span class=nv>$SERVER_PID</span>
+</span></span></code></pre></td></tr></table></div></div></li></ol><br><h2 id=마치며>마치며</h2><p>위 방법 2를 사용해서 Offline에서도 임베딩부터 텍스트 생성까지 정상 동작하는게 확인되었다.</p><p><a class=link href=../docling/#%eb%8f%99%ec%9e%91-%ed%85%8c%ec%8a%a4%ed%8a%b8>&ldquo;Docling이란?&rdquo; 포스트의 동작 테스트 문단</a>에 실제로 테스트 한 영상을 올려두었다.</p></section><footer class=article-footer><section class=article-tags><a href=/tags/ai/>AI</a>
+<a href=/tags/rag/>RAG</a>
+<a href=/tags/embeddings/>Embeddings</a>
+<a href=/tags/docling/>Docling</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>관련 글</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/dev/docling/><div class=article-image><img src=/p/dev/docling/images/cover.aeb9e83b0e4f3b8a1fa54ca7904770fb_hu_d55b5260e849ff8a.png width=250 height=150 loading=lazy alt="Featured image of post Docling이란?" data-key=dev/docling data-hash="md5-rrnoOw5PO4ofpUynkEdw+w=="></div><div class=article-details><h2 class=article-title>Docling이란?</h2></div></a></article><article class=has-image><a href=/p/dev/install-windows-on-k8s/><div class=article-image><img src=/p/dev/install-windows-on-k8s/images/cover.d6b8cebf4b682d596e1913abd1653322_hu_684629e7f31a1126.png width=250 height=150 loading=lazy alt="Featured image of post k8s에 Windows 설치하기" data-key=dev/install-windows-on-k8s data-hash="md5-1rjOv0toLVluGROr0WUzIg=="></div><div class=article-details><h2 class=article-title>k8s에 Windows 설치하기</h2></div></a></article><article class=has-image><a href=/p/dev/nfs-subdir-external-provisioner/><div class=article-image><img src=/p/dev/nfs-subdir-external-provisioner/images/cover.1fc53b8a4b7e37ff70dc14f192254e6a_hu_afaa924cac0286e0.png width=250 height=150 loading=lazy alt="Featured image of post Nfs subdir external provisioner" data-key=dev/nfs-subdir-external-provisioner data-hash="md5-H8U7ikt+N/9w3BTxkiVOag=="></div><div class=article-details><h2 class=article-title>Nfs subdir external provisioner</h2></div></a></article><article class=has-image><a href=/p/dev/oracle-cloud-infrastructure/><div class=article-image><img src=/p/dev/oracle-cloud-infrastructure/images/cover.4030afd137330bedd307626b3dc3deac_hu_14c2f933114c7fc2.png width=250 height=150 loading=lazy alt="Featured image of post Oracle Cloud Infrastructure" data-key=dev/oracle-cloud-infrastructure data-hash="md5-QDCv0TczC+3TB2JrPcPerA=="></div><div class=article-details><h2 class=article-title>Oracle Cloud Infrastructure</h2></div></a></article><article class=has-image><a href=/p/dev/install-metallb-to-on-premise-k8s/><div class=article-image><img src=/p/dev/install-metallb-to-on-premise-k8s/images/cover.2c0e356b72e9a7a9380e959e98ea4e20_hu_605c6a090051f8f9.png width=250 height=150 loading=lazy alt="Featured image of post On-Premise k8s에 Metallb 설치" data-key=dev/install-metallb-to-on-premise-k8s data-hash="md5-LA41a3Lpp6k4DpWemOpOIA=="></div><div class=article-details><h2 class=article-title>On-Premise k8s에 Metallb 설치</h2></div></a></article></div></div></aside><script src=https://utteranc.es/client.js repo=ApexCaptain/ApexCaptain.github.io issue-term=pathname label=comments crossorigin=anonymous async></script><style>.utterances{max-width:unset}</style><script>let utterancesLoaded=!1;function setUtterancesTheme(e){let t=document.querySelector(".utterances iframe");t&&t.contentWindow.postMessage({type:"set-theme",theme:`github-${e}`},"https://utteranc.es")}addEventListener("message",e=>{if(e.origin!=="https://utteranc.es")return;utterancesLoaded=!0,setUtterancesTheme(document.documentElement.dataset.scheme)}),window.addEventListener("onColorSchemeChange",e=>{if(!utterancesLoaded)return;setUtterancesTheme(e.detail)})</script><footer class=site-footer><section class=copyright>&copy;
+2025 ApexCaptain의 기술 블로그</section><section class=powerby><a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a>로 만듦<br><a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a>의 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.31.0>Stack</a></b> 테마 사용 중</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

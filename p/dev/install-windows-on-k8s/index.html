@@ -1,0 +1,472 @@
+<!doctype html><html lang=ko-kr dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="잘못 읽은신거 아닙니다. \" k8s\" 위에 \"windows\" 맞습니다."><title>k8s에 Windows 설치하기</title><link rel=canonical href=https://blog.ayteneve93.com/p/dev/install-windows-on-k8s/><link rel=stylesheet href=/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="k8s에 Windows 설치하기"><meta property='og:description' content="잘못 읽은신거 아닙니다. \" k8s\" 위에 \"windows\" 맞습니다."><meta property='og:url' content='https://blog.ayteneve93.com/p/dev/install-windows-on-k8s/'><meta property='og:site_name' content='ApexCaptain의 기술 블로그'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Kubernetes'><meta property='article:tag' content='Windows'><meta property='article:tag' content='KVM'><meta property='article:published_time' content='2025-10-11T00:00:00+09:00'><meta property='article:modified_time' content='2025-10-11T00:00:00+09:00'><meta property='og:image' content='https://blog.ayteneve93.com/p/dev/install-windows-on-k8s/images/cover.png'><meta name=twitter:title content="k8s에 Windows 설치하기"><meta name=twitter:description content="잘못 읽은신거 아닙니다. \" k8s\" 위에 \"windows\" 맞습니다."><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://blog.ayteneve93.com/p/dev/install-windows-on-k8s/images/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="메뉴 여닫기">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_7c3bd1d4d98bb2c4.png width=300 height=298 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>👋</span></figure><div class=site-meta><h1 class=site-name><a href=/>ApexCaptain의 기술 블로그</a></h1><h2 class=site-description></h2></div></header><ol class=menu-social><li><a href=https://github.com/ApexCaptain target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>다크 모드</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">목차</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#문제의-시작>문제의 시작</a></li><li><a href=#해결방안---k8s에-windows를-설치하자>해결방안 - k8s에 Windows를 설치하자</a><ol><li><a href=#kvm-kernel-based-virtual-machine>KVM (kernel-based Virtual Machine)</a><ol><li><a href=#동작-원리>동작 원리</a></li><li><a href=#주요-특징>주요 특징</a></li><li><a href=#일반적인-사용-사례>일반적인 사용 사례</a></li></ol></li><li><a href=#사전준비>사전준비</a><ol><li><a href=#kvm-지원-확인>KVM 지원 확인</a></li></ol></li><li><a href=#windows-컨테이너-정보>Windows 컨테이너 정보</a></li><li><a href=#kubernetes-구성>kubernetes 구성</a><ol><li><a href=#namespace-생성>Namespace 생성</a></li><li><a href=#windows-사용자-로그인-정보-secret-생성>Windows 사용자 로그인 정보 Secret 생성</a></li><li><a href=#추가-installation-script-configmap-생성-선택사항>추가 Installation Script Configmap 생성 (선택사항)</a></li><li><a href=#persistentvolumeclaim-메니페스트-파일>PersistentVolumeClaim 메니페스트 파일</a></li><li><a href=#deployment-메니페스트-파일>Deployment 메니페스트 파일</a></li><li><a href=#service-메니페스트-파일>Service 메니페스트 파일</a></li><li><a href=#ingress-메니페스트-파일-선택>Ingress 메니페스트 파일 (선택)</a></li><li><a href=#매니페스트-배포>매니페스트 배포</a></li><li><a href=#배포-상태-확인>배포 상태 확인</a></li></ol></li></ol></li><li><a href=#동작-테스트>동작 테스트</a><ol><li><a href=#웹-접속>웹 접속</a></li><li><a href=#원격-데스크탑rdp-접속>원격 데스크탑(RDP) 접속</a></li></ol></li><li><a href=#리소스-소모량>리소스 소모량</a><ol><li><a href=#스토리지>스토리지</a></li><li><a href=#cpu--ram>CPU / RAM</a></li></ol></li><li><a href=#마치며>마치며</a><ol><li><a href=#보안에-대해>보안에 대해</a></li><li><a href=#개인적인-의견>개인적인 의견</a></li></ol></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/dev/install-windows-on-k8s/><img src=/p/dev/install-windows-on-k8s/images/cover_hu_da98895645b48cb.png srcset="/p/dev/install-windows-on-k8s/images/cover_hu_da98895645b48cb.png 800w, /p/dev/install-windows-on-k8s/images/cover_hu_2fb26cb9c91b12a8.png 1600w" width=800 height=424 loading=lazy alt="Featured image of post k8s에 Windows 설치하기"></a></div><div class=article-details><header class=article-category><a href=/categories/development/>Development</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/dev/install-windows-on-k8s/>k8s에 Windows 설치하기</a></h2><h3 class=article-subtitle>잘못 읽은신거 아닙니다. "k8s" 위에 "Windows" 맞습니다.</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>10월 11, 2025</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>9 분 정도</time></div></footer></div></header><section class=article-content><blockquote><p><strong>⚠ 주의</strong> : 본 포스트에서는 k8s에 <code>Windows</code>를 설치하는 방법에 대한 정보를 담고 있습니다.</p><p><strong>MS 법무팀과 평생 기억에 남을 찐한 티 타임</strong>을 가지고 싶은게 아니라면
+<a class=link href=https://github.com/dockur/windows target=_blank rel=noopener>Windows Container</a>나 <a class=link href=https://github.com/dockur/macos target=_blank rel=noopener>Mac OS Container</a> 페이지에도 나와있듯,
+별도 라이센스 없이 상업적으로 사용하는 것은 삼가도록 합시다.</p></blockquote><br><h2 id=문제의-시작>문제의 시작</h2><p>나는 깔끔한 걸 굉장히 좋아하는 성격이다.<br>회사에서나 집에서나 컴퓨터 바탕화면에는 항상 필요한 최소한의 아이콘만 배치하고 있다.</p><p align=center><img src=images/wallpaper.png alt></p><p>특히나 Docker를 접하게 된 이후로는 개발자 컴퓨터라면 응당 설치되어 있을법한 python이나 nodejs, java
+심지어 Database Client 같은 것들도 모두 컨테이너를 통해 사용하고 있다.</p><p>하지만 반드시 Windows 혹은 Mac에서만 동작하도록 만들어진 프로그램들도 있기 마련이다.<br>예컨대 카카오톡의 경우 Docker Container로 사용하기가 대단히 어렵거나 하더라도 매끄럽게 동작하질 않는다.</p><p>이러한 것들 중 내가 특히나 불편하게 여기는 게 있는데 바로 <code>은행 보안 프로그램</code>이다.</p><br><p align=center><img src=images/woori-banking-security.png alt>
+<em>로그인 하려면 이것들부터 설치해야 한다</em></p><p>한 달에 한 번씩 정기적으로 가계부를 정리하는 습관을 가지고 있는데,<br>금융 관련 보안에 대해서는 굉장히 민감한 편이라 반드시 집에 있는 메인 PC로만 작업하곤 한다.</p><p>문제는 다음과 같다.</p><ol><li>매번 은행업무 볼 때마다 각종 은행 보안 프로그램이 설치 / 업데이트 / 실행 된다.</li><li>은행들끼리 통일도 안 되어 있는 건지 다들 사용하는 프로그램이 조금씩 다 다르다.</li><li>개인적으로 사용하는 보안 프로그램과 충돌나는 경우가 잦다.</li><li>은근히 컴퓨터 자원을 많이 잡아 먹는다.</li></ol><p>더 이상 메인 PC에 이런 자질구레한 보안 프로그램들이 설치되는 걸 용납할 수가 없었다.<br>그렇다고 은행업무 전용 PC를 산다는 건 지나친 투자이다. 빈대 잡자고 초가삼간 태울 순 없는 노릇 아닌가.</p><blockquote><p>그렇담 가상화는?</p></blockquote><p>이 생각도 안 해본 건 아니다. 아니 생각 정도가 아니라 실제로 VMWare로 시도도 해봤다. 동작도 잘 한다.<br>그런데, 메인 PC에 은행업무 하나 보자고 가상환경 설치하는 것 자체가 너무나도 번거럽고 부담스러운 일이었다.</p><br><h2 id=해결방안---k8s에-windows를-설치하자>해결방안 - k8s에 Windows를 설치하자</h2><p>이번에 설치할 컨테이너 이미지는 <a class=link href=https://hub.docker.com/r/dockurr/windows target=_blank rel=noopener>dockurr/windows</a>이다.</p><blockquote><p>이게 그 Windows 컨테이너라는 건가?</p></blockquote><p>싶을 수도 있는데, 아니다.</p><p><code>Windows Container</code>는 Host OS가 Windows일 때 Windows App을 격리하여 실행하기 위해 있는 것으로,
+우리가 흔히 <strong>Container</strong>라고 부르는 것은 십중팔구 <code>Linux Container</code>를 의미한다.
+Linux Container와 Windows Container는 근본적으로 다르다.</p><ul><li>Linux Container는 <code>Linux OS</code> 위에서만 동작한다.</li><li>Unix Container라는 것도 있다. <code>Unix OS</code>에서만 동작한다.</li><li>마찬가지로 Windows Container는 <code>Windows</code> 위에서만 동작한다.</li></ul><p align=center><img src=images/dockur-images.png alt></p><p>같은 개발자분이 작성한 <a class=link href=https://hub.docker.com/u/dockurr target=_blank rel=noopener>다른 이미지들</a>을 보면 Windows 이외에도 <a class=link href=https://hub.docker.com/r/dockurr/macos target=_blank rel=noopener>MacOS</a>, <a class=link href=https://hub.docker.com/r/dockurr/casa target=_blank rel=noopener>Casa</a>등 다양하게 준비되어 있는 걸 볼 수 있는데, 이 이미지들은 모두 <strong>Linux</strong> 시스템 위에서 동작하는 걸 전제로 만들어져 있다.</p><p>이런게 가능한 이유는 <code>Container 수준</code>이 아니라 아예 커널 레벨에서의 가상화를 쓰기 때문이다.<br>핵심 컴포넌트는 <code>KVM(kernel-based Virtual Machine)</code>이다.</p><br><h3 id=kvm-kernel-based-virtual-machine>KVM (kernel-based Virtual Machine)</h3><p>KVM은 Linux Kernel을 하이퍼바이저로 변환하는 가상화 기술로, 단일 물리적 컴퓨터에서 여러 개의 격리된 가상 머신(VM), 즉 &ldquo;게스트&rdquo; 운영체제를 실행할 수 있게 해준다.</p><p>각 VM을 메모리, 스토리지, 네트워크 카드와 같은 가상화된 하드웨어 구성 요소를 갖춘 일반 Linux 프로세스로 처리함으로써 효율적이고 고성능의 가상화를 제공한다.</p><h4 id=동작-원리>동작 원리</h4><ul><li><p><strong>Linux Kernel 통합</strong>: KVM은 Linux Kernel 자체 내의 모듈이기 때문에 하이퍼바이저 역할을 하기 위한 별도의 운영체제가 필요하지 않다.</p></li><li><p><strong>하드웨어 가상화</strong>: KVM은 Intel VT-x 또는 AMD-V와 같은 하드웨어 가상화 확장 기능을 활용하여 완전한 하드웨어 수준의 가상화를 제공한다.</p></li><li><p><strong>QEMU</strong>: KVM이 핵심 가상화 기능을 제공하는 반면, QEMU 에뮬레이터와 함께 작동하여 게스트 VM에 하드웨어 에뮬레이션 및 가상 장치를 제공한다.</p></li><li><p><strong>가상 머신</strong>: 각 게스트 OS는 자체 전용 가상 하드웨어를 갖춘 별도의 Linux 프로세스로 실행되어 다른 VM과의 격리를 보장한다.</p></li></ul><h4 id=주요-특징>주요 특징</h4><ul><li><p><strong>오픈소스 및 무료</strong>: KVM은 오픈소스이며 무료로 사용할 수 있다.</p></li><li><p><strong>성능</strong>: Linux Kernel과의 깊은 통합으로 인해 높은 성능과 효율성을 자랑한다.</p></li><li><p><strong>유연성</strong>: Linux와 Windows를 포함한 다양한 운영체제를 게스트 VM으로 실행할 수 있다.</p></li><li><p><strong>비용 효율성</strong>: Linux의 구성 요소로서 값비싼 라이선스 비용이 필요하지 않다.</p></li></ul><h4 id=일반적인-사용-사례>일반적인 사용 사례</h4><ul><li><p><strong>클라우드 컴퓨팅</strong>: KVM은 많은 퍼블릭 및 프라이빗 클라우드 인프라의 핵심 기술로, 확장 가능한 온디맨드 컴퓨팅 리소스를 제공한다.</p></li><li><p><strong>소프트웨어 개발 및 테스트</strong>: 개발자들은 KVM을 사용하여 다양한 운영체제에서 소프트웨어를 테스트하기 위한 격리된 환경을 만든다.</p></li><li><p><strong>서버 통합</strong>: 조직에서는 KVM을 사용하여 여러 서버를 더 적은 수의 물리적 머신으로 통합하여 비용과 에너지를 절약한다.</p></li></ul><br><h3 id=사전준비>사전준비</h3><p>말이 길었는데, 결국 k8s를 구성하는 Node에서 kvm을 지원 해줘야 OS(Linux)의 한계를 뛰어넘는 Container를 사용해 볼 수 있다.</p><h4 id=kvm-지원-확인>KVM 지원 확인</h4><p>KVM 자체는 Linux Kernel에 이미 있기 때문에 하드웨어 가상화만 지원하면 된다. k8s Node에 터미널로 접속해 다음 명령어를 입력해보자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>lsmod <span class=p>|</span> grep kvm
+</span></span></code></pre></td></tr></table></div></div><p>다음과 같이 출력된다면 이미 활성화가 되어 있는 것이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kvm_amd               <span class=m>208896</span>  <span class=m>4</span>
+</span></span><span class=line><span class=cl>kvm                  <span class=m>1409024</span>  <span class=m>3</span> kvm_amd
+</span></span><span class=line><span class=cl>irqbypass              <span class=m>12288</span>  <span class=m>1</span> kvm
+</span></span><span class=line><span class=cl>ccp                   <span class=m>143360</span>  <span class=m>4</span> kvm_amd
+</span></span></code></pre></td></tr></table></div></div><p>Intel의 CPU를 사용한다면 <code>kvm_intel</code>이라고 출력될 것이다.</p><p>출력이 안 되었다면, VMWare나 VirtualBox 설치할 때 처럼 해당 노드의 <code>Bios</code>에서 활성화를 해줘야 한다.</p><br><h3 id=windows-컨테이너-정보>Windows 컨테이너 정보</h3><p>Windows 11을 설치할 것이다. 사양은 <a class=link href=https://www.microsoft.com/ko-kr/windows/windows-11-specifications target=_blank rel=noopener>Windows 11 시스템 요구사항</a>에 맞춰 구성했다.</p><p align=center><img src=images/windows-11-requirements.png alt></p><ul><li>운영체제 : Windows 11</li><li>CPU Core : 2</li><li>메모리 : 4GB</li><li>저장공간 : 64GB</li></ul><br><h3 id=kubernetes-구성>kubernetes 구성</h3><p>실제 구현은 <a class=link href=https://github.com/ApexCaptain/ApexCaptain.IaC/blob/main/src/terraform/stacks/k8s/workstation/apps/windows.stack.ts target=_blank rel=noopener>CDK for Terraform Single Stack</a>으로 작업했다.</p><h4 id=namespace-생성>Namespace 생성</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl create namespace windows
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h4 id=windows-사용자-로그인-정보-secret-생성>Windows 사용자 로그인 정보 Secret 생성</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl create secret generic windows-user-credential-secret <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -n windows <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --from-literal<span class=o>=</span><span class=nv>username</span><span class=o>=</span>&lt;Windows 유저명&gt; <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --from-literal<span class=o>=</span><span class=nv>password</span><span class=o>=</span>&lt;Windows 패스워드&gt;
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h4 id=추가-installation-script-configmap-생성-선택사항>추가 Installation Script Configmap 생성 (선택사항)</h4><p>Container에 Windows가 처음 설치된 이후 1번 실행될 스크립트이다.<br>Container의 <code>/oem/install.bat</code>파일이 실행된다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>.
+</span></span><span class=line><span class=cl>├── install.bat
+</span></span><span class=line><span class=cl>└── remove-unnecessary-apps.ps1
+</span></span></code></pre></td></tr></table></div></div><p>이렇게 2개의 파일로 구성되어 있다. 각 파일의 내용은 다음과 같다.</p><ol><li><p><code>install.bat</code></p><p>밑의 <code>2</code>번 PowerShell 파일을 실행하는 <code>bat</code>파일이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bat data-lang=bat><span class=line><span class=cl><span class=p>@</span><span class=k>echo</span> off
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>echo</span> Running initial installation scripts...
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>powershell -ExecutionPolicy Bypass -File <span class=s2>&#34;</span><span class=nv>%~dp0</span><span class=s2>remove-unnecessary-apps.ps1&#34;</span>
+</span></span></code></pre></td></tr></table></div></div></li></ol><br><ol start=2><li><p><code>remove-unnecessary-apps.ps1</code></p><p>불필요한 Windows 기본 앱들을 제거해주는 PowerShell 스크립트이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ps1 data-lang=ps1><span class=line><span class=cl><span class=n>C:</span><span class=p>\</span><span class=n>WINDOWS</span><span class=p>\</span><span class=n>System32</span><span class=p>\</span><span class=n>OneDriveSetup</span><span class=p>.</span><span class=py>exe</span> <span class=p>/</span><span class=n>uninstall</span>
+</span></span><span class=line><span class=cl><span class=nv>$appNamesToDelete</span> <span class=p>=</span> <span class=vm>@</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Clipchamp.Clipchamp&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.BingNews&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.BingSearch&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.BingWeather&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.GamingApp&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.MicrosoftOfficeHub&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.MicrosoftSolitaireCollection&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.MicrosoftStickyNotes&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.OutlookForWindows&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.PowerAutomateDesktop&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.Todos&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.WebMediaExtensions&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.Windows.Photos&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.WindowsAlarms&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.WindowsCalculator&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.WindowsCamera&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.WindowsFeedbackHub&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.WindowsSoundRecorder&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.Xbox.TCUI&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;MicrosoftCorporationII.QuickAssist&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;MSTeams&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.Copilot&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.ZuneMusic&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.ScreenSketch&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.WindowsAppRuntime.1.3&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.Paint&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.YourPhone&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.Windows.DevHome&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.XboxGamingOverlay&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.XboxSpeechToTextOverlay&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.WindowsStore&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Microsoft.XboxIdentityProvider&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=nb>Write-Host</span> <span class=s1>&#39;Removing unnecessary apps...&#39;</span>
+</span></span><span class=line><span class=cl><span class=k>foreach</span> <span class=p>(</span><span class=nv>$eachAppNameToDelete</span> <span class=k>in</span> <span class=nv>$appNamesToDelete</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nb>Get-AppxPackage</span> <span class=p>|</span> <span class=nb>Where-Object</span> <span class=p>{</span> <span class=nv>$_</span><span class=p>.</span><span class=py>Name</span> <span class=o>-eq</span> <span class=nv>$eachAppNameToDelete</span> <span class=p>}</span> <span class=p>|</span> <span class=nb>Remove-AppxPackage</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=nb>Write-Host</span> <span class=s1>&#39;Unnecessary apps removal completed.&#39;</span>
+</span></span></code></pre></td></tr></table></div></div></li></ol><p>이는 예시로, 원하는 대로 설치 스크립트를 구성할 수 있다.</p><p>이 두 파일을 담는 <code>ConfigMap</code>을 생성한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl create configmap windows-oem-assets-configmap <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -n windows <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --from-file<span class=o>=</span>install.bat <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --from-file<span class=o>=</span>remove-unnecessary-apps.ps1
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h4 id=persistentvolumeclaim-메니페스트-파일>PersistentVolumeClaim 메니페스트 파일</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># pvc.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>PersistentVolumeClaim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-persistent-volume-claim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>windows</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>accessModes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>ReadWriteOnce</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class=l>64Gi</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><br><br></p><h4 id=deployment-메니페스트-파일>Deployment 메니페스트 파일</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># deployment.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>windows</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>windows</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>windows</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>terminationGracePeriodSeconds</span><span class=p>:</span><span class=w> </span><span class=m>120</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>dockurr/windows</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>env</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>VERSION</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;11&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>CPU_CORES</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;2&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>RAM_SIZE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;4G&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>DISK_SIZE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;64G&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>LANGUAGE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;Korean&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>REGION</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;ko-KR&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>KEYBOARD</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;ko-KR&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>USERNAME</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>valueFrom</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>secretKeyRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-user-credential-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>username</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>PASSWORD</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>valueFrom</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>secretKeyRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-user-credential-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>8006</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>rdp-tcp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>3389</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>rdp-udp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>3389</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>UDP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>vnc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>5900</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>securityContext</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>capabilities</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-persistent-volume-claim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-oem-assets-configmap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/oem</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>dev-kvm</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/dev/kvm</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>dev-tun</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/dev/net/tun</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-persistent-volume-claim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>persistentVolumeClaim</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>claimName</span><span class=p>:</span><span class=w> </span><span class=l>windows-persistent-volume-claim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-oem-assets-configmap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>configMap</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-oem-assets-configmap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>dev-kvm</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>hostPath</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/dev/kvm</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>dev-tun</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>hostPath</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/dev/net/tun</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>CharDevice</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><br><br></p><h4 id=service-메니페스트-파일>Service 메니페스트 파일</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># service.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>windows</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>windows</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>8006</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class=m>8006</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>rdp-tcp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>3389</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class=m>3389</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>rdp-udp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>3389</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class=m>3389</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>UDP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>vnc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>5900</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class=m>5900</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><br><br></p><h4 id=ingress-메니페스트-파일-선택>Ingress 메니페스트 파일 (선택)</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># ingress.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>networking.k8s.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Ingress</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-ingress</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>windows</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>annotations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>nginx.ingress.kubernetes.io/backend-protocol</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;HTTP&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>nginx.ingress.kubernetes.io/rewrite-target</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;/&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># OAuth2 Proxy 사용 시 아래 주석 해제</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># nginx.ingress.kubernetes.io/auth-url: &#34;https://oauth2-proxy.example.com/oauth2/auth&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># nginx.ingress.kubernetes.io/auth-signin: &#34;https://oauth2-proxy.example.com/oauth2/start?rd=$scheme://$host$request_uri&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingressClassName</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>windows.yourdomain.com</span><span class=w> </span><span class=c># 도메인으로 변경</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>http</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>paths</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>pathType</span><span class=p>:</span><span class=w> </span><span class=l>Prefix</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>backend</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>windows-service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>port</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class=m>8006</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><br><br></p><h4 id=매니페스트-배포>매니페스트 배포</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f pvc.yml
+</span></span><span class=line><span class=cl>kubectl apply -f deployment.yml
+</span></span><span class=line><span class=cl>kubectl apply -f service.yml
+</span></span><span class=line><span class=cl>kubectl apply -f ingress.yml
+</span></span></code></pre></td></tr></table></div></div><br><h4 id=배포-상태-확인>배포 상태 확인</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl get pods -n windows
+</span></span><span class=line><span class=cl>kubectl logs -n windows -l <span class=nv>app</span><span class=o>=</span>windows -f
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h2 id=동작-테스트>동작 테스트</h2><h3 id=웹-접속>웹 접속</h3><p>ingress 설정까지 마쳤다면 연결한 도메인으로 접속해보자.<br>별도 도메인이 없다면, 다음의 커맨드로 포트포워딩 후 <code>localhost:8006</code>으로 접속하자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl port-forward <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -n windows <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --address localhost <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    svc/windows-service 8006:8006
+</span></span></code></pre></td></tr></table></div></div><br><p align=center><img src=images/downloading-screenshot.png alt>
+<em>처음에 Windows 설치파일을 다운로드 받는다</em></p><br><p align=center><img src=images/installing-screenshot.png alt>
+<em>다운로드가 완료되면 설치가 시작된다</em></p><blockquote><p>여기서 제법 시간이 오래 소요된다. 커피라도 한 잔 하고 오자.</p></blockquote><br><p align=center><img src=images/installed-screenshot.png alt>
+<em>설치가 끝나면 Windows 바탕화면이 반겨준다</em></p><p align=center><img src=images/installed-apps.png alt>
+<em>OEM 스크립트가 정상 동작했다면, 대부분의 불필요한 앱들이 삭제되었을 것이다.</em></p><br><h3 id=원격-데스크탑rdp-접속>원격 데스크탑(RDP) 접속</h3><p>웹으로 보는 건 속도랑 반응성이 처참하므로 실 사용에서는 원격 데스크탑을 사용하는 것을 추천한다.</p><p>Service 구성에서 아예 NodePort로 <code>3389</code> 포트를 빼주거나 포트포워딩 해서 접속하는 것도 가능하다.</p><p>포스트에 굳이 명시하진 않았는데, 내 경우 Nginx Ingress Controller가 LoadBalancer의 특정 포트를 할당하는 형태로 마무리 했다.</p><p align=center><img src=images/rdp.png alt>
+<em>원격 데스크톱 연결</em></p><p><br><br></p><h2 id=리소스-소모량>리소스 소모량</h2><p>Linux와는 근본적으로 상이한 OS가 컨테이너로 올라가다 보니 구체적으로 클러스터에 얼마나 부담이 되는지가 궁금해졌다.</p><h3 id=스토리지>스토리지</h3><p><code>LongHorn</code> Volume 탭을 확인해보니니, 할당한 크기 <code>64GB</code>중 <code>34GB</code> 사용중으로 나온다.</p><p align=center><img src=images/longhorn.png alt>
+<em>이 정도면 큰 문제는 없어 보인다</em></p><br><h3 id=cpu--ram>CPU / RAM</h3><p><code>Prometheus</code> 기록상으론 CPU는 처음 설치 시점에만 높고 이후에는 잠잠해진다.</p><p align=center><img src=images/grafana.png alt></p><p>근데 메모리는 할당한 <code>4GB</code>가 전부 로드되어 있다.</p><br><p align=center><img src=images/resources-in-windows.png alt></p><p>Windows Container 내부에서도 메모리는 제법 많이 소모되고 있다.</p><p>Windows 11 자체가 idle 상태에서도 생각보다 많은 메모리가 필요한 모양이다.<br>좀 더 지켜봐야겠지만, 대처방안은 고려 해야겠다.</p><ol><li><p>필요할 때만 잠깐 배포하거나</p></li><li><p>메모리 할당량을 늘리거나</p></li><li><p>메모리를 잡아먹는 프로세스를 비활성화 하거나</p></li></ol><p>당장 생각할 수 있는 건 이 정도이다.</p><p><br><br></p><h2 id=마치며>마치며</h2><h3 id=보안에-대해>보안에 대해</h3><p>Windows라는 OS는 기본적으로 <code>사용자명</code>과 <code>비밀번호</code> 이 2가지로 인증 처리를 한다.<br>따라서 어떤 형태든 추가적인 보안 레이어를 마련해 둘 필요가 있다.<br>가장 좋은 방법은 애초에 외부 접근을 아예 못 하도록 설정하는 것이다.</p><p><code>Service</code>를 보면 총 3개의 포트를 쓰는 것을 볼 수 있다.</p><ul><li><strong>http</strong></li><li><strong>rdp</strong></li><li><strong>vnc</strong></li></ul><p>http의 경우 내부적으로 <code>noVNC</code>로 서비스 되는데, 내 경우 ingress annotation에 oauth2 proxy를 설정해서 외부에서 아무나 들어올 수 없도록 추가적인 보안 레이어를 마련해두었다.</p><p>문제는 RDP와 VNC이다. Public으로 이 2가지 프로토콜을 열어두는 건 아루미 생각해도 너무 꺼림칙해 아예 VPN을 통해서만 들어올 수 있도록 설정 해두었다.</p><blockquote><p><strong>요컨대 Windows에 원격으로 접속/인증하는 방식이 근원적으로 안전하지 않기 때문에 반드시 이 점을 충분히 고려해서 서비스 네트워크를 구성하길 바란다.</strong></p></blockquote><br><h3 id=개인적인-의견>개인적인 의견</h3><p>위 리소스 소모량 섹션에도 나와있듯이, idle 상태에서도 windows가 필요로 하는 메모리가 제법 많다는 걸 고려하면 비용 최적화 측면에서 그다지 현명한 접근 방법은 아니라고 본다.</p><p>그렇다고 마냥 삐딱하게 볼 건 아니다.</p><p>Windows나 MacOS에서만 동작하는 어떤 프로그램이 있다고 생각해보자.<br>당신의 상사가 이를 k8s에 올려서 서비스 하라고 지시했다.<br>만일 무슨 짓을 써도 매끄럽게 컨테이너화가 불가능한 상황이 온다면-</p><p>KVM 기반의 컨테이너가 구원의 손길이 될지도 모른다. <sub>(물론 정식 라이센스 쓰고)</sub></p></section><footer class=article-footer><section class=article-tags><a href=/tags/kubernetes/>Kubernetes</a>
+<a href=/tags/windows/>Windows</a>
+<a href=/tags/kvm/>KVM</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>관련 글</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/dev/nfs-subdir-external-provisioner/><div class=article-image><img src=/p/dev/nfs-subdir-external-provisioner/images/cover.1fc53b8a4b7e37ff70dc14f192254e6a_hu_afaa924cac0286e0.png width=250 height=150 loading=lazy alt="Featured image of post Nfs subdir external provisioner" data-key=dev/nfs-subdir-external-provisioner data-hash="md5-H8U7ikt+N/9w3BTxkiVOag=="></div><div class=article-details><h2 class=article-title>Nfs subdir external provisioner</h2></div></a></article><article class=has-image><a href=/p/dev/install-metallb-to-on-premise-k8s/><div class=article-image><img src=/p/dev/install-metallb-to-on-premise-k8s/images/cover.2c0e356b72e9a7a9380e959e98ea4e20_hu_605c6a090051f8f9.png width=250 height=150 loading=lazy alt="Featured image of post On-Premise k8s에 Metallb 설치" data-key=dev/install-metallb-to-on-premise-k8s data-hash="md5-LA41a3Lpp6k4DpWemOpOIA=="></div><div class=article-details><h2 class=article-title>On-Premise k8s에 Metallb 설치</h2></div></a></article><article class=has-image><a href=/p/dev/torrenting-with-vpn-on-k8s/><div class=article-image><img src=/p/dev/torrenting-with-vpn-on-k8s/images/cover.c665819bfcbea04dd3d62876855e0077_hu_6cecdffce5d986eb.png width=250 height=150 loading=lazy alt="Featured image of post VPN + qBittorrent 설치" data-key=dev/torrenting-with-vpn-on-k8s data-hash="md5-xmWBm/y+oE3T1ih2hV4Adw=="></div><div class=article-details><h2 class=article-title>VPN + qBittorrent 설치</h2></div></a></article><article class=has-image><a href=/p/dev/apexcaptain.iac/><div class=article-image><img src=/p/dev/apexcaptain.iac/images/cover.40c934e95067ba2660ba6c01253006a7_hu_2d81731f87a0c06.png width=250 height=150 loading=lazy alt="Featured image of post ApexCaptain.IaC" data-key=dev/apexcaptain.iac data-hash="md5-QMk06VBnuiZgumwBJTAGpw=="></div><div class=article-details><h2 class=article-title>ApexCaptain.IaC</h2></div></a></article><article class=has-image><a href=/p/dev/rag-app-in-an-offline-env/><div class=article-image><img src=/p/dev/rag-app-in-an-offline-env/images/cover.299c770e301ca3b0f80be2436495fa65_hu_f618269c73c46325.png width=250 height=150 loading=lazy alt="Featured image of post 오프라인 환경에서 RAG 앱 동작시키기" data-key=dev/rag-app-in-an-offline-env data-hash="md5-KZx3DjAco7D4C+JDZJX6ZQ=="></div><div class=article-details><h2 class=article-title>오프라인 환경에서 RAG 앱 동작시키기</h2></div></a></article></div></div></aside><script src=https://utteranc.es/client.js repo=ApexCaptain/ApexCaptain.github.io issue-term=pathname label=comments crossorigin=anonymous async></script><style>.utterances{max-width:unset}</style><script>let utterancesLoaded=!1;function setUtterancesTheme(e){let t=document.querySelector(".utterances iframe");t&&t.contentWindow.postMessage({type:"set-theme",theme:`github-${e}`},"https://utteranc.es")}addEventListener("message",e=>{if(e.origin!=="https://utteranc.es")return;utterancesLoaded=!0,setUtterancesTheme(document.documentElement.dataset.scheme)}),window.addEventListener("onColorSchemeChange",e=>{if(!utterancesLoaded)return;setUtterancesTheme(e.detail)})</script><footer class=site-footer><section class=copyright>&copy;
+2025 ApexCaptain의 기술 블로그</section><section class=powerby><a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a>로 만듦<br><a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a>의 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.31.0>Stack</a></b> 테마 사용 중</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

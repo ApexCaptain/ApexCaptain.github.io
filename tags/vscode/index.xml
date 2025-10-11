@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>VsCode on ApexCaptain의 기술 블로그</title><link>https://blog.ayteneve93.com/tags/vscode/</link><description>Recent content in VsCode on ApexCaptain의 기술 블로그</description><generator>Hugo -- gohugo.io</generator><language>ko-kr</language><lastBuildDate>Tue, 30 Sep 2025 00:00:00 +0900</lastBuildDate><atom:link href="https://blog.ayteneve93.com/tags/vscode/index.xml" rel="self" type="application/rss+xml"/><item><title>Win11 작업 표시줄에 Cursor Workspace 올리는 법</title><link>https://blog.ayteneve93.com/p/etc/how-to-add-workspace-to-win11-taskbar/</link><pubDate>Tue, 30 Sep 2025 00:00:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/etc/how-to-add-workspace-to-win11-taskbar/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/etc/how-to-add-workspace-to-win11-taskbar/images/cover.png" alt="Featured image of post Win11 작업 표시줄에 Cursor Workspace 올리는 법" /&gt;&lt;h2 id="문제의-시작"&gt;문제의 시작
+&lt;/h2&gt;&lt;p&gt;윈도우 11로 업데이트 하면서 몇 가지 불편해진 점이 있다.&lt;/p&gt;
+&lt;p&gt;예를들어 :&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;여러 압축 파일을 각각의 폴더에 해제 할 수 있던 기능이 없어졌다.&lt;/li&gt;
+&lt;li&gt;파일이나 폴더를 &lt;code&gt;우클릭&lt;/code&gt; -&amp;gt; &lt;code&gt;추가 옵션 표시&lt;/code&gt;를 눌러줘야 기존에 쓰던 기능을 쓸 수 있다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;그중 하나가 바로가기 파일이 윈도우 작업 표시줄에 드래그 앤 드롭으로 추가가 안 된다는 것이다.&lt;/p&gt;
+&lt;p&gt;이번 포스트에선 &lt;code&gt;Cursor&lt;/code&gt;나 &lt;code&gt;VsCode&lt;/code&gt; 작업 영역(Workspace)의 바로가기를 만들고&lt;/p&gt;
+&lt;p&gt;이를 작업 표시줄에 추가하는 방법을 공유하겠다.&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h2 id="해결방안"&gt;해결방안
+&lt;/h2&gt;&lt;h3 id="workspace-파일-생성"&gt;Workspace 파일 생성
+&lt;/h3&gt;&lt;p&gt;&lt;code&gt;Cursor&lt;/code&gt; 혹은 &lt;code&gt;VsCode&lt;/code&gt;로 Workspace파일을 생성한 후 원하는 이름으로 변경한다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/cursor-image.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;생성한 Workspace 파일을 적당히 아무 위치로 옮겨준다.&lt;/p&gt;
+&lt;p&gt;내 경우 &lt;code&gt;C:\&lt;/code&gt;에 넣어줬다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/workspace-file.png" alt&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="바로가기-생성"&gt;바로가기 생성
+&lt;/h3&gt;&lt;p&gt;Workspace 파일의 바로가기를 만들어서 바탕화면으로 옮겨준다.&lt;/p&gt;
+&lt;p&gt;하는 김에 아이콘도 이쁜 걸로 바꿔줬다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/workspace-file-on-wallpaper.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h3 id="바로가기-파일-속성-편집"&gt;바로가기 파일 속성 편집
+&lt;/h3&gt;&lt;p&gt;바로가기 파일 &lt;code&gt;우클릭&lt;/code&gt; -&amp;gt; &lt;code&gt;속성&lt;/code&gt; -&amp;gt; &lt;code&gt;대상&lt;/code&gt; 값 앞에 &lt;code&gt;explorer&lt;/code&gt;라고 추가해준다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/edit-link-file.png" alt&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="작업-표시줄에-바로가기-등록"&gt;작업 표시줄에 바로가기 등록
+&lt;/h3&gt;&lt;p&gt;편집한 바로가기 파일을 작업 표시줄에 추가한다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/drag-and-drop-link.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h2 id="마치며"&gt;마치며
+&lt;/h2&gt;&lt;p align='center'&gt;
+&lt;img src="images/current-wallpaper.png" alt&gt;
+&lt;em&gt;집 메인 PC 바탕화면&lt;/em&gt;
+&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;작업 표시줄 오른쪽의 3개 아이콘은 모두 서로 독립된 개발 서버로 연결되는 &lt;code&gt;Cursor Workspace&lt;/code&gt;이다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/current-task-bar.png" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;이중 하나를 누르면 &lt;code&gt;SSH&lt;/code&gt;연결까지 자연스럽게 Cursor IDE로 접속된다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/open-workstation-from-task-bar.gif" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;윈도우 검색으로도 들어갈 수 있다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/open-workstation-using-search.gif" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;추가한 파일 자체가 &lt;code&gt;바로가기&lt;/code&gt;이기 때문에 비단 &lt;code&gt;VsCode&lt;/code&gt;나 &lt;code&gt;Cursor&lt;/code&gt;의 Workspace 뿐 아니라 모든 종류의 바로가기를 다 이런식으로 등록할 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

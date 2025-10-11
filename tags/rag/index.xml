@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>RAG on ApexCaptain의 기술 블로그</title><link>https://blog.ayteneve93.com/tags/rag/</link><description>Recent content in RAG on ApexCaptain의 기술 블로그</description><generator>Hugo -- gohugo.io</generator><language>ko-kr</language><lastBuildDate>Thu, 09 Oct 2025 12:00:00 +0900</lastBuildDate><atom:link href="https://blog.ayteneve93.com/tags/rag/index.xml" rel="self" type="application/rss+xml"/><item><title>오프라인 환경에서 RAG 앱 동작시키기</title><link>https://blog.ayteneve93.com/p/dev/rag-app-in-an-offline-env/</link><pubDate>Thu, 09 Oct 2025 12:00:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/dev/rag-app-in-an-offline-env/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/dev/rag-app-in-an-offline-env/images/cover.png" alt="Featured image of post 오프라인 환경에서 RAG 앱 동작시키기" /&gt;&lt;h1 id="연관-포스트"&gt;연관 포스트
+&lt;/h1&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="../docling/" &gt;Docling이란?&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;h2 id="문제의-시작"&gt;문제의 시작
+&lt;/h2&gt;&lt;p&gt;회사에서 &lt;em&gt;간단한 RAG 애플리케이션&lt;/em&gt; 을 하나 만들라는 지시를 받았다.&lt;/p&gt;
+&lt;p&gt;여기엔 몇 가지 단서조항이 포함되어 있었는데, 문제가 되는 부분은 다음과 같다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;운영 환경은 &lt;strong&gt;&lt;code&gt;Windows 11 노트북&lt;/code&gt;&lt;/strong&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;&lt;code&gt;네트워크에 연결되지 않은 상태&lt;/code&gt;&lt;/strong&gt; 에서 동작해야 함&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Docker Desktop 설치하면 안 됨&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;중국 기업에서 나온 모델은 사용하면 안 됨&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;예를들어
+&lt;ol&gt;
+&lt;li&gt;&lt;a class="link" href="https://www.deepseek.com/" target="_blank" rel="noopener"
+&gt;DeepSeek&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://chat.qwen.ai/" target="_blank" rel="noopener"
+&gt;QWEN&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/laptop.png" alt&gt;
+&lt;em&gt;추석 연휴동안 작업 하려고 허락 받고 아예 집에 가져왔다.&lt;/em&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="노트북-사양"&gt;노트북 사양
+&lt;/h3&gt;&lt;p align='center'&gt;
+&lt;img src="images/laptop-spec.png" alt&gt;
+&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CPU/메모리는 괜찮다. 특히 메모리는 무려 64GB나 된다!&lt;/li&gt;
+&lt;li&gt;문제는 그래픽 카드인데, VRAM이 &lt;code&gt;8GB&lt;/code&gt; 밖에 되지 않는다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;h3 id="폐쇄망"&gt;폐쇄망
+&lt;/h3&gt;&lt;p&gt;이번 프로젝트에서 가장 큰 걸림돌이 바로 이것이다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;네트워크가 안 되는 환경에서 구동 되어야 할 것&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;Ollama처럼 단순히 LLM을 설치하고 명령 받아서 처리만 해주는 컨테이너의 경우,
+외부에서 제어만 잘 해주면 별다른 문제가 없겠으나 Docling처럼 AI가 애플리케이션
+내부로 들어가서 겉에서 한 번 Wrapping된 형태라면 Offline 기능을 제공해주지 않는 이상 구현이 요원해진다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="해결방안"&gt;해결방안
+&lt;/h2&gt;&lt;h3 id="컨테이너-구성"&gt;컨테이너 구성
+&lt;/h3&gt;&lt;p&gt;우선 전체적으로 컨테이너가 어떻게 구성되어 있는지 정리해두었다.&lt;/p&gt;
+&lt;p&gt;Host OS가 Windows인 관계로, WSL 및 Docker와 Docker-Compose를 사용해서 컨테이너 환경을 마련했다.&lt;/p&gt;
+&lt;p&gt;단서조항에 &lt;code&gt;Docker Desktop은 설치하면 안 됨&lt;/code&gt;이 있어서 Ubuntu 위에 직접 설치했다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Application&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Web&lt;/strong&gt;: React 기반의 웹 애플리케이션&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Backend&lt;/strong&gt;: NestJs 기반의 API 서버&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Infrastructure&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Ollama&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;Image: &lt;a class="link" href="https://hub.docker.com/r/ollama/ollama" target="_blank" rel="noopener"
+&gt;ollama/ollama&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;용도: 텍스트 생성 / Embedding&lt;/li&gt;
+&lt;li&gt;사용된 모델
+&lt;ul&gt;
+&lt;li&gt;텍스트 생성: &lt;a class="link" href="https://ollama.com/joonoh/HyperCLOVAX-SEED-Text-Instruct-1.5B:latest" target="_blank" rel="noopener"
+&gt;joonoh/HyperCLOVAX-SEED-Text-Instruct-1.5B:latest&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;임베딩: &lt;a class="link" href="https://ollama.com/bona/bge-m3-korean" target="_blank" rel="noopener"
+&gt;bona/bge-m3-korean:latest&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;GPU 가속 : &lt;code&gt;O&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Docling&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Image: &lt;a class="link" href="https://quay.io/repository/docling-project/docling-serve" target="_blank" rel="noopener"
+&gt;quay.io/docling-project/docling-serve&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;이 이미지는 CPU Only 모드로만 동작하는 Docling 컨테이너 이미지이다.&lt;br&gt;
+GPU 가속이 가능한 이미지로도 써봤는데, VRAM 제한 때문에 &lt;code&gt;CUDA Out of Memory&lt;/code&gt; 이슈와 함께 먹통이 되어버렸다.&lt;/p&gt;
+&lt;p&gt;결국 이 프로젝트에서 GPU는 Ollama 컨테이너만 쓰는 것으로 타협을 봤다.&lt;br&gt;
+VRAM에 여유가 있다면 다음의 Docker Image 중 하나를 골라 쓰면 된다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://quay.io/repository/docling-project/docling-serve-cu126" target="_blank" rel="noopener"
+&gt;quay.io/docling-project/docling-serve-cu126&lt;/a&gt;: CUDA 12.6&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://quay.io/repository/docling-project/docling-serve-cu128" target="_blank" rel="noopener"
+&gt;quay.io/docling-project/docling-serve-cu128&lt;/a&gt;: CUDA 12.8&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;용도: Embedding 전처리&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;사용된 모델&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://huggingface.co/ds4sd/CodeFormulaV2" target="_blank" rel="noopener"
+&gt;ds4sd/CodeFormulaV2&lt;/a&gt;: 수학 공식 분석&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://huggingface.co/HuggingFaceTB/SmolVLM-256M-Instruct" target="_blank" rel="noopener"
+&gt;HuggingFaceTB/SmolVLM-256M-Instruct&lt;/a&gt;: 이미지 분석&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2" target="_blank" rel="noopener"
+&gt;sentence-transformers/all-MiniLM-L6-v2&lt;/a&gt;: 문서 Chunking&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;GPU 가속 : &lt;code&gt;X&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Chroma&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;Image: &lt;a class="link" href="https://hub.docker.com/r/chromadb/chroma" target="_blank" rel="noopener"
+&gt;chromadb/chroma&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;용도: VectorStore&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Management&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Watchtower&lt;/strong&gt;: 컨테이너 자동 업데이트&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;AutoHeal&lt;/strong&gt;: HealthCheck Fail시 컨테이너 자동 리스타트&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;h3 id="이미지에-ai-model을-내장하기"&gt;이미지에 AI Model을 내장하기
+&lt;/h3&gt;&lt;p&gt;이번 문제의 핵심을 다시 한 번 요약하면 다음과 같다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;RAG 애플리케이션을 &lt;code&gt;Offline 상태&lt;/code&gt;의 노트북 1개에서 동작시켜야 한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;여기서 핵심이 되는 컨테이너는 &lt;code&gt;Ollama&lt;/code&gt;와 &lt;code&gt;Docling&lt;/code&gt;이다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;두 컨테이너는 모두 AI 모델을 동적으로 다운받아 동작하는 것을 기본으로 한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;그럼, Ollama와 Docling에서 사용할 모델을 Docker Image에 내장하면 그만인 것 아닐까?&lt;/p&gt;
+&lt;br&gt;
+&lt;h4 id="방법-1-docker-image에-모델-내장해서-올리기"&gt;방법 1) Docker Image에 모델 내장해서 올리기
+&lt;/h4&gt;&lt;p&gt;우선 아예 모델 다운로드가 포함된 Image를 만들어서 Registry에 올려보았다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/ocir.png" alt&gt;
+&lt;em&gt;10GB가 넘는다. 심지어 필요한 모든 모델을 다 담은 것도 아니다.&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;당연한 얘기지만, 모델이 포함된 만큼 정직하게 크기가 늘어나버렸다.&lt;br&gt;
+이게 비단 Docker 이미지가 좀 무거워졌다 수준의 문제가 아니다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;CI/CD 파이프라인이 전반적으로 다 느려진다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;이렇게 생성된 Image는 클라우드에서 제공하는 Container Registry에 올라가는데, 용량 때문에 비용 걱정도 해야 한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h4 id="방법-2-빌드-타임에-ai-모델을-다운받도록-변경"&gt;방법 2) 빌드 타임에 AI 모델을 다운받도록 변경
+&lt;/h4&gt;&lt;p&gt;생각해보니, 굳이 Image Registry에 올릴 필요는 없었다.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Offline 환경에서 동작해야 한다&lt;/code&gt;이지,&lt;br&gt;
+&lt;code&gt;Offline 환경에서 설치해야 한다&lt;/code&gt;의 개념은 아니지 않은가.&lt;/p&gt;
+&lt;p&gt;Docker Compose에 &lt;code&gt;image&lt;/code&gt; 대신 &lt;code&gt;build&lt;/code&gt;를 넣고 아예 Dockerfile 자체를 정의해주면 그만이다.&lt;/p&gt;
+&lt;p&gt;그렇게 해서 나온 결과는 다음과 같다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;span class="lnt"&gt;37
+&lt;/span&gt;&lt;span class="lnt"&gt;38
+&lt;/span&gt;&lt;span class="lnt"&gt;39
+&lt;/span&gt;&lt;span class="lnt"&gt;40
+&lt;/span&gt;&lt;span class="lnt"&gt;41
+&lt;/span&gt;&lt;span class="lnt"&gt;42
+&lt;/span&gt;&lt;span class="lnt"&gt;43
+&lt;/span&gt;&lt;span class="lnt"&gt;44
+&lt;/span&gt;&lt;span class="lnt"&gt;45
+&lt;/span&gt;&lt;span class="lnt"&gt;46
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-yml" data-lang="yml"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;# docker-compose.yml&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="nt"&gt;services&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# ...... #&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# Infrastructure Services&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;ollama&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;build&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;context&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;./build/ollama&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;dockerfile&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;Dockerfile&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;container_name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;ollama&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;restart&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;unless-stopped&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# Docker Compose에서 GPU를 할당할 땐 이런식으로 한다.&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;deploy&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;resources&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;reservations&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;devices&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;driver&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;nvidia&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;count&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;all&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;capabilities&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="l"&gt;gpu]&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;volumes&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;Ollama.Data:/root/.ollama&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;logging&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;options&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;max-size&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;50m&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;docling&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;container_name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;docling&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;build&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;context&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;./build/docling&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;dockerfile&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;Dockerfile&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;restart&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;unless-stopped&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;environment&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;DOCLING_SERVE_ENABLE_UI&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;false&amp;#39;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# (매우 중요!) 이 항목이 없으면 모델을 내장시켜도 Offline에서 자꾸 에러가 난다.&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;HF_HUB_OFFLINE&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;logging&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;options&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;max-size&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;50m&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# ...... #&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="nt"&gt;volumes&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;Ollama.Data&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;build&lt;/code&gt; 디렉토리는 &lt;code&gt;docker-compose.yml&lt;/code&gt;과 같은 경로에 배치 해두었다.&lt;br&gt;
+&lt;code&gt;build&lt;/code&gt; 디렉토리 내부 구조는 다음과 같다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;build
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── docling
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│   └── Dockerfile
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── ollama
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; ├── Dockerfile
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; └── entrypoint.sh
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;각 파일들은 다음과 같이 작성했다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;build/docling/Dockerfile&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-dockerfile" data-lang="dockerfile"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;FROM&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s"&gt;quay.io/docling-project/docling-serve-cpu&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="c"&gt;# Docling의 기본 모델 다운로드&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="k"&gt;RUN&lt;/span&gt; docling-tools models download&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="c"&gt;# Hybrid Chunker용 추가 모델 다운로드&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="k"&gt;RUN&lt;/span&gt; python3 -c &lt;span class="s2"&gt;&amp;#34;from transformers import AutoTokenizer, AutoModel; \
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt; AutoTokenizer.from_pretrained(&amp;#39;sentence-transformers/all-MiniLM-L6-v2&amp;#39;); \
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt; AutoModel.from_pretrained(&amp;#39;sentence-transformers/all-MiniLM-L6-v2&amp;#39;);&amp;#34;&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="c"&gt;# 공식/이미지 분석용 모델 다운로드&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="k"&gt;RUN&lt;/span&gt; docling-tools models &lt;span class="se"&gt;\
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="se"&gt;&lt;/span&gt; download-hf-repo &lt;span class="se"&gt;\
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="se"&gt;&lt;/span&gt; ds4sd/CodeFormulaV2 &lt;span class="se"&gt;\
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="se"&gt;&lt;/span&gt; HuggingFaceTB/SmolVLM-256M-Instruct &lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="k"&gt;EXPOSE&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s"&gt;5001&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;build/ollama/Dockerfile&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;span class="lnt"&gt;9
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-dockerfile" data-lang="dockerfile"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;FROM&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s"&gt;ollama/ollama&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="k"&gt;COPY&lt;/span&gt; ./entrypoint.sh /entrypoint.sh&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="k"&gt;RUN&lt;/span&gt; chmod +x /entrypoint.sh&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="k"&gt;ENTRYPOINT&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;/entrypoint.sh&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;&lt;/span&gt;&lt;span class="k"&gt;EXPOSE&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s"&gt;11434&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;Ollama는 Ollama 서버가 실행되고 나서야 모델을 받을 수 있으므로, 별도의 Entrypoint를 추가해줬다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;build/ollama/entrypoint.sh&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#!/bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;set&lt;/span&gt; -e
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;Starting Ollama server...&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ollama serve &lt;span class="p"&gt;&amp;amp;&lt;/span&gt; &lt;span class="c1"&gt;# 백그라운드에서 Ollama 실행&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;SERVER_PID&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$!&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;Waiting for Ollama server to be active...&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;until&lt;/span&gt; ollama list &amp;gt;/dev/null 2&amp;gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;1&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt; &lt;span class="c1"&gt;# Ollama process가 정상적으로 동작 될 때까지 대기&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sleep &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;done&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;Pulling models...&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# For embedding&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ollama pull bona/bge-m3-korean:latest &lt;span class="o"&gt;||&lt;/span&gt; &lt;span class="nb"&gt;true&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# For text generation&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ollama pull joonoh/HyperCLOVAX-SEED-Text-Instruct-1.5B:latest &lt;span class="o"&gt;||&lt;/span&gt; &lt;span class="nb"&gt;true&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;trap&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;kill -TERM &lt;/span&gt;&lt;span class="nv"&gt;$SERVER_PID&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;&lt;/span&gt; SIGTERM SIGINT
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;wait&lt;/span&gt; &lt;span class="nv"&gt;$SERVER_PID&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h2 id="마치며"&gt;마치며
+&lt;/h2&gt;&lt;p&gt;위 방법 2를 사용해서 Offline에서도 임베딩부터 텍스트 생성까지 정상 동작하는게 확인되었다.&lt;/p&gt;
+&lt;p&gt;&lt;a class="link" href="../docling/#%eb%8f%99%ec%9e%91-%ed%85%8c%ec%8a%a4%ed%8a%b8" &gt;&amp;ldquo;Docling이란?&amp;rdquo; 포스트의 동작 테스트 문단&lt;/a&gt;에 실제로 테스트 한 영상을 올려두었다.&lt;/p&gt;</description></item><item><title>Docling이란?</title><link>https://blog.ayteneve93.com/p/dev/docling/</link><pubDate>Thu, 09 Oct 2025 00:00:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/dev/docling/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/dev/docling/images/cover.png" alt="Featured image of post Docling이란?" /&gt;&lt;h1 id="연관-포스트"&gt;연관 포스트
+&lt;/h1&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="../rag-app-in-an-offline-env/" &gt;오프라인 환경에서 RAG 앱 동작시키기&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;h2 id="ragretrieval-augmented-generation-검색-증강-생성"&gt;RAG(Retrieval-Augmented Generation, 검색 증강 생성)
+&lt;/h2&gt;&lt;p&gt;인공지능 시스템을 구축할 때, AI 모델(이하 LLM)에게 회사 내부 문서와 같이 사전에 학습되지 않은 정보를 활용한 답변을 기대한다고 생각해보자.&lt;/p&gt;
+&lt;p&gt;1~2개 정도의 PDF 파일이라면 통째로 첨부해서 사용해도 상관 없겠지만,&lt;br&gt;
+수십, 수백 개의 문서들을 모조리 LLM에게 입력할 수는 없는 노릇이다.&lt;/p&gt;
+&lt;p&gt;이 문제를 해결하고자 나온 방법론 중 하나가 바로 RAG이다.&lt;br&gt;
+RAG의 정의는 다음과 같다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;LLM의 출력을 최적화하여 응답을 생성하기 전에 훈련 데이터 소스 외부의 신뢰할 수 있는 기술 자료를 참조하도록 하는 프로세스&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;소스가 되는 문서(가령 PDF 파일)를 AI가 쉽고 빠르게 관련성을 유추할 수 있는 형태의 데이터(vector)로 변환하고,
+사용자의 질문(query)에 맞춰 검색된 데이터를 가져와(retrieving) prompt의 context로 넣어서 동작한다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/basic-rag-pipeline.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;이렇게 문자나 이미지같은 복잡한 데이터를 LLM이 이해하고 처리하기 쉬운 숫자 형태의 Vector로 변환하는 과정 혹은 변환된 결과물 그 자체를 &lt;code&gt;Embedding&lt;/code&gt;이라고 하며,
+그러한 작업을 수행하는 AI Model을 &lt;code&gt;Embedding Model&lt;/code&gt;이라고 한다.&lt;/p&gt;
+&lt;p&gt;Embedding Model이 하는 일은 다음과 같다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;텍스트/이미지 등을 Vector로 변환, &lt;code&gt;VectorStore&lt;/code&gt;&lt;sub&gt;(혹은 Vector DB라고도 한다)&lt;/sub&gt; 에 저장&lt;/li&gt;
+&lt;li&gt;사용자의 Query를 Vector로 변환, VectorStore에서 유사한 값들을 검색(Retrieval)&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h2 id="embedding-전처리"&gt;Embedding 전처리
+&lt;/h2&gt;&lt;h3 id="chunking"&gt;Chunking
+&lt;/h3&gt;&lt;p&gt;Embedding Model이 VectorStore에서 문서 데이터를 가져올 때, 가져온 결과 하나하나는 특별한 사유가 없는 한 있는 그대로 LLM에 전달된다.&lt;/p&gt;
+&lt;p&gt;만일 텍스트로만 이루어진 어떤 문서의 글자 수가 5,000개이고, 이 5,000개가 한 덩어리로 VectorStore에 저장되어
+있다면 LLM은 엄청난 크기의 Context에 적지 않은 부담을 지게 될 것이다. &lt;sub&gt;(혹은 당신의 지갑이&amp;hellip;)&lt;/sub&gt;&lt;/p&gt;
+&lt;p&gt;이에 따라 VectorStore에 문서를 저장할 땐 어떠한 방식으로든 원문을 잘게 잘라(chunking),&lt;br&gt;
+사용자 Query와의 관련성은 유지하면서 불필요하게 많은 Context가 사용되는 일은 피하게 할 필요가 있다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;pageContent&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;하지만 무작정 글자 수나 Token 수에 맞춰&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;pageContent&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;잘랐다가는, 이렇게 하나의 문장이 다 끝나&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;pageContent&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;기도 전에 잘려진 조각이 만들어질 것이다.&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;이와 같은 문제를 막겠다고 일부러 각 조각들 간 &lt;code&gt;겹치는 부분&lt;/code&gt;을 만드는 게 일반적이나, 근본적인 해결책은 아니다.&lt;/p&gt;
+&lt;h3 id="구조-분석"&gt;구조 분석
+&lt;/h3&gt;&lt;p&gt;더욱이 원문이 PDF와 같이 구조화된 형태일 경우(이미지, 그래프, 테이블, 수식 등), 단순하게 텍스트만 추출하고&lt;br&gt;
+구조는 무시해버린다면 최종적으로 LLM이 답변을 낼 때 전혀 엉뚱한 소리를 하는 경우가 생긴다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/chunking.png" alt&gt;
+&lt;em&gt;이런 식으로 Text로만 이루어진 경우는 오히려 드물다&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;Embedding 과정은 전통적으로&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;원본 파일에서 &lt;code&gt;Text&lt;/code&gt;만 추출&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Token 수에 맞춰&lt;/code&gt; 쪼개기&lt;/li&gt;
+&lt;li&gt;Text를 Vectorizing&lt;/li&gt;
+&lt;li&gt;VectorStore에 저장&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;이렇게 단순하게 이루어져 왔었다. 3/4번은 Embedding 모델이 하는 것이므로 여기선 논하지 않겠다.&lt;br&gt;
+문제는 1/2번인데, 앞서 언급했듯 이렇게 텍스트만 추출하게 되면 원본 문서가 가지고 있던 구조적 특징이 유실되는 문제가 있다.&lt;/p&gt;
+&lt;p&gt;PDF Parser나 OCR 같은 도구들을 활용해서 보완할 수는 있겠으나, PDF는 일반적으로 생각하는 것보다&lt;br&gt;
+훨씬 복잡한 형태가 많고, 이를 완벽하게 추출해내는 것은 아직도 매우 어렵다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="docling도클링이란"&gt;Docling(도클링)이란?
+&lt;/h2&gt;&lt;p&gt;&lt;a class="link" href="https://github.com/docling-project/docling" target="_blank" rel="noopener"
+&gt;Docling&lt;/a&gt;은 IBM Research에서 개발한 생성형 AI 애플리케이션을 위한 문서 처리 및 변환을 위한 오픈소스 툴킷이다.&lt;br&gt;
+MIT 라이선스로 공개되어 있어 상업적으로도 자유롭게 활용할 수 있다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/docling.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;앞서 얘기한 Embedding 전처리 과정에서 생기는 문제점을 해결하고자 나온 오픈소스로,&lt;br&gt;
+자체적인 인공지능 모델을 활용해 원본 문서를 분석/변환/Chunking 해준다.&lt;/p&gt;
+&lt;p&gt;제공해주는 기능은 &lt;a class="link" href="https://github.com/docling-project/docling" target="_blank" rel="noopener"
+&gt;GitHub&lt;/a&gt;에 보다 잘 정리되어 있다.&lt;br&gt;
+기본적으로 다양한 문서 포맷을 지원하고, &lt;code&gt;Page Layout&lt;/code&gt;, &lt;code&gt;Order&lt;/code&gt;, &lt;code&gt;Table&lt;/code&gt; 등을 해석할 수 있으며, LangChain과 쉽게 통합 가능한 것이 특징이다.&lt;/p&gt;
+&lt;p&gt;현재 이 글을 쓰고 있는 시점을 기준으로 언급된 기능들은 다음과 같다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;🗂️ Parsing of &lt;a class="link" href="https://docling-project.github.io/docling/usage/supported_formats/" target="_blank" rel="noopener"
+&gt;multiple document formats&lt;/a&gt; incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, VTT, images (PNG, TIFF, JPEG, &amp;hellip;), and more&lt;/li&gt;
+&lt;li&gt;📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more&lt;/li&gt;
+&lt;li&gt;🧬 Unified, expressive &lt;a class="link" href="https://docling-project.github.io/docling/concepts/docling_document/" target="_blank" rel="noopener"
+&gt;DoclingDocument&lt;/a&gt; representation format&lt;/li&gt;
+&lt;li&gt;↪️ Various &lt;a class="link" href="https://docling-project.github.io/docling/usage/supported_formats/" target="_blank" rel="noopener"
+&gt;export formats&lt;/a&gt; and options, including Markdown, HTML, &lt;a class="link" href="https://arxiv.org/abs/2503.11576" target="_blank" rel="noopener"
+&gt;DocTags&lt;/a&gt; and lossless JSON&lt;/li&gt;
+&lt;li&gt;🔒 Local execution capabilities for sensitive data and air-gapped environments&lt;/li&gt;
+&lt;li&gt;🤖 Plug-and-play &lt;a class="link" href="https://docling-project.github.io/docling/integrations/" target="_blank" rel="noopener"
+&gt;integrations&lt;/a&gt; incl. LangChain, LlamaIndex, Crew AI &amp;amp; Haystack for agentic AI&lt;/li&gt;
+&lt;li&gt;🔍 Extensive OCR support for scanned PDFs and images&lt;/li&gt;
+&lt;li&gt;👓 Support of several Visual Language Models (&lt;a class="link" href="https://huggingface.co/ibm-granite/granite-docling-258M" target="_blank" rel="noopener"
+&gt;GraniteDocling&lt;/a&gt;)&lt;/li&gt;
+&lt;li&gt;🎙️ Audio support with Automatic Speech Recognition (ASR) models&lt;/li&gt;
+&lt;li&gt;🔌 Connect to any agent using the &lt;a class="link" href="https://docling-project.github.io/docling/usage/mcp/" target="_blank" rel="noopener"
+&gt;MCP server&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;💻 Simple and convenient CLI&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="다른-솔루션들과의-비교"&gt;다른 솔루션들과의 비교
+&lt;/h3&gt;&lt;p&gt;문서 변환은 오랫동안 논의된 주제로, 이미 많은 솔루션이 존재한다. 최근 널리 사용되는 방식은 크게 두 가지로 나뉜다.&lt;/p&gt;
+&lt;h4 id="1-vlmvisual-language-model-기반-솔루션"&gt;1. VLM(Visual Language Model) 기반 솔루션
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Closed-source&lt;/strong&gt;: GPT-4, Claude, Gemini&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Open-source&lt;/strong&gt;: LLaVA 기반 모델들&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;이러한 생성 모델 기반 솔루션은 강력하지만 다음과 같은 문제점이 있다:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;할루시네이션(Hallucination)&lt;/strong&gt;: 문서 변환 시 정확성이 중요한데, 모델이 존재하지 않는 내용을 생성할 수 있다&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;높은 계산 비용&lt;/strong&gt;: 대규모 모델을 사용하기 때문에 비용이 매우 비싸고 비효율적이다&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="2-task-specific-모델-기반-솔루션"&gt;2. Task-specific 모델 기반 솔루션
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;대표 사례&lt;/strong&gt;: Adobe Acrobat, Grobid, Marker, MinerU, Unstructured&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Docling의 접근 방식&lt;/strong&gt;도 여기에 해당&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;이 방식은 OCR, 레이아웃 분석, 테이블 인식 등 특화된 모델들을 조합하여 사용한다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;장점&lt;/strong&gt;: 할루시네이션 문제가 적고, 정확하고 예측 가능한 변환 결과를 보장&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;단점&lt;/strong&gt;: 상대적으로 커버리지가 작고, 다양한 특화 모델을 유지해야 하는 복잡성&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;h3 id="docling의-아키텍처"&gt;Docling의 아키텍처
+&lt;/h3&gt;&lt;p&gt;Docling은 크게 3가지 주요 컴포넌트로 구성되어 있다:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Pipelines&lt;/strong&gt;: 문서 처리 파이프라인&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Parser Backends&lt;/strong&gt;: 다양한 문서 형식 처리기&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;DoclingDocument&lt;/strong&gt;: Pydantic 기반의 통합 문서 표현 모델&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h4 id="pipeline의-종류"&gt;Pipeline의 종류
+&lt;/h4&gt;&lt;p&gt;&lt;strong&gt;1. StandardPdfPipeline&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;PDF 및 이미지 입력을 DoclingDocument 형태로 변환하는 파이프라인&lt;/li&gt;
+&lt;li&gt;여러 AI 모델들을 단계적으로 사용하여 정보를 구조화&lt;/li&gt;
+&lt;li&gt;다음과 같은 특화 모델들을 활용:
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Layout Analysis Model&lt;/strong&gt;: 페이지 내 각 요소들의 위치와 레이아웃 분석&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;TableFormer&lt;/strong&gt;: 테이블 구조를 인식하고 복원 (행/열 정보 보존)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;OCR Engine&lt;/strong&gt;: 스캔된 문서나 이미지 내 텍스트 추출&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;2. SimplePipeline&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;PDF를 제외한 다른 문서 형식(DOCX, PPTX, HTML 등)을 처리&lt;/li&gt;
+&lt;li&gt;상대적으로 단순한 구조로, 빠른 처리가 가능&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;이러한 모듈 형태의 설계 덕분에 필요에 따라 각 단계를 교체하거나 확장할 수 있는 유연성을 제공한다.&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h2 id="동작-테스트"&gt;동작 테스트
+&lt;/h2&gt;&lt;p&gt;&lt;a class="link" href="../rag-app-in-an-offline-env/" &gt;오프라인 환경에서 RAG 앱 동작시키기&lt;/a&gt; 포스트에서 작업한 내용을 이쪽으로 가져왔다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;테스트에 사용된 파일은 &lt;a class="link" href="https://www.kofic.or.kr/kofic/business/board/selectBoardList.do?boardNumber=2" target="_blank" rel="noopener"
+&gt;영화진흥위원회&lt;/a&gt;에서 공개한 25년 8월 영화산업 결산 보고서 PDF의 일부이다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/pdf-screenshot.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;텍스트 생성에 쓰인 LLM은 &lt;a class="link" href="https://ollama.com/joonoh/HyperCLOVAX-SEED-Text-Instruct-1.5B:latest" target="_blank" rel="noopener"
+&gt;joonoh/HyperCLOVAX-SEED-Text-Instruct-1.5B:latest&lt;/a&gt;로&lt;br&gt;
+예시로 쓰인 &lt;code&gt;2025년 8월 대한민국 외국영화 흥행작 상위 10위&lt;/code&gt;에 대한 정보는 모델에 사전 학습되어 있는 것이 아니다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;임베딩&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;video controls&gt;
+&lt;source src="videos/embedding.mp4" type="video/mp4"&gt;
+&lt;/video&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;텍스트 생성 테스트&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;video controls&gt;
+&lt;source src="videos/chatting.mp4" type="video/mp4"&gt;
+&lt;/video&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="마치며"&gt;마치며
+&lt;/h2&gt;&lt;p&gt;&lt;a class="link" href="../rag-app-in-an-offline-env/" &gt;프로젝트&lt;/a&gt; 제한사항으로 인해 Docling에서 GPU 가속을 못 쓰다 보니, 전반적으로 만족스러운 속도는 아니었다.&lt;br&gt;
+하지만, 표 등이 포함된 소스 파일에서 단순한 텍스트 추출만 해서는 LLM이 이해할 수 있는 형태로&lt;br&gt;
+전달되지 않았던 문제를 해결할 수 있는 좋은 방법이라고 생각한다.&lt;/p&gt;
+&lt;h3 id="장단점-정리"&gt;장단점 정리
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;장점:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;VLM 기반 솔루션 대비 훨씬 저렴한 비용&lt;/li&gt;
+&lt;li&gt;MIT 라이선스로 상업적 활용 자유&lt;/li&gt;
+&lt;li&gt;LangChain, LlamaIndex 등 주요 프레임워크와의 쉬운 통합&lt;/li&gt;
+&lt;li&gt;오프라인 환경(Air-gapped)에서도 사용 가능&lt;/li&gt;
+&lt;li&gt;Mac에서 MPS device를 활용한 빠른 처리 지원&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;단점:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Runtime에 실시간으로 사용하기보단 RAG 인덱싱용으로 적합&lt;/li&gt;
+&lt;li&gt;VLM 대비 상대적으로 제한적인 커버리지&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="권장-사용-사례"&gt;권장 사용 사례
+&lt;/h3&gt;&lt;p&gt;Docling은 다음과 같은 경우에 특히 유용하다:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;RAG 시스템을 위한 문서 인덱싱 작업&lt;/li&gt;
+&lt;li&gt;테이블이나 복잡한 레이아웃이 포함된 PDF 처리&lt;/li&gt;
+&lt;li&gt;정확성이 중요한 문서 변환 작업&lt;/li&gt;
+&lt;li&gt;비용 효율적인 문서 처리 파이프라인 구축&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;이제까지 PDF Parser 같은 기본적인 라이브러리만 사용해봤다면, 한 번 결과를 보고 도입을 고려해봐도 괜찮을 것 같다.&lt;/p&gt;
+&lt;p&gt;취향에 따라 Docker Container로 혹은 Python script에 모듈을 설치해 Import할 수도 있고, 아예 CLI로 동작시킬 수도 있다.&lt;/p&gt;
+&lt;br&gt;</description></item></channel></rss>
