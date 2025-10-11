@@ -15,7 +15,7 @@ tags:
 weight: 1
 ---
 
-> **⚠ 주의** : 본 포스트에서는 k8s에 `Windows` 설치하는 방법에 대한 정보를 담고 있습니다.
+> **⚠ 주의** : 본 포스트에서는 k8s에 `Windows`를 설치하는 방법에 대한 정보를 담고 있습니다.
 >
 > **MS 법무팀과 평생 기억에 남을 찐한 티 타임**을 가지고 싶은게 아니라면
 > [Windows Container](https://github.com/dockur/windows)나 [Mac OS Container](https://github.com/dockur/macos) 페이지에도 나와있듯,
@@ -47,14 +47,14 @@ weight: 1
     <em>로그인 하려면 이것들부터 설치해야 한다</em>
 </p>
 
-나는 월 1회 정기적으로 가계부를 정리하는 습관을 가지고 있다.  
+한 달에 한 번씩 정기적으로 가계부를 정리하는 습관을 가지고 있는데,  
 금융 관련 보안에 대해서는 굉장히 민감한 편이라 반드시 집에 있는 메인 PC로만 작업하곤 한다.
 
 문제는 다음과 같다.
 
-1. 매번 은행업무 볼 때마다 각종 은행 보안 프로그램이 설치/업데이트/실행 된다.
+1. 매번 은행업무 볼 때마다 각종 은행 보안 프로그램이 설치 / 업데이트 / 실행 된다.
 2. 은행들끼리 통일도 안 되어 있는 건지 다들 사용하는 프로그램이 조금씩 다 다르다.
-3. 내가 개인적으로 사용하는 보안 프로그램과 충돌나는 경우가 잦다.
+3. 개인적으로 사용하는 보안 프로그램과 충돌나는 경우가 잦다.
 4. 은근히 컴퓨터 자원을 많이 잡아 먹는다.
 
 더 이상 메인 PC에 이런 자질구레한 보안 프로그램들이 설치되는 걸 용납할 수가 없었다.  
@@ -62,9 +62,8 @@ weight: 1
 
 > 그렇담 가상화는?
 
-이 생각도 안 해본 건 아니다. 아니 생각 정도가 아니라 실제로 VMWare로 시도도 해봤다. 동작도 잘 한다.
-
-그런데, 메인 PC에 은행업무 하나 보자고 가상환경 설치하는 것 자체가 너무나도 번거럽고 부담스러운 일이다.
+이 생각도 안 해본 건 아니다. 아니 생각 정도가 아니라 실제로 VMWare로 시도도 해봤다. 동작도 잘 한다.  
+그런데, 메인 PC에 은행업무 하나 보자고 가상환경 설치하는 것 자체가 너무나도 번거럽고 부담스러운 일이었다.
 
 <br>
 
@@ -460,10 +459,10 @@ spec:
 #### 매니페스트 배포
 
 ```bash
-kubectl apply -f pvc.yaml
-kubectl apply -f deployment.yaml
-kubectl apply -f service.yaml
-kubectl apply -f ingress.yaml
+kubectl apply -f pvc.yml
+kubectl apply -f deployment.yml
+kubectl apply -f service.yml
+kubectl apply -f ingress.yml
 ```
 
 <br>
@@ -477,11 +476,11 @@ kubectl logs -n windows -l app=windows -f
 
 <br><br>
 
-### 동작 테스트
+## 동작 테스트
 
-#### 웹 접속
+### 웹 접속
 
-ingerss 설정을 했다면 연결한 도메인으로 접속해보자.  
+ingress 설정까지 마쳤다면 연결한 도메인으로 접속해보자.  
 별도 도메인이 없다면, 다음의 커맨드로 포트포워딩 후 `localhost:8006`으로 접속하자.
 
 ```bash
@@ -507,6 +506,8 @@ kubectl port-forward \
 
 > 여기서 제법 시간이 오래 소요된다. 커피라도 한 잔 하고 오자.
 
+<br>
+
 <p align='center'>
     <img src="images/installed-screenshot.png" alt>
     <em>설치가 끝나면 Windows 바탕화면이 반겨준다</em>
@@ -519,7 +520,7 @@ kubectl port-forward \
 
 <br>
 
-#### 원격 데스크탑(RDP) 접속
+### 원격 데스크탑(RDP) 접속
 
 웹으로 보는 건 속도랑 반응성이 처참하므로 실 사용에서는 원격 데스크탑을 사용하는 것을 추천한다.
 
@@ -531,6 +532,50 @@ Service 구성에서 아예 NodePort로 `3389` 포트를 빼주거나 포트포�
     <img src="images/rdp.png" alt>
     <em>원격 데스크톱 연결</em>
 </p>
+
+<br><br>
+
+## 리소스 소모량
+
+Linux와는 근본적으로 상이한 OS가 컨테이너로 올라가다 보니 구체적으로 클러스터에 얼마나 부담이 되는지가 궁금해졌다.
+
+### 스토리지
+
+`LongHorn` Volume 탭을 확인해보니니, 할당한 크기 `64GB`중 `34GB` 사용중으로 나온다. 
+<p align='center'>
+    <img src="images/longhorn.png" alt>
+    <em>이 정도면 큰 문제는 없어 보인다</em>
+</p>
+
+<br>
+
+### CPU / RAM
+
+`Prometheus` 기록상으론 CPU는 처음 설치 시점에만 높고 이후에는 잠잠해진다.
+<p align='center'>
+    <img src="images/grafana.png" alt>
+</p>
+
+근데 메모리는 할당한 `4GB`가 전부 로드되어 있다.
+
+<br>
+
+<p align='center'>
+    <img src="images/resources-in-windows.png" alt>
+</p>
+
+Windows Container 내부에서도 메모리는 제법 많이 소모되고 있다.
+
+Windows 11 자체가 idle 상태에서도 생각보다 많은 메모리가 필요한 모양이다.  
+좀 더 지켜봐야겠지만, 대처방안은 고려 해야겠다.
+
+1. 필요할 때만 잠깐 배포하거나
+
+2. 메모리 할당량을 늘리거나
+
+3. 메모리를 잡아먹는 프로세스를 비활성화 하거나
+
+당장 생각할 수 있는 건 이 정도이다.
 
 <br><br>
 
