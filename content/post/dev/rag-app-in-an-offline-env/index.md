@@ -34,7 +34,7 @@ weight: 1
 
 4. 중국 기업에서 나온 모델은 사용하면 안 됨
     - 예를들어
-        1. [DeppSeek](https://www.deepseek.com/)
+        1. [DeepSeek](https://www.deepseek.com/)
         2. [QWEN](https://chat.qwen.ai/)
 
 <p align='center'>
