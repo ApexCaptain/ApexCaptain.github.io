@@ -1,7 +1,7 @@
 ---
 title: Utterances로 블로그에 댓글 기능 추가하기
 description: Hugo Stack 테마에서 Utterances로 comment 기능 활성화 하기
-slug: blog/hugo
+slug: blog/setup-utterances-comment-to-hugo
 date: 2025-10-08 00:00:00+0900
 image: images/cover.png
 categories:
