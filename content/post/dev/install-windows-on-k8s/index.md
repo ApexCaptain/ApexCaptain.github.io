@@ -67,9 +67,31 @@ weight: 1
 
 <br>
 
-## 해결방안 - k8s에 Windows를 설치하자
+이것도 싫고 저것도 싫고...
 
-이번에 설치할 컨테이너 이미지는 [dockurr/windows](https://hub.docker.com/r/dockurr/windows)이다.
+> 그렇담 아예 k8s 위에 windows를 설치해보자!
+>
+> ...
+>
+> 아니 대체 왜 이렇게까지...
+
+<p align='center'>
+    <img width=80% src="images/why-are-you-doing-this.png" alt>
+    <br>
+    <em>사실 진짜 이유</em>
+</p>
+
+<br>
+
+## 해결방안 - k8s에 Windows를 설치하자!
+
+<p align='center'>
+    <img width=80% src="images/lets-go.gif" alt>
+</p>
+
+<br>
+
+사용할 컨테이너 이미지는 [dockurr/windows](https://hub.docker.com/r/dockurr/windows)이다.
 
 > 이게 그 Windows 컨테이너라는 건가?
 
@@ -436,7 +458,7 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: 'HTTP'
     nginx.ingress.kubernetes.io/rewrite-target: '/'
-    # OAuth2 Proxy 사용 시 아래 주석 해제
+    # OAuth2 Proxy 사용 시 아래 예시처럼 사용
     # nginx.ingress.kubernetes.io/auth-url: "https://oauth2-proxy.example.com/oauth2/auth"
     # nginx.ingress.kubernetes.io/auth-signin: "https://oauth2-proxy.example.com/oauth2/start?rd=$scheme://$host$request_uri"
 spec:
@@ -541,7 +563,7 @@ Linux와는 근본적으로 상이한 OS가 컨테이너로 올라가다 보니 
 
 ### 스토리지
 
-`LongHorn` Volume 탭을 확인해보니니, 할당한 크기 `64GB`중 `34GB` 사용중으로 나온다. 
+`LongHorn` Volume 탭을 확인해보니, 할당한 크기 `64GB`중 `34GB` 사용중으로 나온다. 
 <p align='center'>
     <img src="images/longhorn.png" alt>
     <em>이 정도면 큰 문제는 없어 보인다</em>
@@ -564,9 +586,10 @@ Linux와는 근본적으로 상이한 OS가 컨테이너로 올라가다 보니 
     <img src="images/resources-in-windows.png" alt>
 </p>
 
-Windows Container 내부에서도 메모리는 제법 많이 소모되고 있다.
+Windows Container 내부 작업 관리자에서 봐도 제법 많은 메모리가 소모되고 있다.
 
 Windows 11 자체가 idle 상태에서도 생각보다 많은 메모리가 필요한 모양이다.  
+아니면 KVM 자체가 메모리를 Reserved하게 할당하는 걸 수도 있다.  
 좀 더 지켜봐야겠지만, 대처방안은 고려 해야겠다.
 
 1. 필요할 때만 잠깐 배포하거나
@@ -593,7 +616,7 @@ Windows라는 OS는 기본적으로 `사용자명`과 `비밀번호` 이 2가지
 
 http의 경우 내부적으로 `noVNC`로 서비스 되는데, 내 경우 ingress annotation에 oauth2 proxy를 설정해서 외부에서 아무나 들어올 수 없도록 추가적인 보안 레이어를 마련해두었다.
 
-문제는 RDP와 VNC이다. Public으로 이 2가지 프로토콜을 열어두는 건 아루미 생각해도 너무 꺼림칙해 아예 VPN을 통해서만 들어올 수 있도록 설정 해두었다.
+문제는 RDP와 VNC이다. Public으로 이 2가지 프로토콜을 열어두는 건 아무리 생각해도 너무 꺼림칙해 아예 VPN을 통해서만 들어올 수 있도록 설정 해두었다.
 
 > **요컨대 Windows에 원격으로 접속/인증하는 방식이 근원적으로 안전하지 않기 때문에 반드시 이 점을 충분히 고려해서 서비스 네트워크를 구성하길 바란다.**
 
