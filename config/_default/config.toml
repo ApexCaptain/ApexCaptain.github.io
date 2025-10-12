@@ -3,14 +3,20 @@ baseurl = "https://blog.ayteneve93.com"
 languageCode = "ko-kr"
 title = "ApexCaptain의 기술 블로그"
 
+enableRobotsTXT = true
 defaultContentLanguage = "ko"
 hasCJKLanguage = true
 disqusShortname = "hugo-theme-stack"
 
 [pagination]
-pagerSize = 5
+pagerSize = 8
 
 [taxonomies]
 category = "categories"
 tag = "tags"
 subcategory = "subcategories"
+
+[sitemap]
+changefreq = "daily"
+filename = "sitemap.xml"
+priority = 0.5

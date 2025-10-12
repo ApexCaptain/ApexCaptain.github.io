@@ -67,16 +67,16 @@ weight: 1
 
 <br>
 
-이것도 싫고 저것도 싫고...
+이것도 싫고 저것도 싫고... 그렇다면 결론은 **하나**다.
 
-> 그렇담 아예 k8s 위에 windows를 설치해보자!
+> **k8s 클러스터 위에 Windows를 설치하는 수밖에!**
 >
 > ...
 >
 > 아니 대체 왜 이렇게까지...
 
 <p align='center'>
-    <img width=80% src="images/why-are-you-doing-this.png" alt>
+    <img width=90% src="images/why-are-you-doing-this.png" alt>
     <br>
     <em>사실 진짜 이유</em>
 </p>
@@ -86,7 +86,7 @@ weight: 1
 ## 해결방안 - k8s에 Windows를 설치하자!
 
 <p align='center'>
-    <img width=80% src="images/lets-go.gif" alt>
+    <img width=90% src="images/lets-go.gif" alt>
 </p>
 
 <br>
