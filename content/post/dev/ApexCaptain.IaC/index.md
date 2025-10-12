@@ -39,22 +39,22 @@ weight: 1
 - **인프라 자동화**
   - OKE 및 Workstation 클러스터 구성 정의, 선택적 스택 배포/병렬화, 상태 백업 스크립트 제공
 - **보안/신뢰**
-  - Bastion 접근 제어, OAuth2 Proxy, Cert-Manager 자동 인증서 발급 구성
-  - Vault 기반 시크릿 관리 체계 설계(개발 중)
+  - Bastion 접근 제어, OAuth2 Proxy, Cert-Manager 자동 인증서 발급
+  - Vault 기반 시크릿 관리 체계 설계계
 - **운영 효율**
-  - Prometheus/Grafana 관찰성 스택 구성(개발 중), 로그 중앙화 계획
-  - 개인 미디어/유틸 서비스(Jellyfin, qBittorrent, SFTP, 7 Days to Die) 구성
+  - Prometheus/Grafana 관찰성 스택 구성, 로그 중앙화 계획
+  - 개인 미디어/유틸 서비스(Jellyfin, qBittorrent, SFTP, 7 Days to Die)
 - **개발 생산성**
   - `src/terraform/stacks` 중심 스택화 구조, `scripts/` 내 배포 선택/백업/터미널 도구
   - Projen, ESLint/Prettier, Yarn 워크플로우 정착
 
 ## 진행 현황(요약)
 
-- OKE 클러스터 자동 프로비저닝: 구성
-- Workstation microk8s 클러스터: 구성
-- Istio 서비스 메시: 구성
-- ArgoCD(GitOps): 개발 중
-- Vault(시크릿): 개발 중
-- Prometheus/Grafana(모니터링): 개발 중
-- Bastion/인증·인증서(Cert-Manager, OAuth2 Proxy): 구성
-- 미디어/게임/SFTP 서비스: 구성
+- OKE 클러스터 자동 프로비저닝
+- Workstation microk8s 클러스터
+- Istio 서비스 메시
+- ArgoCD(GitOps)
+- Vault(시크릿)
+- Prometheus/Grafana(모니터링)
+- Bastion/인증·인증서(Cert-Manager, OAuth2 Proxy)
+- 미디어/게임/SFTP 서비스
