@@ -143,41 +143,43 @@ priority = 0.5
     여담으로 나는 이 부분에서 문제가 발생했었다. 사이트 소유권 검증이 안 되었던 것이다.  
     확인 결과 Cloudflare rullset 설정 떄문이란 걸 알았다.
     ```typescript
-      firewallRules = this.provide(Ruleset, 'firewallRules', id => ({
+    firewallRules = this.provide(Ruleset, 'firewallRules', id => ({
         zoneId: this.cloudflareZoneStack.dataAyteneve93Zone.element.zoneId,
         name: id,
-        description:
-        'Block countries except Korea and Japan, allow Blog and ArgoCD webhooks',
+        description: dedent`
+            Allow ArgoCD webhooks and all traffic to Blog.
+            Otherwise, block countries except Korea and Japan.
+        `,
         kind: 'zone',
         phase: 'http_request_firewall_custom',
         rules: [
-        {
-            description: 'Allow all traffic to blog',
-            enabled: true,
-            action: 'skip',
-            expression: `http.host eq "${this.cloudflareRecordStack.blogRecord.element.name}"`,
-            actionParameters: {
-            ruleset: 'current',
+            {
+                description: 'Allow all traffic to blog',
+                enabled: true,
+                action: 'skip',
+                expression: `http.host eq "${this.cloudflareRecordStack.blogRecord.element.name}"`,
+                actionParameters: {
+                ruleset: 'current',
+                },
             },
-        },
-        {
-            description: 'Allow ArgoCD webhooks from GitHub for specific domain',
-            enabled: true,
-            action: 'skip',
-            logging: {
-            enabled: true,
+            {
+                description: 'Allow ArgoCD webhooks',
+                enabled: true,
+                action: 'skip',
+                logging: {
+                enabled: true,
+                },
+                expression: `http.host eq "${this.cloudflareRecordStack.argoCdRecord.element.name}" and http.request.uri.path contains "/api/webhook"`,
+                actionParameters: {
+                ruleset: 'current',
+                },
             },
-            expression: `http.host eq "${this.cloudflareRecordStack.argoCdRecord.element.name}" and http.request.uri.path contains "/api/webhook"`,
-            actionParameters: {
-            ruleset: 'current',
+            {
+                description: 'Block countries except Korea and Japan',
+                enabled: true,
+                action: 'block',
+                expression: '(ip.geoip.country ne "KR" and ip.geoip.country ne "JP")',
             },
-        },
-        {
-            description: 'Block countries except Korea and Japan',
-            enabled: true,
-            action: 'block',
-            expression: '(ip.geoip.country ne "KR" and ip.geoip.country ne "JP")',
-        },
         ],
     }));
     ```
