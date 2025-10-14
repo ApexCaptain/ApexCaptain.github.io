@@ -29,43 +29,55 @@ weight: 1
 <p align='center'>
     <img width=100% src="images/code/shutup-compiler.png" alt>
     <br>
-    <em>컴파일러 경고 따위 상남자들의 기개 앞에선 무의미 하다.</em>
+    <em>컴파일러 경고 따위 상남자들의 기개 앞에선 무의미 하다</em>
 </p>
 
 <br>
 
 <p align='center'>
     <img width=100% src="images/code/1.png" alt>
+    <br>
+    <em>독특하게 무언가를 지칭하는 대명사 "it" 앞에는 항상 "sh"를 붙여주는 관습이 있는 모양이다</em>
 </p>
 
 <br>
 
 <p align='center'>
     <img width=100% src="images/code/2.png" alt>
+    <br>
+    <em>별도 축약어가 있다면 주석에 반드시 무엇의 줄임말인지 적어두자</em>
 </p>
 
 <br>
 
 <p align='center'>
     <img width=100% src="images/code/3.png" alt>
+    <br>
+    <em>조건문 진입 전에 어떤 상황에 실행되는 건지 간략하게 주석 처리 해주는 좋은 관습이다</em>
 </p>
 
 <br>
 
 <p align='center'>
     <img width=100% src="images/code/4.png" alt>
+    <br>
+    <em>조건문의 분기가 많아도 마찬가지다. 반복문에도 적어두자</em>
 </p>
 
 <br>
 
 <p align='center'>
     <img width=100% src="images/code/5.png" alt>
+    <br>
+    <em>복잡한 로직 전 코드의 역할이 무엇인지 명시</em>
 </p>
 
 <br>
 
 <p align='center'>
     <img width=100% src="images/code/6.png" alt>
+    <br>
+    <em>함수명을 지을 땐 함수의 명확한 역할을 내포하는게 좋다</em>
 </p>
 
 <br>
@@ -73,7 +85,7 @@ weight: 1
 <p align='center'>
     <img width=100% src="images/code/end-message.png" alt>
     <br>
-    <em>이건 주석이 아니라 게임 종료시 나오는 메시지이다. 도무지 해석할 엄두가 나질 않는다.</em>
+    <em>이건 주석이 아니라 게임 종료시 나오는 메시지이다</em>
 </p>
 
 <br><br>
@@ -85,4 +97,8 @@ weight: 1
 
 요즘은 코드 리뷰와 협업 도구가 발달해서 이런 주석을 보기 힘들지만, 당시에는 이런 것이 개발자들의 일상이었다.
 
- > 지금 회사에서 이 짓거리 하면 여러분의 상사의 애정어린 관심을 독차지 할 수 있을 것이다.
+<br>
+
+ > 지금 다니는 회사에서도 이러한 방식을 참고해 코드를 작성해보자.
+ >
+ > 시니어 엔지니어의 애정어린 관심을 독차지 할 수 있을 것이다.
