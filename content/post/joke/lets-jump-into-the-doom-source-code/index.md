@@ -29,14 +29,14 @@ weight: 1
 
 역사의 한 획을 그었던 **전설의 게임 둠(DOOM)**.
 
-이번 포스트에선 둠의 공개된 소스코드를 통해 [id Software](https://www.idsoftware.com/) 90년대 상남자 개발자들의 코딩 스타일을 살펴보자. 
+이번 포스트에선 둠의 공개된 소스코드를 통해 [id Software](https://www.idsoftware.com/) 90년대 상남자 개발자들의 코딩 스타일을 살펴 보도록 하겠다.
 
 <br>
 
 <p align='center'>
     <img width=100% src="images/code/shutup-compiler.png" alt>
     <br>
-    <em>컴파일러 경고 따위 상남자들의 기개 앞에선 무의미 하다</em>
+    <em>하찮은 컴파일러 경고 따위 상남자들의 기개 앞에선 무의미 하다</em>
 </p>
 
 <br>
