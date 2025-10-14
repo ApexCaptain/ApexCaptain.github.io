@@ -27,37 +27,37 @@ weight: 1
 <br><br>
 
 <p align='center'>
-    <img width=80% src="images/code/shutup-compiler.png" alt>
+    <img width=95% src="images/code/shutup-compiler.png" alt>
     <br>
     <em>컴파일러 경고 따위 상남자들의 기개 앞에선 무의미 하다.</em>
 </p>
 
 <p align='center'>
-    <img width=80% src="images/code/1.png" alt>
+    <img width=95% src="images/code/1.png" alt>
 </p>
 
 <p align='center'>
-    <img width=80% src="images/code/2.png" alt>
+    <img width=95% src="images/code/2.png" alt>
 </p>
 
 <p align='center'>
-    <img width=80% src="images/code/3.png" alt>
+    <img width=95% src="images/code/3.png" alt>
 </p>
 
 <p align='center'>
-    <img width=80% src="images/code/4.png" alt>
+    <img width=95% src="images/code/4.png" alt>
 </p>
 
 <p align='center'>
-    <img width=80% src="images/code/5.png" alt>
+    <img width=95% src="images/code/5.png" alt>
 </p>
 
 <p align='center'>
-    <img width=80% src="images/code/6.png" alt>
+    <img width=95% src="images/code/6.png" alt>
 </p>
 
 <p align='center'>
-    <img width=80% src="images/code/end-message.png" alt>
+    <img width=95% src="images/code/end-message.png" alt>
     <br>
     <em>이건 주석이 아니라 게임 엔딩 메시지이다... 도무지 해석할 엄두가 나질 않는다</em>
 </p>
