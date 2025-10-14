@@ -20,44 +20,44 @@ weight: 1
     <img src="images/github.png" alt>
 </p>
 
-역사의 한 획을 그었던 전설의 게임 둠(Doom).
+역사의 한 획을 그었던 **전설의 게임 둠(Doom)**.
 
-이번 포스트에선 둠의 공개된 소스코드를 살펴보며 [id Software](https://www.idsoftware.com/) 상남자 개발자들의 생활양식을 엿보도록 하자.
+이번 포스트에선 둠의 공개된 소스코드를 살펴보며 [id Software](https://www.idsoftware.com/) 90년대 상남자 개발자들의 코딩 스타일을 배워보자. 
 
 <br><br>
 
 <p align='center'>
-    <img width=95% src="images/code/shutup-compiler.png" alt>
+    <img width=100% src="images/code/shutup-compiler.png" alt>
     <br>
     <em>컴파일러 경고 따위 상남자들의 기개 앞에선 무의미 하다.</em>
 </p>
 
 <p align='center'>
-    <img width=95% src="images/code/1.png" alt>
+    <img width=100% src="images/code/1.png" alt>
 </p>
 
 <p align='center'>
-    <img width=95% src="images/code/2.png" alt>
+    <img width=100% src="images/code/2.png" alt>
 </p>
 
 <p align='center'>
-    <img width=95% src="images/code/3.png" alt>
+    <img width=100% src="images/code/3.png" alt>
 </p>
 
 <p align='center'>
-    <img width=95% src="images/code/4.png" alt>
+    <img width=100% src="images/code/4.png" alt>
 </p>
 
 <p align='center'>
-    <img width=95% src="images/code/5.png" alt>
+    <img width=100% src="images/code/5.png" alt>
 </p>
 
 <p align='center'>
-    <img width=95% src="images/code/6.png" alt>
+    <img width=100% src="images/code/6.png" alt>
 </p>
 
 <p align='center'>
-    <img width=95% src="images/code/end-message.png" alt>
+    <img width=100% src="images/code/end-message.png" alt>
     <br>
     <em>이건 주석이 아니라 게임 엔딩 메시지이다... 도무지 해석할 엄두가 나질 않는다</em>
 </p>
@@ -71,4 +71,4 @@ weight: 1
 
 지금은 코드 리뷰와 협업 도구가 발달해서 이런 주석을 보기 힘들지만, 당시에는 이런 것이 개발자들의 일상이었다.
 
- > 지금 회사에서 이 짓거리 하면 여러분의 상사의 특별한 애정을 독차지 할 수 있을 것이다.
+ > 지금 회사에서 이 짓거리 하면 여러분의 상사의 애정어린 관심을 독차지 할 수 있을 것이다.
