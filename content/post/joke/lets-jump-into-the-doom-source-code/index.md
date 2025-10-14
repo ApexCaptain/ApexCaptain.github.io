@@ -92,7 +92,7 @@ weight: 1
 <p align='center'>
     <img width=100% src="images/code/end-message.png" alt>
     <br>
-    <em>이건 주석이 아니라 게임 종료시 나오는 메시지이다</em>ㅤ<sub>(번역할 엄두가 안 난다)</sub>
+    <em>이건 주석이 아니라 게임 종료시 나오는 메시지이다</em>ㅤ<sub>(음... 이건 번역할 엄두가 안 난다)</sub>
 </p>
 
 <br><br>
