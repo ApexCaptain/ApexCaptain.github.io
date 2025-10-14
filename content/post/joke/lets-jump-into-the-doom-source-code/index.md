@@ -32,29 +32,43 @@ weight: 1
     <em>컴파일러 경고 따위 상남자들의 기개 앞에선 무의미 하다.</em>
 </p>
 
+<br>
+
 <p align='center'>
     <img width=100% src="images/code/1.png" alt>
 </p>
+
+<br>
 
 <p align='center'>
     <img width=100% src="images/code/2.png" alt>
 </p>
 
+<br>
+
 <p align='center'>
     <img width=100% src="images/code/3.png" alt>
 </p>
+
+<br>
 
 <p align='center'>
     <img width=100% src="images/code/4.png" alt>
 </p>
 
+<br>
+
 <p align='center'>
     <img width=100% src="images/code/5.png" alt>
 </p>
 
+<br>
+
 <p align='center'>
     <img width=100% src="images/code/6.png" alt>
 </p>
+
+<br>
 
 <p align='center'>
     <img width=100% src="images/code/end-message.png" alt>
