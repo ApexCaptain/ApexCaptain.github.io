@@ -280,7 +280,7 @@ info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this comm
     <img src="images/eslint.png" alt>
 </p>
 
-ESLint, 여기서 ES는 `Ecma Script`의 약자이다. [Ecma International](https://ecma-international.org/)이라는 기구에서 만든 Script의미로  
+ESLint, 여기서 ES는 `Ecma Script`의 약자이다. [Ecma International](https://ecma-international.org/)이라는 기구에서 만든 Script라는 뜻으로  
 통상적으로 `표준 Javascript`를 의미한다.
 
 `Lint` 혹은 `Linter`는 코드베이스를 탐색, 사전에 정의한 규칙에 맞지 않는 코드를 찾아내고 교정하는 도구이다.  
