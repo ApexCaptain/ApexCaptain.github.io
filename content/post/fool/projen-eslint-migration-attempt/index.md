@@ -442,7 +442,7 @@ Issue 작성까지 끝나고 나서 뒤늦은 샤워를 한다.
     <img src="images/issues/4.png" alt>
 </p>
 
-ESLint에서 `Flat Config` 호환성 이슈는 아직 없다는 의견이다.
+ESLint v9에서도 기존 방식(Legacy Config)이 아직 사용 가능하다는 내용이다.
 
 특히나 `Mr Grain`이 구체적으로 지적한 부분은 `.projenrc.ts`의 다음 라인이었다.
 
