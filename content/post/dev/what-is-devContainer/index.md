@@ -6,8 +6,12 @@ date: 2025-10-18 00:00:00+0900
 image: images/cover.png
 categories:
     - Development
-tags:
+subcategories:
     - DevContainer
+tags:
+    - Dev Tools
+    - Docker
+    - Docker Compose
 weight: 1
 ---
 ## 들어가기 앞서
