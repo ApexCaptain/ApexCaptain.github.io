@@ -495,7 +495,7 @@ DevContainer에는 `Customizations`라는 항목도 있다.
 #### Settings
 
 vsCode 설정을 프로젝트별로 다르게 하고 싶을 때는 보통  
-루트 경로의 `.vscode/settings.json` 파일을 만들어서 사용하곤 한다. <sub>(개인적으로 이 방식을 추천한다)</sub> 
+루트 경로의 `.vscode/settings.json` 파일을 만들어 사용하는 것이 일반적이다. <sub>(개인적으로 이 방식을 추천한다)</sub>   
 `devcontainer.json`에 지정하는 `custom settings`는 이와 동일한 동작을 한다.
 
 IDE 화면이 맨날 새까만 화면이라 지루하지 않았는가?  
@@ -558,7 +558,7 @@ IDE 화면이 맨날 새까만 화면이라 지루하지 않았는가?
     <em>당신의 눈 건강을 위해 준비한 <span style="color:red">붉은색</span> 테마이다</em>
 </p>
 
-> ...바로 원상복귀 해주었다.
+> 바로 원상복귀 해주었다.
 
 <br>
 
