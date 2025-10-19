@@ -108,7 +108,7 @@ Windows에 `Java Spring Boot` 프레임워크 기반에 `Oracle DB`를 쓰는 �
 
 <br>
 
-## 해결방안
+## DevContainer 기본설정
 
 [**Codespaces**](https://github.com/features/codespaces?locale=ko-KR), [**Gitpod**](https://ona.com/), [**DevPod**](https://devpod.sh/)등 여러가지 방법론이 제시되어 왔는데,  
 대게 별도 플랫폼에 종속된 서비스의 형태(SaaS)로 제공되거나 <sub>(당연히 무료는 아니다)</sub>  
@@ -204,7 +204,7 @@ Windows에 `Java Spring Boot` 프레임워크 기반에 `Oracle DB`를 쓰는 �
 
 <br>
 
-### 기본 설정
+### 설정 파일 준비
 
 #### DevContainer 디렉토리
 
@@ -297,6 +297,8 @@ services:
 
 
 <br>
+
+## 심화과정
 
 ### Image
 
