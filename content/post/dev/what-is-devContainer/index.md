@@ -1,6 +1,6 @@
 ---
-title: devContainer란?
-description: 일관된 개발 환경 구축하기
+title: DevContainer 톺아보기
+description: 개발 환경도 이제 Docker로 구축하자
 slug: dev/what-is-devContainer
 date: 2025-10-18 00:00:00+0900
 image: images/cover.png
@@ -132,20 +132,20 @@ Windows에 `Java Spring Boot` 프레임워크 기반에 `Oracle DB`를 쓰는 �
 `테스트 환경`과 `운영 환경`을 Container로 일관화 시켰듯,  
 `개발환경`도 Container화 해보도록 하자.
 
-이번에 알아볼 주제는 `devContainer`이다.
+이번에 알아볼 주제는 `DevContainer`이다.
 
 
 
 <br>
 
-### devContainer란 무엇인가?
+### DevContainer란 무엇인가?
 
 <p align='left'>
     <img src="images/i-will-explain.png" alt>
 </p>
 
 
-[devContainer (Development Container)](https://containers.dev/)는 Microsoft에서 만든 오픈소스 프로젝트로,  
+[DevContainer (Development Container)](https://containers.dev/)는 Microsoft에서 만든 오픈소스 프로젝트로,  
 `vsCode` 혹은 `Cursor`와 같이 vsCode의 파생 IDE 등에서 사용할 수 있는 개발 전용 라이브러리이다.  
 개발에 필요한 `모든 도구`, `모든 설정`을 Container로 패키징하여 사용할 수 있게 해준다.
 
@@ -206,9 +206,9 @@ Windows에 `Java Spring Boot` 프레임워크 기반에 `Oracle DB`를 쓰는 �
 
 ### 기본 설정
 
-#### devContainer 디렉토리
+#### DevContainer 디렉토리
 
-devContainer 설정 파일들을 저장하기 위해 프로젝트 루트에 `.devcontainer`라는 디렉토리를 만들어주자.
+DevContainer 설정 파일들을 저장하기 위해 프로젝트 루트에 `.devcontainer`라는 디렉토리를 만들어주자.
 
 <p align='left'>
     <img width=30% src="images/settings/base-directory.png" alt>
@@ -220,7 +220,7 @@ devcontainer 구성을 위한 모든 파일은 전부 이 디렉토리 안에 �
 
 #### `devcontainer.json`
 
-devContainer 빌드의 시작점이 되는 파일이다.  
+DevContainer 빌드의 시작점이 되는 파일이다.  
 이 파일의 전체적인 Spec이 궁금하다면 [다음의 링크](https://containers.dev/implementors/json_reference/)에서 확인 해보자. 
 
 사용할 수 있는 옵션이 굉장히 많은데,  
@@ -248,7 +248,7 @@ devContainer 빌드의 시작점이 되는 파일이다.
   // 대상 Docker Compose 파일
   "dockerComposeFile": "docker-compose.dev.yml",
 
-  // compose 파일에서 devContainer로 동작시킬 service의 이름이다
+  // compose 파일에서 DevContainer로 동작시킬 service의 이름이다
   "service": "workspace",
 
   // devcontainer로 동작시킬 대상 service에서 프로젝트가 위치할 경로이다.
@@ -307,7 +307,7 @@ services:
 
 - **Microsoft**가 만든
 
-- **devContainer**용
+- **DevContainer**용
 
 - **base**(기반) 이미지의
 
@@ -333,9 +333,9 @@ services:
 
 ### Features
 
-devContainer에는 `Features`라는 항목이 있다.  
+DevContainer에는 `Features`라는 항목이 있다.  
 `devcontainer.json`파일에 원하는 Feature(기능)를 선언하면,  
-해당하는 기능들이 devContainer에 설치된다.
+해당하는 기능들이 DevContainer에 설치된다.
 
 사용 가능한 기능들은 [devContainer 페이지의 Available Features 탭](https://containers.dev/features)에서 확인 가능하다.
 
@@ -344,7 +344,7 @@ devContainer에는 `Features`라는 항목이 있다.
 #### 설치
 
 말해 뭐 하겠는가, 직접 해보도록 하자.  
-예시로 `Java`, `nodejs`, `python` 그리고 `Docker in Docker`를 devContainer에 설치해보겠다.
+예시로 `Java`, `nodejs`, `python` 그리고 `Docker in Docker`를 DevContainer에 설치해보겠다.
 
 `.devcontainer/devcontainer.json` 파일을 다음과 같이 수정하자.
 
@@ -392,7 +392,7 @@ devContainer에는 `Features`라는 항목이 있다.
 
 #### 설치 확인
 
-devContainer가 Rebuild 되었다면 터미널을 열고 제대로 설치가 되었는지 확인해보자.
+DevContainer가 Rebuild 되었다면 터미널을 열고 제대로 설치가 되었는지 확인해보자.
 
 1. **Java**
     ```bash
@@ -421,7 +421,7 @@ devContainer가 Rebuild 되었다면 터미널을 열고 제대로 설치가 되
     ```
 
 처음에 예시로 들었던 Java의 수동 설치 절차가 어땠는지 생각해보자.  
-devContainer를 쓰면 Features를 통해 원하는 환경을 입맛에 맞춰 아주 간편하게 구성할 수 있다.  
+DevContainer를 쓰면 Features를 통해 원하는 환경을 입맛에 맞춰 아주 간편하게 구성할 수 있다.  
 
 당연히 이는 모두 `Container` 안에 설치되는 것이므로, Host PC 환경에 영향을 줄 일도, 다른 container에 영향을 줄 일도 없다.
 
@@ -480,9 +480,9 @@ OpenJDK 64-Bit Server VM Microsoft-11933203 (build 21.0.8+9-LTS, mixed mode, sha
 
 ### Customizations
 
-devContainer에는 `Customizations`라는 항목도 있다.
+DevContainer에는 `Customizations`라는 항목도 있다.
 
-이는 해당 devContainer만을 위한 IDE(vsCode) 커스텀 설정을 구성한다.
+이는 해당 DevContainer만을 위한 IDE(vsCode) 커스텀 설정을 구성한다.
 
 - **settings**  
     vsCode의 `settings.json`의 기본값을 설정해준다.
@@ -490,8 +490,82 @@ devContainer에는 `Customizations`라는 항목도 있다.
 - **extensions**  
     지정한 `Extension`을 container에 설치한다.
 
-먼저 직관적인 예시를 들기 위해 아무 HTML 파일이나 하나 만들어보자.  
-내 경우 Cursor에게 자신에 대해 소개하는 HTML을 생성하라고 해보았다.
+<br>
+
+#### Settings
+
+vsCode 설정을 프로젝트별로 다르게 하고 싶을 때는 보통  
+루트 경로의 `.vscode/settings.json` 파일을 만들어서 사용하곤 한다. <sub>(개인적으로 이 방식을 추천한다)</sub> 
+`devcontainer.json`에 지정하는 `custom settings`는 이와 동일한 동작을 한다.
+
+IDE 화면이 맨날 새까만 화면이라 지루하지 않았는가?  
+간단한 예시로 IDE의 테마를 한 번 변경해보자.  
+
+가장 하단의 `customizations`을 보면 된다.
+
+```json
+// .devcontainer/devcontainer.json
+
+{
+  // General
+  "name": "My First DevContainer",
+  "remoteUser": "vscode",
+
+  // Docker Compose
+  "dockerComposeFile": "docker-compose.dev.yml",
+  "service": "workspace",
+  "workspaceFolder": "/home/vscode/workspace/my-project-name",
+
+  // Features
+  "features": {
+
+    // Java Feature
+    // https://github.com/devcontainers/features/tree/main/src/java
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21" // Java 21 버전으로 변경
+    },
+
+    // Node.js Feature
+    // https://github.com/devcontainers/features/tree/main/src/node
+    "ghcr.io/devcontainers/features/node:1": {},
+
+    // Python Feature
+    // https://github.com/devcontainers/features/tree/main/src/python
+    "ghcr.io/devcontainers/features/python:1": {},
+
+    // Docker in Docker Feature
+    // https://github.com/devcontainers/features/tree/main/src/docker-in-docker
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  
+  // Custom
+  "customizations": {
+    "vscode": {
+      // ------ 위는 기존 설정 그대로이다 ------ //
+      // Settings
+      "settings": {
+        "workbench.colorTheme": "Red"
+      },
+    }
+  }
+}
+```
+
+`F1` 키를 누르고 `Dev Containers: Rebuild Container`를 실행한다.
+
+<p align='center'>
+    <img src="images/settings/blood-red-cursor-ide.png" alt>
+    <em>당신의 눈 건강을 위해 준비한 <span style="color:red">붉은색</span> 테마이다</em>
+</p>
+
+> ...바로 원상복귀 해주었다.
+
+<br>
+
+#### Extensions
+
+아무런 HTML 파일이나 하나 만들어보자.  
+내 경우 Cursor에게 자기 자신에 대해 소개하는 HTML을 생성하라고 해보았다.
 
 <p align='center'>
     <img src="images/settings/test-html.png" alt>
@@ -500,7 +574,7 @@ devContainer에는 `Customizations`라는 항목도 있다.
 
 > 갑자기 이게 무슨 뚱딴지같은 소린가 싶겠지만 일단 계속 들어보길 바란다.
 
-devContainer에서 html 파일을 열어보면 다음과 같이 나올 것이다.
+DevContainer에서 html 파일을 열어보면 다음과 같이 나올 것이다.
 
 <p align='center'>
     <img src="images/settings/open-html-without-extension.png" alt>
@@ -575,7 +649,7 @@ devContainer에서 html 파일을 열어보면 다음과 같이 나올 것이다
 
 ### Lifecycle Scripts
 
-devContainer는 일정한 [생명주기(lifecycle)](https://containers.dev/implementors/json_reference/#lifecycle-scripts)를 가지고 있다.  
+DevContainer는 일정한 [생명주기(lifecycle)](https://containers.dev/implementors/json_reference/#lifecycle-scripts)를 가지고 있다.  
 그리고 각 생명주기에서 실행될 별도의 Script를 지정해줄 수 있는데 이를 `Lifecycle Scripts`라고 한다.
 
 순서는 다음과 같다.
@@ -603,9 +677,9 @@ devContainer는 일정한 [생명주기(lifecycle)](https://containers.dev/imple
     특정 조건이 만족될 때까지 대기
     예: 데이터베이스가 준비될 때까지, 특정 포트가 열릴 때까지 대기
 
-앞서 기술했던 devContainer의 `Features`나 `Customizations`으로는 대응하기 힘든 고유한 스크립트를 실행 할 수 있다.
+앞서 기술했던 DevContainer의 `Features`나 `Customizations`으로는 대응하기 힘든 고유한 스크립트를 실행 할 수 있다.
 
-이번엔 Lifecycle Scripts 중 하나인 `updateContentCommand`를 이용해서 devContainer에 `redis-cli`라는 프로그램을 설치해보자.
+이번엔 Lifecycle Scripts 중 하나인 `updateContentCommand`를 이용해서 DevContainer에 `redis-cli`라는 프로그램을 설치해보자.
 
 우선 `.devcontainer` 밑에 `lifecycle`이라는 디렉토리를 만들어주자.  
 이후 `updateContentCommand.sh` 파일을 다음과 같이 작성해준다.
@@ -689,7 +763,7 @@ redis-cli 7.0.15
 
 ### 멀티 컨테이너 구성
 
-지금까지의 예시에서 사용한 devContainer는 `docker-compose.dev.yml` 파일을 사용하고 있다.  
+지금까지의 예시에서 사용한 DevContainer는 `docker-compose.dev.yml` 파일을 사용하고 있다.  
 당연히 일반적인 `docker compose`처럼 다른 `service`를 등록하는 것도 가능하다.
 
 예시로 Redis Container를 `docker-compose.dev.yml`에 추가해보자.
@@ -750,10 +824,10 @@ redis:6379>
 
 ## 마치며
 
-이번 포스트에서는 devContainer를 통해 개발환경의 일관성과 격리성을 확보하는 방법에 대해 알아보았다.
+이번 포스트에서는 DevContainer를 통해 개발환경의 일관성과 격리성을 확보하는 방법에 대해 알아보았다.
 
 처음에 언급했던 "제 컴퓨터에선 잘 돌아가던데요?"라는 말을 들을 일이 이제는 훨씬 줄어들 것이다.  
-devContainer를 사용하면:
+DevContainer를 사용하면:
 
 - **개발환경의 일관성**이 보장되고
 - **프로젝트별 격리된 환경**을 구축할 수 있으며  
