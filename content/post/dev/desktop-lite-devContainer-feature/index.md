@@ -170,7 +170,7 @@ URL을 통한 페이지 구분이 안 된다.
 </p>
 
 DevContainer에서 GUI가 포함된 어떤 프로그램을 실행해야 하는 경우가 아주 간혹 있다.  
-그리고 그 중에서도 가장 번거로운 것이 `가상 브라우저를 통한 크롤링`이다.
+그 중에 비교적 가장 빈번한 것이 앞에서 언급한 `가상 브라우저를 통한 크롤링`이다.
 
 회사에서 맡게 되는 작업 중에는 이렇게 가상 브라우저로 외부 웹 페이지를 방문해서 데이터를 추출해야 하는 때가 있는데, 크롤링 자체는 DevContainer건 서버에 올린 Production Container건 별 문제 없이 아주 잘 동작한다.  
 
@@ -206,7 +206,13 @@ DevContainer에서 GUI가 포함된 어떤 프로그램을 실행해야 하는 �
 
 
 이번 포스트에선 이 문제를 해결하는 [예시 소스가 담긴 GitHub Repository](https://github.com/ApexCaptain/postExample.noVncDesktopLiteFeature)를 아예 따로 만들었다.  
-직접 작업하기 귀찮으면 Clone해서 살펴보도록 하자.
+
+```bash
+git clone https://github.com/ApexCaptain/postExample.noVncDesktopLiteFeature.git
+```
+직접 작업할 시간이 없다면 위 커맨드로 프로젝트를 Clone 해서 봐도 좋다.
+
+
 
 - `devcontainer.json`
 

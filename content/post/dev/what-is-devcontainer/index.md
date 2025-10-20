@@ -148,7 +148,7 @@ Windows에 `Java Spring Boot` + `Oracle DB`를 쓰는 웹 애플리케이션 개
 
 
 [DevContainer (Development Container)](https://containers.dev/)는 Microsoft에서 만든 오픈소스 프로젝트로,  
-`vsCode` 혹은 `Cursor`와 같이 vsCode의 파생 IDE 등에서 사용할 수 있는 개발 전용 라이브러리이다.  
+`vsCode` 혹은 `Cursor`와 같은 vsCode의 파생 IDE 에서 사용할 수 있는 개발 전용 라이브러리이다.  
 개발에 필요한 `모든 도구`, `모든 설정`을 Container로 패키징하여 사용할 수 있게 해준다.
 
 주요 특징은 다음과 같다.
