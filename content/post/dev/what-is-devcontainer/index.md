@@ -1,7 +1,7 @@
 ---
 title: DevContainer 톺아보기
 description: 개발 환경도 이제 Docker로 구축하자
-slug: dev/what-is-devContainer
+slug: dev/what-is-devcontainer
 date: 2025-10-18 00:00:00+0900
 image: images/cover.png
 categories:
@@ -35,7 +35,7 @@ weight: 1
 
 등등...
 
-더 볼 것도 없이 애초에 작업은 `Windows`나 `Mac`에서 하면서 그걸 실행하는 서버가 `Linux`이니 문제가 안 생길래야 안 생길 수가 없다.
+더 볼 것도 없이 애초에 작업은 `Windows`나 `Mac`에서 하면서 그걸 실행하는 서버가 `Linux`이니 **문제가 안 생길래야 안 생길 수가 없다.**
 
 <p align='center'>
     <img src="images/ritual-in-server-room.png" alt>
@@ -44,7 +44,7 @@ weight: 1
 
 
 다행히 **Docker**와 **Container**를 도입한 이래로는 이러한 일의 발생 빈도가 확연히 줄어들었다.   
-Production / Stage용 환경변수 설정을 잘못 잡아놨다거나, 이미지를 빌드할 때 `CPU Architecture`<sub>(ARM/AMD)</sub>가 서버마다 다르다는 걸 고려하지 않았다 수준의 특이 케이스를 제외하면 말이다.  
+환경변수 설정을 잘못 잡아놨다거나, 이미지를 빌드할 때 CPU Architecture<sub>(ARM/AMD)</sub>를 고려하지 않았다 수준의 특이 케이스를 제외하면 말이다.  
 
 작업한 소스코드를 **테스트 할 때**, 빌드한 소스가 **서버에서 실행 될 때** 모두 Container 위에서 동작하는 것이므로 일관성이 보장된다. 👍
 
@@ -59,23 +59,26 @@ Production / Stage용 환경변수 설정을 잘못 잡아놨다거나, 이미�
 하지만 여전히 개발자의 작업 환경은 `Windows` 혹은 `Mac`이라는 OS에 종속되어 있다.  
 이러한 OS에 Native하게 환경을 구축하는 것은 여전히 매우 번거로운 일이다.
 
-Windows에 `Java Spring Boot` 프레임워크 기반에 `Oracle DB`를 쓰는 웹 애플리케이션 개발환경을 구축한다고 생각해보자.
+Windows에 `Java Spring Boot` + `Oracle DB`를 쓰는 웹 애플리케이션 개발환경을 구축한다고 생각해보자.
 
 우선 Java부터 설치해야 한다.
 
-1. Oracle에 접속해 원하는 버전의 JDK를 다운로드 받는다.
+1. Oracle에 접속해 원하는 버전의 JDK를 다운
 
-2. 1에서 다운받은 파일을 실행시켜 설치를 진행한다.
+2. 1에서 다운받은 파일을 실행시켜 설치 진행
 
-3. JDK의 설치 경로를 확인한다. 가령 `C:\Program Files\Java\jdk-x.y.z`
+3. JDK의 설치 경로를 확인, 가령 `C:\Program Files\Java\jdk-x.y.z`
 
-4. Windows 환경 변수에 `JAVA_HOME` 시스템 변수를 생성하고 3의 경로를 입력한다.
+4. Windows 환경 변수에 `JAVA_HOME` 시스템 변수를 생성하고 3의 경로를 입력
 
-5. 시스템 변수 `Path`에 4에서 입력한 환경변수를 추가한다. 가령 `%JAVA_HOME%\bin`
+5. 시스템 변수 `Path`에 4에서 입력한 환경변수를 추가, 가령 `%JAVA_HOME%\bin`
 
 이 정도는 별 거 아니라고 생각할 수도 있다.
 
-> 동일한 조건의 새로운 프로젝트를 맡게 되었다. 근데 **Java 버전이 달라진다면?**
+> 같은 스택의 새 프로젝트를 맡게 되었다.  
+> 근데 사용하는 **Java 버전이 달라졌다**고 한다.  
+> 어떻게 하지?
+
 
 새로운 JDK를 설치해야할까? 아니면 `IntelliJ IDEA`같은 IDE로 넘어가야 하나?
 
@@ -84,8 +87,7 @@ Windows에 `Java Spring Boot` 프레임워크 기반에 `Oracle DB`를 쓰는 �
 `Oracle DB 19C`를 사용해서 프로젝트를 진행했었는데,  
 새 프로젝트에선 `Oracle DB 21C`를 사용한다고 한다.
 
-로컬 PC에 그럼 DB를 2개 설치해야 하는 걸까?  
-기존 DB를 지워야 하나?  
+로컬 PC에 그럼 DB를 2개 설치해야 하는 걸까? 기존 DB를 지워야 하나?  
 아니면 아예 DB 서버에 `개발용` Schema를 따로 만들어야 하나?
 
 > 다 떠나서 아예 컴퓨터를 새로 사거나 포맷이라도 하면...?
@@ -100,7 +102,7 @@ Windows에 `Java Spring Boot` 프레임워크 기반에 `Oracle DB`를 쓰는 �
 
 
 여태 언급된 것들은 결코 허황되거나 과장된 예시가 아니다.  
-<sub>왜냐하면 내가 지금 다니고 있는 회사가 처음에 딱 저런 상황이었으니까...</sub>
+<sub>(왜냐하면 내가 지금 다니고 있는 회사가 처음에 딱 저런 상황이었으니까...)</sub>
 
 `Java Spring Boot`에 `Oracle DB`  
 이는 대한민국에서 한 때 <sub>(어쩌면 지금도)</sub> 가장 보편적으로 쓰이던 애플리케이션 스택이다.  
@@ -110,7 +112,7 @@ Windows에 `Java Spring Boot` 프레임워크 기반에 `Oracle DB`를 쓰는 �
 
 ## DevContainer 기본설정
 
-[**Codespaces**](https://github.com/features/codespaces?locale=ko-KR), [**Gitpod**](https://ona.com/), [**DevPod**](https://devpod.sh/)등 여러가지 방법론이 제시되어 왔는데,  
+[**Codespaces**](https://github.com/features/codespaces?locale=ko-KR), [**Gitpod**](https://ona.com/), [**DevPod**](https://devpod.sh/)등 여러가지 방법론이 제시되어 왔으나,  
 대게 별도 플랫폼에 종속된 서비스의 형태(SaaS)로 제공되거나 <sub>(당연히 무료는 아니다)</sub>  
 자체 호스팅을 하더라고 **Kubernetes 클러스터가 전제 조건**인 경우도 있다.  
 
@@ -293,14 +295,14 @@ services:
     <img src="images/that-easy.png" alt>
 </p>
 
-> 자 이제 하나씩 심화 과정으로 들어가보자.
+> 자 이제 하나씩 **심화 과정**으로 들어가보자.
 
 
 <br>
 
-## 심화과정
+## 심화 과정
 
-### Image
+### Image는 뭘 고르지?
 
 예시에서 사용한 Docker Image는 `mcr.microsoft.com/devcontainers/base:dev-noble`이다.
 
@@ -322,24 +324,35 @@ services:
     <em>내가 고른 건 여기서 가장 오른쪽 아래 이미지이다</em>
 </p>
 
-`base image`는 말 그대로 기반이 되는 이미지로, 안에는 `Git`이나 `Bash` 같은 걸 제외하고는 아무것도 설치되어 있지 않다.
+`base image`는 말 그대로 기반이 되는 이미지로, 안에는 `Git`이나 `Bash` 같은 걸 제외하고는 *아무것도 설치되어 있지 않다.*
 
-원하는 개발 환경에 맞춰 다른 이미지를 골라도 되지만,  
-개인적으로는 base 이미지를 고수하는 걸 추천한다.
+원하는 개발 환경에 맞춰 이미지를 고르면 된다.
 
-> 어? 그럼 개발환경 설치는 어떻게 하지? `Dockerfile`을 커스텀 해서 써야하나?
+예를들어:
 
-당연한 추론이다. 하지만 그보다 더 좋은 방법이 있다. 다음 섹션을 참고하자.
+- [**Typescript**를 써서 **Node.Js** 앱 만들어야지](https://mcr.microsoft.com/en-us/artifact/mar/devcontainers/typescript-node/tags)
+- [**.NET 프레임워크** 기반으로 앱 만들고싶어](https://mcr.microsoft.com/en-us/artifact/mar/devcontainers/dotnet/tags)
+- [모르겠고, 그냥 **모든 언어**가 다 설치되어 있으면 좋겠어](https://mcr.microsoft.com/en-us/artifact/mar/devcontainers/universal/tags)
+
+하지만 나는 개인적으로는 `base` 이미지를 고수하는 걸 추천한다.
+
+> 어? 그럼 개발도구 설치는 어떻게 하지?
+>
+> `Dockerfile`을 커스텀 해서 써야하나?
+
+지극히 당연한 추론이다.  
+하지만 **그보다 더 좋은 방법**이 있다.  
+다음 섹션을 참고하자.
 
 <br>
 
-### Features
+### Features로 개발도구 설치하기
 
 DevContainer에는 `Features`라는 항목이 있다.  
 `devcontainer.json`파일에 원하는 Feature(기능)를 선언하면,  
 해당하는 기능들이 DevContainer에 설치된다.
 
-사용 가능한 기능들은 [devContainer 페이지의 Available Features 탭](https://containers.dev/features)에서 확인 가능하다.
+사용 가능한 기능들은 [**DevContainer 페이지의 Available Features 탭**](https://containers.dev/features)에서 확인 가능하다.
 
 <br>
 
@@ -386,9 +399,15 @@ DevContainer에는 `Features`라는 항목이 있다.
   
 }
 ```
+
+<br>
+
 이후 다시 `F1` 키를 누르고 `Dev Containers: Rebuild Container`를 실행하자.
 
-> 여기서 시간이 좀 걸릴 것이다. 커피 한 잔 끓여 오도록 하자.
+
+> 저것들 다 설치하려면 제법 시간이 걸린다.
+>
+> **커피 한 잔 끓여 오도록 하자.**
 
 <br>
 
@@ -422,8 +441,18 @@ DevContainer가 Rebuild 되었다면 터미널을 열고 제대로 설치가 되
     Docker version 28.5.1-1, build e180ab8ab82d22b7895a3e6e110cf6dd5c45f1d7
     ```
 
-처음에 예시로 들었던 Java의 수동 설치 절차가 어땠는지 생각해보자.  
-DevContainer를 쓰면 Features를 통해 원하는 환경을 입맛에 맞춰 아주 간편하게 구성할 수 있다.  
+모든 개발 도구들이 성공적으로 잘 설치되었다.   
+주석을 제외하면 추가한 내용은 **겨우 4줄**이다!   
+
+<p align='center'>
+    <img src="images/amazing.gif" alt>
+</p>
+
+*어디서 뭘 받고, 하나 하나 다음(Next) 눌러주면서 설치 해주고, 환경변수 설정하고...*  
+이런 고생은 이제 안녕이다.  
+<sub>(덕분에 온보딩 기간에 신입 직원이 개발환경 구성한답시고 일주일 날로 먹는 혜택은 누리기 힘들어지겠지만)</sub>
+
+DevContainer를 쓰면 `Features`를 통해 원하는 환경을 입맛에 맞춰 아주 간편하게 구성할 수 있다.  
 
 당연히 이는 모두 `Container` 안에 설치되는 것이므로, Host PC 환경에 영향을 줄 일도, 다른 container에 영향을 줄 일도 없다.
 
@@ -449,8 +478,10 @@ Feature에는 상세 옵션도 설정 가능하다.
 | installGroovy | Install Groovy, powerful, optionally typed and dynamic language with static-typing and static compilation capabilities | boolean | false |
 | groovyVersion | Select or enter a Groovy version | string | latest |
 
+이 표는 DevContainer Java Feature에서 사용 가능한 옵션들이다.  
 특별히 명시를 안 해주면 `기본값(Default Value)`이 적용된다.  
-현재 `version`의 기본값은 `latest`다. 실제로 확인해보면 `JDK 25`가 설치되어 있다.  
+Java 버전을 정하는 `version` 옵션의 기본값은 `latest`다.  
+실제로 확인해보면 작성일 기준, `JDK 25`가 설치되어 있다.  
 이를 `21`로 변경해보자.
 
 ```json
@@ -480,7 +511,7 @@ OpenJDK 64-Bit Server VM Microsoft-11933203 (build 21.0.8+9-LTS, mixed mode, sha
 
 <br>
 
-### Customizations
+### Customizations 설정
 
 DevContainer에는 `Customizations`라는 항목도 있다.
 
@@ -498,7 +529,7 @@ DevContainer에는 `Customizations`라는 항목도 있다.
 
 vsCode 설정을 프로젝트별로 다르게 하고 싶을 때는 보통  
 루트 경로의 `.vscode/settings.json` 파일을 만들어 사용하는 것이 일반적이다. <sub>(개인적으로 이 방식을 추천한다)</sub>   
-`devcontainer.json`에 지정하는 `custom settings`는 이와 동일한 동작을 한다.
+`devcontainer.json`에 지정하는 `custom settings`는 이와 유사하게 동작한다.
 
 IDE 화면이 맨날 새까만 화면이라 지루하지 않았는가?  
 간단한 예시로 IDE의 테마를 한 번 변경해보자.  
@@ -560,7 +591,7 @@ IDE 화면이 맨날 새까만 화면이라 지루하지 않았는가?
     <em>당신의 눈 건강을 위해 준비한 <span style="color:red">붉은색</span> 테마이다</em>
 </p>
 
-> 바로 원상복귀 해주었다.
+> <sub>내 눈은 아직 건강하므로 바로 원상복귀 해주었다.</sub>
 
 <br>
 
@@ -657,29 +688,30 @@ DevContainer는 일정한 [생명주기(lifecycle)](https://containers.dev/imple
 순서는 다음과 같다.
 
 1. **initializeCommand**  
-    컨테이너가 생성되기 전에 `호스트`에서 실행
+    DevContainer가 `생성되기 전`에  
+    `호스트`에서 실행 *(이 이후 커맨드는 전부 Container 내부에서 실행된다.)*
 
 2. **onCreateCommand**  
-    컨테이너가 `생성된 직후` 실행  
-    실행 위치는 컨테이너 내부
+    DevContainer가 `생성된 직후` 실행  
 
 3. **updateContentCommand**  
-    컨테이너의 `내용이 업데이트될 때` 실행
+    DevContainer의 `내용이 업데이트될 때` 실행
 
 4. **postCreateCommand**  
-    컨테이너 `생성 완료 후` 실행
+    DevContainer `생성 완료 후` 실행
 
 5. **postStartCommand**  
-    컨테이너가 `시작될 때마다` 실행
+    DevContainer가 `시작(start)될 때마다` 실행
 
 6. **postAttachCommand**  
-    VS Code나 다른 `IDE가 컨테이너에 연결될 때` 실행
+    VS Code나 Cursor등 `IDE가 DevContainer에 연결될 때` 실행
 
 7. **waitFor**  
-    특정 조건이 만족될 때까지 대기
+    특정 조건이 만족될 때까지 대기  
     예: 데이터베이스가 준비될 때까지, 특정 포트가 열릴 때까지 대기
 
-앞서 기술했던 DevContainer의 `Features`나 `Customizations`으로는 대응하기 힘든 고유한 스크립트를 실행 할 수 있다.
+**대부분의 도구**는 `Features`로 설치가 가능하지만,  
+*마이너한* 혹은 *회사에서만 사용하는* **독특한 프로그램**이 있다면, Lifecycle Scripts를 사용해 구현이 가능하다.
 
 이번엔 Lifecycle Scripts 중 하나인 `updateContentCommand`를 이용해서 DevContainer에 `redis-cli`라는 프로그램을 설치해보자.
 
@@ -700,7 +732,8 @@ sudo apt install -y \
 
 ```
 
-`devcontainer.json` 파일에 LifeCycle Scripts를 추가한다.
+`devcontainer.json` 파일에 LifeCycle Scripts를 추가한다.  
+가장 하단을 보면 된다.
 ```json
 // .devcontainer/devcontainer.json
 
@@ -763,10 +796,10 @@ redis-cli 7.0.15
 
 <br>
 
-### 멀티 컨테이너 구성
+### 멀티 컨테이너 구성하기
 
 지금까지의 예시에서 사용한 DevContainer는 `docker-compose.dev.yml` 파일을 사용하고 있다.  
-당연히 일반적인 `docker compose`처럼 다른 `service`를 등록하는 것도 가능하다.
+당연히 일반적인 `docker compose`처럼 다른 `service(container)`를 등록하는 것도 가능하다.
 
 예시로 Redis Container를 `docker-compose.dev.yml`에 추가해보자.
 
@@ -844,6 +877,6 @@ DevContainer를 사용하면:
 더 나아가 `멀티 컨테이너 구성`을 통해 데이터베이스나 캐시 서버 같은 외부 의존성까지도 함께 관리할 수 있다는 점은 정말 매력적이다.
 
 **참고 자료**
-- [devContainer 공식 문서](https://containers.dev/)
+- [DevContainer 공식 문서](https://containers.dev/)
 - [Available Features](https://containers.dev/features)
 - [devcontainer.json 스펙](https://containers.dev/implementors/json_reference/)
