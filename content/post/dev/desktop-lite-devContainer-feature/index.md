@@ -34,7 +34,7 @@ weight: 1
 - 기본적인 설치 방법과 약간의 심화과정
 
 본래 이번 포스트를 먼저 작성하고 있었는데,  
-쓰다보니 DevContainer에 대한 설명이 지나치게 장황해진다는 것을 깨달았다.  
+쓰다보니 **DevContainer 자체에 대한 내용이 지나치게 장황하다**라는 것을 깨달았다.  
 고로 내용을 둘로 나눠 [DevContainer에 대해 정리하는 포스트](../what-is-devcontainer/)를 먼저 올린 것이다.   
 <sub>~~이거 보여주려고 어그로 끌었다~~</sub>
 
@@ -200,10 +200,13 @@ DevContainer에서 GUI가 포함된 어떤 프로그램을 실행해야 하는 �
 
 [사용 가능한 기능 목록](https://containers.dev/features) 페이지에 있는 ["Lite-weight Desktop"](https://github.com/devcontainers/features/tree/main/src/desktop-lite)을 설치해서 브라우져를 통해 DevContainer에서 실행되는 GUI 프로그램을<sub>(이 경우, 브라우져)</sub> 눈으로 확인 할 수 있도록 해보겠다.
 
-이번 포스트에선 이 문제를 해결하는 [예시 소스가 담긴 GitHub Repository](https://github.com/ApexCaptain/postExample.noVncDesktopLiteFeature)를 아예 따로 만들었다.  
-직접 작업하기 귀찮으면 Clone해서 살펴보도록 하자.
+<br>
 
 ### DevContainer 구성
+
+
+이번 포스트에선 이 문제를 해결하는 [예시 소스가 담긴 GitHub Repository](https://github.com/ApexCaptain/postExample.noVncDesktopLiteFeature)를 아예 따로 만들었다.  
+직접 작업하기 귀찮으면 Clone해서 살펴보도록 하자.
 
 - `devcontainer.json`
 
@@ -422,6 +425,143 @@ node index.js
 
 <br>
 
+## 주의사항
+
+### 호환성
+
+나온지 얼마 안 된 기능이라 그런지 OS 및 하드웨어 제약사항이 있다
+
+- Container Image 제약
+
+    예시에서 사용한 DevContainer Docker Image는 `Ubuntu 기반`이다.  
+    `desktop lite` feature는 현재 `Debian/Ubuntu` 기반의 이미지만 지원한다.  
+    `Alpine` 이미지에서는 사용할 수 없다.
+
+    <p align='left'>
+        <img src="images/os-support.png" alt>
+    </p>
+
+    <br>
+
+- CPU Architecture 제약
+
+    `desktop lite` feature를 적용하려면 DevContainer를 동작시키는 PC의  
+    CPU Architecture가 `AMD64`여야만 한다.
+
+    **Intel**이나 **AMD**에서 만든 CPU라면 관계 없으나,  
+    **Arm**을 사용하고 있다면 이 기능은 사용 할 수 없다.
+
+    대표적으로 `Apple Silicon 칩이 장착된 Mac`은 안 된다.
+
+<br>
+
+### 패스워드 설정
+
+`desktop lite` feature는 내부적으로 `VNC 서버`와  
+그 위에 얹혀 있는 `noVnc` 웹 클라이언트를 사용해서 GUI 화면을 노출시킨다.
+
+```plaintext
++---------------------------+
+|       Web Browser         |
+| (noVNC Client over 6080)  |
++------------▲--------------+
+             │ WebSocket
+             ▼
++---------------------------+
+|   noVNC (Websockify)      |
++------------▲--------------+
+             │ VNC Protocol
+             ▼
++---------------------------+
+|     Xvfb + Fluxbox        |
+|  (Virtual Display Server) |
++------------▲--------------+
+             │
+             ▼
++---------------------------+
+| GUI Application (ex: Chrome) |
++---------------------------+
+```
+
+그리고 `.devcontainer/devcontainer.json`에서 해당 포트를<sub>(6080)</sub> 그대로 포워딩 한다.
+```json
+// .devcontainer/devcontainer.json
+{
+    // ...
+    "forwardPorts": [
+      6080
+    ],
+    "portsAttributes": {
+      "6080": {
+        "label": "Desktop (noVNC)"
+      }
+    }
+}
+```
+
+로컬 PC에 DevContainer를 실행중이라면 큰 문제가 되진 않겠지만,  
+`Remote Devcontainer`를 사용하는 경우, 가령
+- SSH (자체 호스팅 혹은 클라우드 서버)
+- Codespaces
+
+vsCode 혹은 Cursor는 원격 서버의 `6080` 포트를 **"클라이언트로 포워딩"** 한다.
+
+**만일 서버 방화벽에서 허용되어 있다면 외부에서도 noVnc로 접근 할 수 있다. (!!)**
+
+사실 실제 그렇게 되어있을 가능성은 희박하지만, 그래도 안전하게 해서 나쁠 건 없다.  
+다음의 예시처럼 패스워드 설정을 확실하게 해두도록 하자.
+
+```json
+// .devcontainer/devcontainer.json
+{
+    // ...
+    "features": {
+
+        // https://github.com/devcontainers/features/tree/main/src/desktop-lite
+        "ghcr.io/devcontainers/features/desktop-lite:1": {
+            "password": "my-extremly-complex-password"
+        },
+
+    }
+    // ...
+}
+```
+
+<br>
+
+Git 저장소에 패스워드가 올라가는게 꺼려진다면 다음과 같이 설정해도 된다.
+
+```env
+# .devconvtainer/.env
+NOVNC_PASSWORD=my-extremly-complex-password
+```
+
+<br>
+
+```json
+// .devcontainer/devcontainer.json
+{
+    // ...
+    "features": {
+
+        // https://github.com/devcontainers/features/tree/main/src/desktop-lite
+        "ghcr.io/devcontainers/features/desktop-lite:1": {
+            "password": "${localEnv:NOVNC_PASSWORD}"
+        },
+
+    }
+    // ...
+}
+```
+
+`.env` 파일은 `.gitignore`에 추가 해두도록 하자.
+
+
+
+
+
+<br>
+
 ## 마치며
 
 이번 포스트에서는 DevContainer에서 GUI 프로그램을 실행할 때 겪는 문제와 그 해결책에 대해 다뤄봤다.
@@ -442,3 +582,7 @@ noVNC를 통해 웹 브라우저로 DevContainer 내부의 GUI에 접근할 수 
 
 혹시나 비슷한 고민을 겪고 있는 분들이 있었다면 부디 도움이 되었길 바란다.
 
+### 참고자료
+- [Dev Containers Features Spec – desktop-lite](https://github.com/devcontainers/features/tree/main/src/desktop-lite)
+- [VS Code Remote Containers Documentation](https://code.visualstudio.com/docs/devcontainers/containers)
+- [noVNC project site](https://novnc.com/info.html)
