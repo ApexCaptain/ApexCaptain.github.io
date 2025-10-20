@@ -442,9 +442,9 @@ DevContainer가 Rebuild 되었다면 터미널을 열고 제대로 설치가 되
     ```
 
 모든 개발 도구들이 성공적으로 잘 설치되었다.   
-주석을 제외하면 추가한 내용은 **겨우 4줄**이다!   
+주석을 제외하면 추가한 내용은 **고작 4줄**밖에 되지 않는다.   
 
-<p align='center'>
+<p align='left'>
     <img src="images/amazing.gif" alt>
 </p>
 
@@ -589,9 +589,9 @@ IDE 화면이 맨날 새까만 화면이라 지루하지 않았는가?
 <p align='center'>
     <img src="images/settings/blood-red-cursor-ide.png" alt>
     <em>당신의 눈 건강을 위해 준비한 <span style="color:red">붉은색</span> 테마이다</em>
+    <br>
+    <sub><i>내 눈은 아직 건강하므로 바로 원상복귀 해주었다.</i></sub>
 </p>
-
-> <sub>내 눈은 아직 건강하므로 바로 원상복귀 해주었다.</sub>
 
 <br>
 
@@ -798,9 +798,22 @@ redis-cli 7.0.15
 
 ### 멀티 컨테이너 구성하기
 
+작업하는 프로젝트에 `외부 의존성`이 존재한다고 해보자.  
+
+예를들어: 
+- [ElasticSearch](https://www.elastic.co/kr/elasticsearch)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Redis](https://redis.io/)
+
+등등...
+
+이것들은 단순히 "**개발에 필요한 도구**"라기 보단 "**개발 환경**" 내지는 "**개발 인프라**"에 더 가깝다.  
+DevContainer에 직접 설치 할 수도 있지만 그다지 추천하는 방법은 아니다.  
+
 지금까지의 예시에서 사용한 DevContainer는 `docker-compose.dev.yml` 파일을 사용하고 있다.  
 당연히 일반적인 `docker compose`처럼 다른 `service(container)`를 등록하는 것도 가능하다.
 
+외부 의존성은 이 `docker compose` 파일에 정의 해줌으로써 간편하게 설정 할 수 있다.  
 예시로 Redis Container를 `docker-compose.dev.yml`에 추가해보자.
 
 ```yml
@@ -853,7 +866,7 @@ Warning: Using a password with '-a' or '-u' option on the command line interface
 redis:6379>
 ```
 
-이와 같은 터미널 결과를 봤다면 정상적으로 연결이 된 것이다.
+이와 같은 터미널 결과를 봤다면 정상적으로 연결이 된 것이다.  
 
 <br>
 
