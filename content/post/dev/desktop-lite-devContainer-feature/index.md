@@ -27,11 +27,11 @@ weight: 1
 얼마 전에<sub>(어제)</sub> [**"DevContainer 톺아보기"**](../what-is-devcontainer/)라는 제목의 포스트를 올렸다.
 
 주된 내용을 요약하면 다음과 같다.
-- 개발 환경 구축시 겪는 어려움<sub>(일관성, 재현성, 격리성)</sub> 소개
+- 개발 환경 구축 시 겪는 어려움<sub>(일관성, 재현성, 격리성)</sub> 소개
 
 - DevContainer를 사용해서 이런 문제를 극복할 수 있다는 것
 
-- 기본적인 설치 방법과 약간의 심화과정
+- 기본적인 설치 방법과 약간의 심화 과정
 
 본래 이번 포스트를 먼저 작성하고 있었는데,  
 쓰다보니 **DevContainer 자체에 대한 내용이 지나치게 장황하다**라는 것을 깨달았다.  
@@ -73,7 +73,7 @@ Mac이나 Windows에서는 **어떤 방식으로든 Linux를 가상화**시켜 C
 
 나름 MacBook Pro인데도 불구, 조금 무거운 DevContainer 2~3개 정도만 띄워도  
 방열 팬에서 당장이라도 이륙할듯한 기세로 고열의 제트를 내뿜는다. <sub>F-35가 따로 없다.</sub>  
-심한 날은 격한 쓰토틀링 끝에 아예 Mac이 Docker를 *죽여버리는*😱 경우도 심심찮게 발생한다.
+심한 날은 격한 스로틀링 끝에 아예 Mac이 Docker를 *죽여버리는*😱 경우도 심심찮게 발생한다.
 
 
 내 개인적인 평은 `"Abstraction Layer가 쌓일 수록 자연스레 발생하는 오버헤드"`이다.
@@ -87,7 +87,7 @@ Mac이나 Windows에서는 **어떤 방식으로든 Linux를 가상화**시켜 C
 ### 별도 Linux 서버를 사용하기로 함
 
 사실 이런 문제는 특별히 `Mac`이라 그런 것은 아니다. <sub>애플은 억울합니다</sub>   
-그보단 `노트북`이라는 환경 자체가 발열 해소에 취약할 수 밖에 없다는 `구조적인 이슈`이다.
+그보단 `노트북`이라는 환경 자체가 발열 해소에 취약할 수 밖에 없다는 `구조적 이슈`이다.
 
 해결책은 의외로 심플하다. 그냥 **개발용 Linux 서버 하나를 구축**하면 그만이다.
 
@@ -105,7 +105,7 @@ Mac이나 Windows에서는 **어떤 방식으로든 Linux를 가상화**시켜 C
 
 <br>
 
-이렇게 해두면 사용하는 터미널 PC에는 vsCode나 Cursor 정도만 설치하면 그만이다.  
+이렇게 해두면 사용하는 로컬 PC에는 vsCode나 Cursor 정도만 설치하면 그만이다.  
 
 > IDE에서 SSH로 원격 개발 서버에 연결 -> 프로젝트를 Clone하고 -> 개발 컨테이너 시작!
 
@@ -127,10 +127,10 @@ Mac이나 Windows에서는 **어떤 방식으로든 Linux를 가상화**시켜 C
 별도 API를 제공해준다면 아무런 문제가 없겠지만  
 애석하게도 그렇지 않은 경우가 아주 많다.
 
-일반적인 URL을 통해 접근 할 수 있는 페이지가 있고,  
+일반적인 URL을 통해 접근할 수 있는 페이지가 있고,  
 거기서 데이터를 추출하고 싶다고 생각해보자. 
 
-1. Get Request를 날려<sub>(curl, ajax, axios 등등...)</sub> HTML 페이지를 가져온다
+1. GET 요청을 날려<sub>(curl, ajax, axios 등등...)</sub> HTML 페이지를 가져온다
 
 2. HTML 분석을 통해 데이터를 추출한다
 
@@ -145,12 +145,12 @@ React로 만든 SPA가 하나 있다고 생각해보자. 여기엔 `A탭`, `B탭
 문자 그대로 SPA, `Single Page Application`이다.  
 URL을 통한 페이지 구분이 안 된다.
 
-이런 그야말로 최악의 최악인 상황을 해결 할 수 있는 유일한 방법은  
+이런 그야말로 최악의 최악인 상황을 해결할 수 있는 유일한 방법은  
 `가상 브라우져를 사용한 Crawling`인 것이다.
 
-본 포스트의 주제에서 크게 벗어날 수 있으므로, 간단하게 요약을 하면 다음과 같이 동작한다.
+본 포스트의 주제에서 크게 벗어날 수 있으므로, 간단하게 요약하면 다음과 같이 동작한다.
 
-1. 프로그램을 통해 `브라우져를 실행`한다.
+1. 프로그램을 통해 `브라우저를 실행`한다.
 
 2. `원하는 페이지로 이동`한다.
 
@@ -158,7 +158,7 @@ URL을 통한 페이지 구분이 안 된다.
 
 4. 페이지의 내용을 추출한다.
 
-요컨대 `사람이 하는 행동을 모방`해서 `진짜 브라우져를 통해 페이지를 방문`하는 것이다.  
+요컨대 `사람이 하는 행동을 모방`해서 `진짜 브라우저를 통해 페이지를 방문`하는 것이다.  
 
 > 그런데 돌연 이게 DevContainer와 무슨 관계가 있다는 걸까?
 
@@ -170,20 +170,20 @@ URL을 통한 페이지 구분이 안 된다.
 </p>
 
 DevContainer에서 GUI가 포함된 어떤 프로그램을 실행해야 하는 경우가 아주 간혹 있다.  
-그리고 그 중에서도 가장 번거로운 것이 `가상 브라우져를 통한 크롤링`이다.
+그리고 그 중에서도 가장 번거로운 것이 `가상 브라우저를 통한 크롤링`이다.
 
-회사에서 맡게 되는 작업 중에는 이렇게 가상 브라우져로 외부 웹 페이지를 방문해서 데이터를 추출해야 하는 때가 있는데, 크롤링 자체는 DevContainer건 서버에 올린 Production Container건 별 문제 없이 아주 잘 동작한다.  
+회사에서 맡게 되는 작업 중에는 이렇게 가상 브라우저로 외부 웹 페이지를 방문해서 데이터를 추출해야 하는 때가 있는데, 크롤링 자체는 DevContainer건 서버에 올린 Production Container건 별 문제 없이 아주 잘 동작한다.  
 
 문제는 디버깅이다.
 
-`브라우져`라는 것은 일종의 GUI 프로그램이다.  
-스크립트가 `가상의 브라우저`를 띄울 때는 대개 `headless`모드로 동작하는데,   
-이는 브라우져 그래픽은 띄우지 말고 백그라운드에서 실행하라는 의미이다.
+`브라우저`라는 것은 일종의 GUI 프로그램이다.  
+스크립트가 `가상 브라우저`를 띄울 때는 대개 `headless`모드로 동작하는데,   
+이는 브라우저 그래픽은 띄우지 말고 백그라운드에서 실행하라는 의미이다.
 
 `개발`을 할 때는 이 `headless` 모드를 꺼놓고 작업을 해야한다.  
-직접 브라우져에서 Bot이 동작하는 모습을 보면서 스크립트를 짜야 하니까...
+직접 브라우저에서 Bot이 동작하는 모습을 보면서 스크립트를 짜야 하니까...
 
-> 그런데 DevContainer에서는 **가상 브라우져의 GUI를 볼 수가 없다.**
+> 그런데 DevContainer에서는 **가상 브라우저의 GUI를 볼 수가 없다.**
 
 내 기억이 맞다면 WSL 위에 올린 DevContainer에서는 가능 했던 거 같은데, 정확하지 않다.  
 확실한 건 지금 사용하는 방식, `원격 개발 서버의 DevContainer`에서는 `GUI를 볼 방법이 없다`는 것이다.
@@ -198,7 +198,7 @@ DevContainer에서 GUI가 포함된 어떤 프로그램을 실행해야 하는 �
 [기존 포스트](../what-is-devcontainer/)의 ["Features로 개발도구 설치하기"](../what-is-devcontainer/#features로-개발도구-설치하기) 단락에 보면  
 여러가지 개발 도구들을 간편하게 설치할 수 있다는 걸 알 수 있다.
 
-[사용 가능한 기능 목록](https://containers.dev/features) 페이지에 있는 ["Lite-weight Desktop"](https://github.com/devcontainers/features/tree/main/src/desktop-lite)을 설치해서 브라우져를 통해 DevContainer에서 실행되는 GUI 프로그램을<sub>(이 경우, 브라우져)</sub> 눈으로 확인 할 수 있도록 해보겠다.
+[사용 가능한 기능 목록](https://containers.dev/features) 페이지에 있는 ["Lite-weight Desktop"](https://github.com/devcontainers/features/tree/main/src/desktop-lite)을 설치해서 브라우저를 통해 DevContainer에서 실행되는 GUI 프로그램을<sub>(이 경우, 브라우저)</sub> 눈으로 확인할 수 있도록 해보겠다.
 
 <br>
 
@@ -286,14 +286,14 @@ DevContainer에서 GUI가 포함된 어떤 프로그램을 실행해야 하는 �
 `F1` 키를 누르고 `Dev Containers: Rebuild Container`를 실행하자.
 
 DevContainer 빌드가 끝났다면,  
-Host PC에서 브라우져를 열고 `localhost:6080`으로 접속해보자.
+Host PC에서 브라우저를 열고 `localhost:6080`으로 접속해보자.
 
 <p align='center'>
     <img src="images/no-vnc.png" alt>
     <em>이 화면까지 봤다면 성공이다 🎉</em>
 </p>
 
-좀 전에 설치한 Desktop Lite에 Web을 통해 접속한 것이다. 여기서 **연결** 버튼을 눌러주자.  
+좀 전에 설치한 Desktop Lite에 웹을 통해 접속한 것이다. 여기서 **연결** 버튼을 눌러주자.  
 DevContainer 내부에서 실행되는 GUI를 볼 수 있을 것이다.
 
 
@@ -310,7 +310,7 @@ DevContainer 내부에서 실행되는 GUI를 볼 수 있을 것이다.
 
 - 프로젝트 초기화 및 의존성 설치
 
-    1. yarn 커맨드로 nodejs 프로젝트를 초기화 한다.
+    1. yarn 명령어로 nodejs 프로젝트를 초기화한다.
 
         ```bash
         yarn init -y
@@ -319,7 +319,7 @@ DevContainer 내부에서 실행되는 GUI를 볼 수 있을 것이다.
     2. 생성된 `package.json`의 `type`을 `module`로 설정한다.
         ```json
         {
-            "name": "post-xample.no-vnc-desktop-lite-feature",
+            "name": "post-example.no-vnc-desktop-lite-feature",
             "version": "1.0.0",
             "type": "module", // Type을 Module로 지정
             "main": "index.js"
@@ -338,7 +338,7 @@ DevContainer 내부에서 실행되는 GUI를 볼 수 있을 것이다.
 
 - 스크립트 작성
 
-    `index.js`파일 하나를 만들고 다음의 스크립트를 복사해보자.
+    `index.js` 파일 하나를 만들고 다음의 스크립트를 복사해보자.
 
     ```javascript
     // index.js
@@ -420,7 +420,7 @@ node index.js
     <br>
     <em>브라우저를 통해 브라우저가 실행되는 걸 바라보는 모습이다</em> 
     <br>
-    <sub>그리고 그걸 녹화해서 또 다른 브라우져로 보고있는 나</sub>
+    <sub>그리고 그걸 녹화해서 또 다른 브라우저로 보고있는 나</sub>
 </p>
 
 <br>
@@ -429,7 +429,7 @@ node index.js
 
 ### 호환성
 
-나온지 얼마 안 된 기능이라 그런지 OS 및 하드웨어 제약사항이 있다
+나온 지 얼마 안 된 기능이라 그런지 OS 및 하드웨어 제약사항이 있다
 
 - Container Image 제약
 
@@ -445,11 +445,11 @@ node index.js
 
 - CPU Architecture 제약
 
-    `desktop lite` feature를 적용하려면 DevContainer를 동작시키는 PC의  
+    `desktop lite` feature를 적용하려면 DevContainer를 동작하는 PC의  
     CPU Architecture가 `AMD64`여야만 한다.
 
     **Intel**이나 **AMD**에서 만든 CPU라면 관계 없으나,  
-    **Arm**을 사용하고 있다면 이 기능은 사용 할 수 없다.
+    **Arm**을 사용하고 있다면 이 기능은 사용할 수 없다.
 
     대표적으로 `Apple Silicon 칩이 장착된 Mac`은 안 된다.
 
@@ -504,9 +504,9 @@ node index.js
 - SSH (자체 호스팅 혹은 클라우드 서버)
 - Codespaces
 
-vsCode 혹은 Cursor는 원격 서버의 `6080` 포트를 **"클라이언트로 포워딩"** 한다.
+vsCode 혹은 Cursor는 원격 서버의 `6080` 포트를 **"클라이언트 측으로 포워딩"** 한다.
 
-**만일 서버 방화벽에서 허용되어 있다면 외부에서도 noVnc로 접근 할 수 있다. (!!)**
+**만일 서버 방화벽에서 허용되어 있다면 외부에서도 noVnc로 접근할 수 있다. (!!)**
 
 사실 실제 그렇게 되어있을 가능성은 희박하지만, 그래도 안전하게 해서 나쁠 건 없다.  
 다음의 예시처럼 패스워드 설정을 확실하게 해두도록 하자.
@@ -519,7 +519,7 @@ vsCode 혹은 Cursor는 원격 서버의 `6080` 포트를 **"클라이언트로 
 
         // https://github.com/devcontainers/features/tree/main/src/desktop-lite
         "ghcr.io/devcontainers/features/desktop-lite:1": {
-            "password": "my-extremly-complex-password"
+            "password": "my-extremely-complex-password"
         },
 
     }
@@ -529,11 +529,11 @@ vsCode 혹은 Cursor는 원격 서버의 `6080` 포트를 **"클라이언트로 
 
 <br>
 
-Git 저장소에 패스워드가 올라가는게 꺼려진다면 다음과 같이 설정해도 된다.
+Git 저장소에 패스워드가 올라가는 게 꺼려진다면 다음과 같이 설정해도 된다.
 
 ```env
-# .devconvtainer/.env
-NOVNC_PASSWORD=my-extremly-complex-password
+# .devcontainer/.env
+NOVNC_PASSWORD=my-extremely-complex-password
 ```
 
 <br>
@@ -577,7 +577,7 @@ noVNC를 통해 웹 브라우저로 DevContainer 내부의 GUI에 접근할 수 
 
 > 이번에는 **사람도 편하고 기계도 편한** 해결책을 찾은 것 같다 😊
 
-당장 마땅히 떠오르는 GUI 프로그램이 없어서 크롤링을 예시로 들었다.  
+당장 마땅한 GUI 프로그램이 없어서 크롤링을 예시로 들었다.  
 예상컨데 이외에도 활용할 수 있는 여지는 많을 것으로 보인다.
 
 혹시나 비슷한 고민을 겪고 있는 분들이 있었다면 부디 도움이 되었길 바란다.
