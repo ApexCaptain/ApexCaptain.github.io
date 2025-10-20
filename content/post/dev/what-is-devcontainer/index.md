@@ -112,8 +112,8 @@ Windows에 `Java Spring Boot` + `Oracle DB`를 쓰는 웹 애플리케이션 개
 
 ## DevContainer 기본설정
 
-[**Codespaces**](https://github.com/features/codespaces?locale=ko-KR), [**Gitpod**](https://ona.com/), [**DevPod**](https://devpod.sh/)등 여러가지 방법론이 제시되어 왔으나,  
-대게 별도 플랫폼에 종속된 서비스의 형태(SaaS)로 제공되거나 <sub>(당연히 무료는 아니다)</sub>  
+[**Codespaces**](https://github.com/features/codespaces?locale=ko-KR), [**Gitpod**](https://gitpod.io/), [**DevPod**](https://devpod.sh/)등 여러가지 방법론이 제시되어 왔으나,  
+대개 별도 플랫폼에 종속된 서비스의 형태(SaaS)로 제공되거나 <sub>(당연히 무료는 아니다)</sub>  
 자체 호스팅을 하더라고 **Kubernetes 클러스터가 전제 조건**인 경우도 있다.  
 
 처음부터 이렇게 밑밥을 깔아버리면 도전하고자 하는 마음이 꺾일 지도 모른다.  
@@ -794,6 +794,8 @@ vscode ➜ ~/workspace/my-project-name $ redis-cli --version
 redis-cli 7.0.15
 ```
 
+이렇게 버전이 출력되면 잘 설치 된 것이다.
+
 <br>
 
 ### 멀티 컨테이너 구성하기
@@ -802,7 +804,9 @@ redis-cli 7.0.15
 
 예를들어: 
 - [ElasticSearch](https://www.elastic.co/kr/elasticsearch)
+
 - [PostgreSQL](https://www.postgresql.org/)
+
 - [Redis](https://redis.io/)
 
 등등...
@@ -888,6 +892,23 @@ DevContainer를 사용하면:
 새로운 PC를 구매하거나 포맷을 해도 개발환경 구축에 대한 걱정은 이제 그만이다.
 
 더 나아가 `멀티 컨테이너 구성`을 통해 데이터베이스나 캐시 서버 같은 외부 의존성까지도 함께 관리할 수 있다는 점은 정말 매력적이다.
+
+<br>
+
+### 추후 계획
+
+현재 DevContainer를 통해 로컬 개발환경의 일관성을 확보했지만, 더 나아가 **클라우드 기반의 개발환경**을 구축하는 것도 고려해볼 만하다.
+
+[**DevPod**](https://devpod.sh/)는 DevContainer 설정을 거의 그대로 사용할 수 있는 오픈소스 도구로, 다양한 클라우드 프로바이더를 지원한다. 특히 **Kubernetes 클러스터**를 프로바이더로 설정하면 다음과 같은 장점을 얻을 수 있다:
+
+- **확장성**: 필요에 따라 개발환경의 리소스를 동적으로 조정
+- **격리성**: 각 개발자마다 완전히 독립된 네임스페이스에서 작업
+- **중앙 관리**: 모든 개발환경을 Kubernetes 클러스터에서 통합 관리
+- **비용 효율성**: 사용하지 않는 개발환경은 자동으로 종료하여 리소스 절약
+
+DevContainer에서 작성한 `.devcontainer/devcontainer.json` 설정을 DevPod에서도 거의 그대로 활용할 수 있으므로, 기존 설정을 최대한 재사용하면서 클라우드 환경으로 확장할 수 있다.
+
+이를 통해 팀 전체가 동일한 클라우드 환경에서 개발할 수 있는 인프라를 구축할 계획이다.
 
 **참고 자료**
 - [DevContainer 공식 문서](https://containers.dev/)
