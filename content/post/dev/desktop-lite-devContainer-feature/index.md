@@ -221,7 +221,7 @@ git clone https://github.com/ApexCaptain/postExample.noVncDesktopLiteFeature.git
                 // 기본 설정값들
                 // "version": "latest",
                 // "noVncVersion": "1.2.0",
-                // "password": "password",
+                // "password": "vscode",
                 // "webPort": "6080",
                 // "vncPort": "5901"
             },
