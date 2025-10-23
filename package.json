@@ -1,0 +1,8 @@
+{
+  "name": "ApexCaptain.github.io",
+  "repository": "https://github.com/ApexCaptain/ApexCaptain.github.io.git",
+  "author": "SangHun Lee <ayteneve93@gmail.com>",
+  "scripts": {
+    "dev": "hugo server --buildFuture --buildDrafts --buildExpired"
+  }
+}

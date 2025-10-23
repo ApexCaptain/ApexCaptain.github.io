@@ -10,6 +10,7 @@ subcategories:
     - Infrastructure
     - Kubernetes
 tags:
+    - Helm
     - Kubernetes
     - On-Premise
     - Metallb

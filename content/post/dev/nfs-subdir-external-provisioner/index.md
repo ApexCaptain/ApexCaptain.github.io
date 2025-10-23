@@ -11,6 +11,8 @@ subcategories:
     - Kubernetes
 tags:
     - Kubernetes
+    - Terraform
+    - Helm
     - OCI
     - NFS
     - StorageClass

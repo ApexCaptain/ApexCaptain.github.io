@@ -174,6 +174,12 @@ Intel의 CPU를 사용한다면 `kvm_intel`이라고 출력될 것이다.
 
 출력이 안 되었다면, VMWare나 VirtualBox 설치할 때 처럼 해당 노드의 `Bios`에서 활성화를 해줘야 한다. 
 
+Host OS가 Debian 계열이라면 다음의 명령어로 더 간편하게 확인 가능하다.
+```bash
+sudo apt install cpu-checker
+sudo kvm-ok
+```
+
 <br>
 
 ### Windows 컨테이너 정보
@@ -411,6 +417,44 @@ spec:
             type: CharDevice
 ```
 
+<br>
+
+---
+
+> **⚠️ 여기서 잠깐!** 
+>
+> **KVM이 활성화 된 Node만 필터링 해서 스케쥴링**을 해야 할 수도 있다.  
+> 이 *경우엔 가상화가 가능한 Node들*에 다음의 예시처럼 **Labeling**을 해주자.
+> ```bash
+> kubectl label node <KVM 사용 가능한 노드의 이름> kvm.enabled=true
+> ```
+>
+> 이후 `deployment.yml`의 `spec`에 `nodeAffinity`를 다음과 같이 추가해줘야 한다.
+> ```yml
+> # deployment.yml
+> # --- 기존 코드 --- *
+> spec:
+>   template:
+>     spec:
+>       containers:
+>       # --- 기존 코드 --- *
+>       volumes:
+>       # --- 기존 코드 --- *
+>       affinity:
+>         nodeAffinity:
+>           # 스케쥴링 시엔 '필수' 만족, 실행 중엔 값이 변경되어도 무시
+>           requiredDuringSchedulingIgnoredDuringExecution:
+>             nodeSelectorTerms:
+>             - matchExpressions:
+>               - key: kvm.enabled  # 설정한 레이블 키
+>                 operator: In
+>                 values:
+>                 - "true"         # 레이블 값
+> 
+> ```
+> 이렇게 함으로써 KVM 사용이 가능한 Node만 선택적으로 골라내 windows를 배포 할 수 있다.
+---
+
 <br><br>
 
 #### Service 메니페스트 파일
@@ -557,30 +601,109 @@ Service 구성에서 아예 NodePort로 `3389` 포트를 빼주거나 포트포�
 
 <br><br>
 
-## 리소스 소모량
+## 한계점
 
-Linux와는 근본적으로 상이한 OS가 컨테이너로 올라가다 보니 구체적으로 클러스터에 얼마나 부담이 되는지가 궁금해졌다.
+### 클라우드에서 사용하는 경우
 
-### 스토리지
+앞서 클러스터를 구성하는 `Node에서 KVM이 허용 되어야`지만 windows pod 생성이 가능하다고 했다.
+
+본 포스트에서 사용한 Node는 **On-Premise 환경에서 동작하는 Desktop 사양의 컴퓨터**이다.  
+고로 비슷한 환경이라면 십중팔구 문제 없이 적용이 될 것이다.
+
+하지만 만일 클라우드에서 KVM을 동작하길 원한다면 프로바이더 별로 몇 가지 제약사항이 있다.
+
+- Amazon Web Service (AWS)  
+  - EC2 : **사용 불가능**  
+    EC2는 보안/성능상의 이유로 `중첩 가상화(Nested Virtualizaion)`를 허용하지 않는다. 
+
+  - BMI : **사용 가능**  
+    BMI(Bare Metal Instance)는 `물리적인 서버 전체를 임대`해주는 서비스다.  
+    이 경우엔 사용 가능하다. <sub>(무지하게 비싸서 문제지)</sub>
+
+- Google Cloud Platform (GCP)  
+
+  사용 가능하다.  
+  다만, 다음의 제약사항을 준수해야 한다.
+  
+  1. 인스턴스 생성시 `--enable-nested-virtualization` 플래그를 넣어줘야 한다.
+  2. **AMD / Arm 프로세서**은 지원되지 않는다. **Intel CPU**만 가능하다.
+  3. 일부 VM 유형(E2 VM등) 지원되지 않는다.
+  
+  커맨드 예시:
+  ```bash
+    gcloud compute instances create <사용할 인스턴스 명> \
+    --enable-nested-virtualization \
+    --zone=<배치할 Zone> \
+    --min-cpu-platform="Intel Haswell"
+  ```
+
+- Microsoft Azure
+
+  Azure도 가능은 한데 GCP보다다 더 까다롭다.
+
+  1. `Dv3`, `Ev3`등 충분히 큰 크기의 VM에서만 사용 가능하다.
+  2.  Linux VM에 직접 KVM 관련 패키지를 설치해야한다.  
+      ```bash
+        apt-get update
+        apt-get install kvm qemu-kvm libvirt-bin virtinst
+        apt install virt-manager 
+        adduser `id -un` libvirt
+        adduser `id -un` kvm
+      ```
+  3. 마찬가지로 Linux VM에 KVM 게스트 VM의 인터넷 연결  
+    및 통신을 위한 가상 브리지, NAT 설정을 **직접** 구성해야한다.
+      ```bash
+        iface br0 inet static
+        address 192.168.0.100
+        network 192.168.0.0
+        netmask 255.255.255.0
+        broadcast 192.168.0.255
+        gateway 192.168.0.1
+        bridge_ports eth0
+        bridge_fd 9
+        bridge_hello 2
+        bridge_maxage 12
+        bridge_stp off
+      ```
+- Oracle Cloud Infrastructure (OCI)  
+
+  오라클은 여러가지 옵션을 제공한다.
+
+  - BMI: **사용 가능**
+
+  - Oracle Linux KVM Image: **사용 가능**  
+    얘네는 특이하게도 KVM을 사용할 수 있는 **별도의 전용 OS**를 아예 제공한다.  
+    하지만 AMD/Arm에선 사용 할 수 없고 Intel CPU에서만 가능하다.
+
+  - 일반 Oracle Instance: **사용 가능**  
+    가능은 한데, Azure의 경우와 마찬가지로 Linux 안에 `libvirt`와 같은 패키지를  
+    직접 설치해야 하고 Shape도 AMD E-Series (예: VM.Standard.E5.Flex) 또는 Intel X-Series (VM.Standard3.Flex) 등을 사용해야 한다.
+
+<br>
+
+### 리소스 소모량
+
+Linux와는 근본적으로 상이한 OS가 컨테이너로 올라가다 보니  
+구체적으로 클러스터에 얼마나 부담이 되는지가 걱정이 되었다.
+
+#### 스토리지
 
 `LongHorn` Volume 탭을 확인해보니, 할당한 크기 `64GB`중 `34GB` 사용중으로 나온다. 
 <p align='center'>
     <img src="images/longhorn.png" alt>
-    <em>이 정도면 큰 문제는 없어 보인다</em>
+    <em>이 정도면 아주 큰 문제는 없어 보인다</em>
 </p>
 
 <br>
 
-### CPU / RAM
+#### CPU 및 메모리
 
-`Prometheus` 기록상으론 CPU는 처음 설치 시점에만 높고 이후에는 잠잠해진다.
+`Prometheus` 기록상으론 의외로 CPU는 처음 설치 시점에만 높고 이후에는 잠잠해진다.
 <p align='center'>
     <img src="images/grafana.png" alt>
 </p>
 
-근데 메모리는 할당한 `4GB`가 전부 로드되어 있다.
-
-<br>
+그런데 메모리는 할당한 `4GB`가 전부 로드되어 있다.
 
 <p align='center'>
     <img src="images/resources-in-windows.png" alt>
@@ -592,13 +715,13 @@ Windows 11 자체가 idle 상태에서도 생각보다 많은 메모리가 필�
 아니면 KVM이 메모리를 `Reserved`하게 할당하는 걸 수도 있다.  
 좀 더 지켜봐야겠지만, 대처방안은 고려 해야겠다.
 
-1. 필요할 때만 잠깐 배포하거나
+1. **필요할 때만 잠깐 배포**하거나
 
-2. 메모리 할당량을 늘리거나
+2. **메모리 할당량을 늘리거나**
 
-3. 메모리를 잡아먹는 프로세스를 비활성화 하거나
+3. 메모리를 잡아먹는 **프로세스를 비활성화** 하거나
 
-당장 생각할 수 있는 건 이 정도이다.
+이런식으로 접근해야 할 듯 하다.
 
 <br><br>
 
@@ -628,7 +751,9 @@ idle 상태에서도 windows가 필요로 하는 메모리가 제법 많다는 �
 
 <p align='center'>
     <img src="images/grafana-memory-usage.png" alt>
-    <em>Windows 혼자 타노스급으로 메모리를 폭식중인 모습이다...</em>
+    <em>Windows 혼자 타노스급으로 메모리를 폭식중인 모습이다</em>
+    <br>
+    <i><sup>심지어 색도 <b><span style="color:#b4a7d6">보라색</span></b>이다</sup></i>
 </p> 
 
 그렇다고 마냥 삐딱하게 볼 건 아니다.  

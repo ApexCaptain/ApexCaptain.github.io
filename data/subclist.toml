@@ -1,1 +1,1 @@
-Development = ["Infrastructure", "Kubernetes", "AI", "DevContainer"]
+Development = ["Infrastructure", "Kubernetes", "AI", "DevContainer", "CI/CD"]
