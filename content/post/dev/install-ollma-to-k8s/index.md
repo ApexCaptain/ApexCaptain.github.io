@@ -57,8 +57,7 @@ weight: 1
 ### 하드웨어 가격이 너무 비싸다
 
 내가 회사 인프라를 관리하면서 가장 조심스러워 하는게 바로 `비용 문제`이다.  
-잘못되면 욕 먹기 제일 쉬운 분야라 눈에 불을 켜고 한 푼이라도 줄이기 위해 노력해야 한다.  
-<sub>(아니 뭐 돈을 내가 내는 것도 아니고...)</sub>
+잘못되면 욕 먹기 제일 쉬운 분야라 눈에 불을 켜고 한 푼이라도 줄이기 위해 노력해야 한다.
 
 인공지능을 제대로 동작시키기 위해선 **고성능의 병렬 연산 장치**가 필수적인데    
 `GPU`<sub>(그래픽 처리 장치)</sub>건 `NPU`<sub>(신경 처리 장치)</sub>건 이런 하드웨어들은 하나같이 무지하게 비싸다.
@@ -76,7 +75,7 @@ NPU는 나도 실물로 본 적이 없으니, GPU를 기준으로 생각해보�
 
 | 항목 | gpt-oss-120b | gpt-oss-20b |
 |------|-------------|-------------|
-| **모델 크기** | 120B | 약 20B |
+| **모델 크기** | 120B | 20B |
 | **성능** | o4-mini와 매우 유사한 성능 | o3-mini와 매우 유사한 성능 |
 | **아키텍처** | 128개의 전문 모델 통합 | 32개의 전문 모델 통합 |
 | **활성 영역** | 동작 시 5.1B 크기 영역 활성화 | 동작 시 3.6B 크기 영역 활성화 |
@@ -128,10 +127,11 @@ AWS에서 32GB VRAM이 장착된 [g5g.16xlarge 인스턴스](https://aws-pricing
     달러당 환율 1,400으로 계산하면 **한달에 135만원**이다.  
     3년 일시불이니 총 지출은 대략 **4,800만원**(!!)이다. <sub>그냥 H100 하나 사고 만다.</sub>
 
+전반적으로 보면 On-Premise 서버를 쓰는게 보다 합리적으로 보인다.  
 물론 클라우드에 올라가는 서버용 연산장치를 단순히 상용 GPU와 VRAM 크기가 같다고 동일선상에 두는 건 불합리하다.
 
 더욱이 EC2의 인스턴스 타입은 CPU나 시스템 메모리 사이즈도 티셔츠마냥<sub>(large, x-large)</sub> 모두 딱딱 정해진 값이다.  
-예시로 쓰인 `g5g.16xlarge`도 AMD 64코어 CPU에 시스템 메모리 128GB가 적용된다.
+예시로 쓰인 `g5g.16xlarge`의 경우 AMD 64코어 CPU에 시스템 메모리 128GB가 적용된다.
 
 그 비용도 포함된 가격임을 고려해봐야 한다.
 
@@ -140,12 +140,12 @@ AWS에서 32GB VRAM이 장착된 [g5g.16xlarge 인스턴스](https://aws-pricing
 ### 클러스터 구성
 
 앞서 H/W 가격과 이어지는 문제이다. 그렇다면 클러스터 구성을 어떻게 할 것인가?  
-포인트는 GPU가 포함된 Node의 위치이다.
+포인트는 `GPU가 포함된 Node의 위치`이다.
 
 1. **싹 다 클라우드에 올리기** <sub>(상남자 스타일)</sub>
 
     문자 그대로의 의미이다.  
-    대표님이 Microsoft Azure에 3년 예약 GPU 인스턴스가 저렴하다고 써보자고 눈독을 들이고 계신다.  
+    대표님이 Microsoft Azure에 3년 예약 GPU 인스턴스가 저렴하다고 한 번 써보자고 하시는데...
 
     개인적으로 가장 편한 방법이긴 하나,  
     GPU 사용료 비싼건 어느 클라우드를 쓰건 오십보백보라 그다지 추천하지는 않는다.
@@ -163,10 +163,23 @@ AWS에서 32GB VRAM이 장착된 [g5g.16xlarge 인스턴스](https://aws-pricing
 4. **EKS Hybrid Node** 
 
     이건 나도 이번에 조사해보다가 알게 된 건데, **AWS EKS에 외부 Node를 등록하는 방식**이다.  
-    요컨대 Control Plane은 여전히 AWS에 존재하고, Worker Node는 IDC에 둘 수 있다.
+    요컨대 Control Plane은 여전히 AWS에 존재하고, Worker Node는 IDC에 둘 수 있다.    
 
     당연히 무료는 아니고, 등록한 Worker Node의 코어당 연결 시간에 비례해서 책정된다.  
-    예를들어, 8 코어 16 쓰레드 CPU를 가지는 Node 1개를 연결하면 1달에 대략 33만원 정도가 나온다.
+    예를들어, 8 코어 16 쓰레드 CPU를 가지는 Node 1개를 연결하면 `1달에 대략 33만원` 정도가 나온다.
+
+    - 
+      {{< youtube tFn9IdlddBw >}}
+
+    단순 연결하는데 쓰는 비용이 이렇다면 당장의 현실성은 없다.  
+    그래도 이 접근방법의 개념은 되게 재밌어서 개인적으로 흥미가 많이 간다.
+
+    자세한 내용은 [AWS 공식 문서](https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/hybrid-nodes-overview.html)를 참고해보자.
+    
+    
+
+
+
 
 <br>
 
@@ -308,22 +321,22 @@ helm show values nvidia/gpu-operator > nvidia-gpu-operator.yml
 
 - Toolkit 설정 변경
 
-나는 `containerd`를 기본 Runtime으로 사용하고 있어서 다음과 같이 설정해주었다.
+  나는 `containerd`를 기본 Runtime으로 사용하고 있어서 다음과 같이 설정해주었다.
 
-```yml
-operator:
-    defaultRuntime: containerd  # 기본 런타임을 containerd로 설정
+  ```yml
+  operator:
+      defaultRuntime: containerd  # 기본 런타임을 containerd로 설정
 
-toolkit:
-    enabled: "true"
-env:
-    - name: CONTAINERD_CONFIG
-        value: /etc/containerd/config.toml
-    - name: CONTAINERD_SOCKET
-        value: /run/containerd/containerd.sock
-    - name: CONTAINERD_SET_AS_DEFAULT
-        value: "1"
-```
+  toolkit:
+      enabled: "true"
+  env:
+      - name: CONTAINERD_CONFIG
+          value: /etc/containerd/config.toml
+      - name: CONTAINERD_SOCKET
+          value: /run/containerd/containerd.sock
+      - name: CONTAINERD_SET_AS_DEFAULT
+          value: "1"
+  ```
 
 <br>
 
@@ -445,7 +458,7 @@ helm install ollama ollama/ollama -f ollama.yml -n ollama
 ## Open Web UI 설치
 
 Ollama Chart는 오로지 **Ollama**만 설치해준다.  
-직접 테스트해볼 수 있도록 UI도 따로 배포했다.  
+직접 테스트해볼 수 있게 UI도 별도 Chart로 배포했다.  
 기본적인 AI 인프라만 필요하다면 이 섹션은 무시해도 된다.
 
 ### 네임스페이스 생성
@@ -495,7 +508,7 @@ helm repo update
 ```yml
 # open-webui-values.yml
 ollama:
-  enabled: false # Ollama 설치 여부
+  enabled: false # Ollama 설치 안 함
   # 이 부분이 좀 의아할텐데 Open Web UI 차트에서는
   # 내부적으로 Ollama를 설치하는 것도 가능하다.
   # 여기에 위 Ollama 차트의 설정을 그대로 넣으면 가능하다.
