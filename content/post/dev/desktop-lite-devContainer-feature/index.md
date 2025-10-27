@@ -1,6 +1,6 @@
 ---
 title: DevContainer Desktop Lite Feature
-description: DevContainer에서도 GUI를 볼 수 있습니다
+description: 이제 DevContainer에서도 GUI를 볼 수 있습니다
 slug: dev/desktop-lite-devContainer-feature
 date: 2025-10-19 00:00:00+0900
 image: images/cover.png
