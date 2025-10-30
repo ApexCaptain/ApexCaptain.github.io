@@ -2,7 +2,7 @@
 title: 클라우드 비용 절약을 위한 노력
 description: 이 글을 회계담당자가 좋아합니다.
 slug: dev/how-to-save-on-cloud-costs
-date: 2025-10-29 00:00:00+0900
+date: 2025-10-30 00:00:00+0900
 image: images/cover.png
 categories:
     - Development
