@@ -893,7 +893,18 @@ CloudFront는 상시 무료(Always Free) 혜택으로 `월 1TB 데이터 전송 
         <img width=60% src="images/cloud-flare.png" alt>
     </p>
 
-    개인적으로 CDN은 [CloudFlare](https://www.cloudflare.com/ko-kr/)를 추천한다.
+    개인적으로 CDN은 [Cloudflare](https://www.cloudflare.com/ko-kr/)를 추천한다.
+
+    | 항목 | Cloudflare | AWS CloudFront |
+    | --- | --- | --- |
+    | 네트워크 아키텍처 | 리버스 프록시 | 전통적인 CDN |
+    | 기본 설정 방법 | Nameserver | Special URLs |
+    | 주요 기능 | CDN과 DDoS 방어 | CDN |
+    | 마켓 포지셔닝 | Standalone 플랫폼 | AWS 클라우드 서비스 중 일부 |
+    | 프리티어 | 과금 없음 | 매달 1TB 데이터 전송, 천만건 요청, 2백만건 함수 호출 무료  |
+
+    단순히 돈만의 문제가 아니라 Cloudflare가 서버 수도 많고 속도도 더 빠르다.
+
 
 <br>
 
