@@ -14,8 +14,8 @@ tags:
     - S3
     - EKS
     - Lambda
-    - Saving Plan
-    - Reserved Instance
+    - Savings Plans
+    - Reserved Instances
     - CDN
     - Kubernetes
 weight: 1
@@ -28,7 +28,7 @@ weight: 1
     <img src="images/aws.png" alt>
 </p>
 
-얼마 전에 ["k8s에 Ollama AI 서버 올려보기"](../install-ollma-to-k8s/)라는 포스트를 통해  
+얼마 전에 ["k8s에 Ollama AI 서버 올려보기"](../install-ollama-to-k8s/)라는 포스트를 통해  
 "**GPU가 너무 비싸 인프라 구축을 어떻게 해야 할지 고민이다**"라는 내용을 토로했다.
 
 얼핏 GPU 얘기에만 매몰된 것처럼 보였을 수도 있으나,  
@@ -306,8 +306,119 @@ AMD(x86)의 경우 시간당 $ 0.281, Arm은 시간당 $ 0.195이다.
 
 > CPU 아키텍처를 Arm으로 바꾸면 대략 30% 정도 비용을 절감할 수 있다.
 
-다만, 이 경우 애플리케이션을 빌드 할 때 Arm CPU 아키텍쳐에 맞춰서 빌드해야 한다.  
-Docker Image로 패키징을 하고 있다면 [Docker buildx](https://docs.docker.com/reference/cli/docker/buildx/) 기능을 활용하도록 하자.
+현재 근무중인 회사에서도 실제 Arm CPU를 굉장히 활발하게 사용하고 있다.  
+신규로 생성하는 서비스는 물론 기존 AMD(x86)으로 동작중인 것들도 하나씩 마이그레이션 중이다.  
+실제 수치상으로도 2~30% 정도의 비용 절감 효과를 보고 있다.
+
+
+다만, 이 경우 애플리케이션을 빌드할 때 Arm CPU 아키텍처에 맞춰서 빌드해야 한다.  
+아무래도 이게 걸림돌이 되어서 전환을 망설이는 경우도 있을 것이다.
+
+현재 Docker로 애플리케이션을 패키징 하고 있다면 [Docker buildx](https://docs.docker.com/reference/cli/docker/buildx/)를 사용 해보는 것을 추천한다.
+
+예를들어 다음은 실제 현재 회사에서 사용하고 있는 GitHub Action Workflow CI 스크립트의 일부이다.  
+조금 특이하게도 대상 환경이 `Production`일 경우엔 `arm64`, `Stage`일 경우엔 `amd64`에 맞춰 빌드한다.
+
+```yml
+# ...... #
+jobs:
+  # ...... #   
+  release_ocir:
+    name: Publish to OCIR Repository
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # ...... #   
+      - name: Restore build artifact permissions
+        run: cd dist && setfacl --restore=permissions-backup.acl
+        continue-on-error: true
+
+      - name: Get OCIR repo
+        id: get-ocir-repo
+        uses: oracle-actions/get-ocir-repository@v1.3.0
+        with:
+          name: ${{ vars.REPO_NAME }}
+          compartment: ${{ secrets.OCI_COMPARTMENT_OCID  }}
+
+      - name: Read version
+        id: get-version
+        run: echo "version=$(cat dist/version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Get OCIR region
+        id: get-ocir-region
+        uses: actions/github-script@v7.0.1
+        env:
+          repo_path: ${{ steps.get-ocir-repo.outputs.repo_path }}
+        with:
+          result-encoding: string
+          script: return `${process.env.repo_path}`.split('.')[0]
+
+      # 이 작업까지 끝나면 대상 Container Registry에 접근 권한을 얻게 된다.
+      - name: Login to OCIR repo
+        uses: docker/login-action@v3.5.0
+        with:
+          registry: ${{ steps.get-ocir-region.outputs.result }}.ocir.io
+          username: ${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ secrets.OCI_CLI_USER_NAME }}
+          password: ${{ secrets.OCI_AUTH_TOKEN }}
+
+      # 목표 환경 (prod/stage)에 따라 platform(CPU 아키텍처) 값 지정 
+      - name: Resolve target platforms
+        id: resolve-platforms
+        run: |-
+          TARGET="${{ inputs.target }}"
+          if [ -z "$TARGET" ]; then TARGET="stage"; fi
+          if [ "$TARGET" = "prod" ]; then
+            echo "platforms=linux/arm64" >> $GITHUB_OUTPUT
+          else
+            echo "platforms=linux/amd64" >> $GITHUB_OUTPUT
+          fi
+          
+      # Docker Buildx 설정
+      - name: Set up Buildx
+        id: docker-buildx
+        uses: docker/setup-buildx-action@v3.11.1
+        with:
+          driver-opts: |-
+            image=moby/buildkit:master
+            network=host
+          platforms: ${{ steps.resolve-platforms.outputs.platforms }}
+          
+      # 이미지를 빌드하고 대상 Registry에 Push  
+      - name: Build Container image and push
+        uses: docker/build-push-action@v6.18.0
+        with:
+          push: true
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ steps.resolve-platforms.outputs.platforms }}
+          tags: ${{ steps.get-ocir-repo.outputs.repo_path }}:${{ inputs.target || 'stage' }}-latest,${{ steps.get-ocir-repo.outputs.repo_path }}:${{ inputs.target || 'stage' }}-${{ steps.get-version.outputs.version }}
+          builder: ${{ steps.docker-buildx.outputs.name }}
+   # ...... #
+
+```
+
+Docker Buildx로 대부분의 호환성 이슈는 대응 가능하지만,    
+이미지 내부에 설치하는 라이브러리 수준에서의 호환성 이슈의 경우는 Dockerfile에 분기를 넣어 해결하자.
+```Dockerfile
+# ...... #
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+    # 아키텍처가 Arm64인 경우만 이 안의 코드를 실행
+    fi
+
+# ...... #
+```
+
+단순 분기 처리로는 대응이 불가능할 경우, 아예 파일을 나눠 사용하도록 하자.
+
+```bash
+.
+├── Dockerfile.amd64
+└── Dockerfile.arm64
+```
+
 
 <br>
 
@@ -421,10 +532,10 @@ EC2의 **기본 요금**은 흔히 On-Demand 방식이라고 한다.
 `특정 인스턴스` 유형과 리전을 사용할 것을 미리 약정하고 선결제 혹은 부분 선결제 함으로써  
 On-Demand 방식에 비해 상당한 할인을 받는 방식의 요금 모델이다.
 
-마침 [기존 포스트](../install-ollma-to-k8s/)에서 조사한 정보가 있으니 여기에서 활용 해보겠다.  
+마침 [기존 포스트](../install-ollama-to-k8s/)에서 조사한 정보가 있으니 여기에서 활용 해보겠다.  
 다음은 AWS **g5g.16xlarge** 인스턴스의 비용 비교 표이다.
 
-| 비용모델 | 월 평균 사용료 |
+| 비용모델 | 월 평균 사용료 (서울 리전전 / 단위 : USD) |
 | --- | --- |
 | On-Demand | $ 2388.29 |
 | Spot | $ 672.59 |
@@ -472,7 +583,7 @@ On-Demand 방식에 비해 상당한 할인을 받는 방식의 요금 모델이
 
 ### 절약 플랜
 
-절약 플랜(Savings Plan)은 RI의 단점을 극복하기 위해 나온 요금제이다.  
+절약 플랜(Savings Plan)은 RI의 단점을 극복하기 위해 나온 요금제이다.   
 기본적으로 RI와 유사한 비용 절감 효과는 최대한 제공하면서 부족한 유연성 제약을 완화한다.
 
 회사 근처 구내식당에서 점심 한 끼를 먹으려면 10,000원이라고 하자.  
@@ -485,7 +596,8 @@ On-Demand 방식에 비해 상당한 할인을 받는 방식의 요금 모델이
 다만 디테일하게 들어가면 굉장히 길고 복잡해서 이 부분만 추후 별도로 포스트 하도록 하겠다.  
 기본적으로는 다음의 전제를 기억하자.
 
-> 제약이 많아질 수록, 즉 유연성을 포기 할 수록 -> 비용이 절감된다
+> 리전, OS, 인스턴스 유형 패밀리 등의 제약이 많아질수록, 다시 말해  
+> **유연성을 포기할수록 -> 비용이 절감된다**
 
 종류:
 
@@ -503,6 +615,23 @@ On-Demand 방식에 비해 상당한 할인을 받는 방식의 요금 모델이
 2. 약정 기간은 `1년/3년`, 선결제 정도에 따라 할인율이 달라진다.  
 
 3. RI보다 유연하지만, `약정 초과분`은 온디맨드로 과금된다.
+
+<p align='left'>
+    <img src="images/savings-plan.png" alt>
+</p>
+
+RI처럼 `일시불` / `특정 인스턴스 장기 계약`과 같은 부담되는 제약이 없어서인지,  
+경영진을 설득해 도입하는 게 비교적 쉬웠던 것으로 기억한다. 
+
+특히나 절약 플랜은 인스턴스 패밀리가 일치하는 모든 EC2에 일괄 적용되기 때문에  
+바로 다음달부터 즉각적으로 회사에서 소비되는 인스턴스 비용이 2~30% 정도 줄어들었다.
+
+다만 이는 특정 인스턴스 패밀리에 해당하는 경우에만 그렇다.  
+
+구내식당 비유를 계속 들자면 본래 매일 점심 식사 하라고 회사에서 10,000원씩 지급 해주다가  
+어느날부터 우리가 "지정한 구내식당 가서 식사하면 무료니까 그쪽으로 가라" 라고 하는 것과 같다.
+
+> 이제 점심에 햄버거 먹고 싶으면 본인 돈으로 사야한다.
 
 <br>
 
@@ -558,7 +687,7 @@ S3 수명 주기 규칙을 설정하여 자동으로 객체를 관리함으로�
 ## 네트워크 (Data Transfer)
 
 <p align='left'>
-    <img width=50% src="images/cannot-go-out.png" alt>
+    <img width=55% src="images/cannot-go-out.png" alt>
 </p>
 
 AWS를 포함해서 클라우드 서비스에서 네트워크 사용 비용이란 건 기본적으로
@@ -594,7 +723,7 @@ AWS의 경우 [CloudFront](https://aws.amazon.com/ko/cloudfront/)라는 서비�
     <img width=60% src="images/compression.png" alt>
 </p>
 
-S3나 EC2에서 데이터를 전송 할 때 **Gzip**이나 **Brotli** 등을 이용해 데이터를 압축해서 보내는 것이 좋다.  
+S3나 EC2에서 데이터를 전송할 때 **Gzip**이나 **Brotli** 등을 이용해 데이터를 압축해서 보내는 것이 좋다.  
 
 CloudFront를 사용한다면 CloudFront에서 자동 압축을 켜는 것이 가장 간단하다.  
 
@@ -643,17 +772,30 @@ location / {
 
 클라우드 `내부적으로` 이루어지는 통신 비용도 절약 할 필요가 있다.
 
-1. **동일 가용 영역에 리소스 배치**
+1. **동일 가용 영역(AZ)에 리소스 배치**
 
     동일 리전 내에서도 가용 영역(AZ)이 다르면 전송 요금이 붙는다.   
     통신이 잦은 EC2, 데이터베이스, 캐시 등은 가급적 같은 AZ에 배치하자.  
     클라우드 서비스 제공자마다 약간의 차이는 있지만 동일 AZ 내 트래픽은 대체로 무료거나 매우 저렴하다.
 
-2. **VPC 엔드포인트 활용**
 
-    EC2 등에서 S3, DynamoDB에 접근할 때 인터넷/NAT 게이트웨이를 거치면 NAT 처리 비용과 AZ 간 전송 비용이 발생한다.  
-    S3/DynamoDB 트래픽은 반드시 `VPC 엔드포인트(Gateway Endpoint)`로 우회해 내부망으로 무료 전환하자.  
-    NAT 게이트웨이는 시간당 요금+전송량 요금이 함께 부과되어 `월간 비용 누수의 최상위 원인`이 되기 쉽다.
+2. **VPC 내부 통신 활용**
+
+    EC2 인스턴스간 통신을 할 때 대상의 `Public IP`를 목적지로 해서 보낸다고 생각해보자.  
+    이는 마치 옆 집 사는 사람에게 물건을 전달하기 위해 우편을 붙이는 것과 같다.  
+
+    이 경우 통신 패킷 자체가 IGW<sub>(Internet Gateway)</sub>를 경유해 클라우드 밖으로 나갔다가  
+    다시 들어오는 게 되어 **사실상 외부 통신**으로 간주된다. 비용 부과는 물론 지연까지 발생한다.
+
+    심지어 호출을 요청한 EC2가 **Private Subnet**에 있다면 문제는 더 심각해진다.  
+    이 때는 NGW<sub>(NAT Gateway)</sub>를 경유하게 되는데, 시간당 요금과 전송량 요금이 함께 부과된다.  
+    
+    이는 `월간 비용 누수의 최상위 원인`이 되기 쉽다.
+
+    S3, DynamoDB 등에 접근할 때도 마찬가지다.  
+    반드시 `VPC 엔드포인트(Gateway Endpoint)`를 사용해 내부망으로 우회하자.  
+
+
 
 3. **리전 간 전송 최소화**
 
