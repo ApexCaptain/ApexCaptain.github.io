@@ -310,13 +310,12 @@ AMD(x86)의 경우 시간당 $ 0.281, Arm은 시간당 $ 0.195이다.
 신규로 생성하는 서비스는 물론 기존 AMD(x86)으로 동작중인 것들도 하나씩 마이그레이션 중이다.  
 실제 수치상으로도 2~30% 정도의 비용 절감 효과를 보고 있다.
 
-
 다만, 이 경우 애플리케이션을 빌드할 때 Arm CPU 아키텍처에 맞춰서 빌드해야 한다.  
 아무래도 이게 걸림돌이 되어서 전환을 망설이는 경우도 있을 것이다.
 
-현재 Docker로 애플리케이션을 패키징 하고 있다면 [Docker buildx](https://docs.docker.com/reference/cli/docker/buildx/)를 사용 해보는 것을 추천한다.
+Docker로 애플리케이션을 패키징 하고 있다면 [Docker buildx](https://docs.docker.com/reference/cli/docker/buildx/)를 사용 해보는 것을 추천한다.
 
-예를들어 다음은 실제 현재 회사에서 사용하고 있는 GitHub Action Workflow CI 스크립트의 일부이다.  
+예를들어 다음은 회사에서 사용하고 있는 GitHub Action Workflow CI 스크립트중 하나의 일부이다.  
 조금 특이하게도 대상 환경이 `Production`일 경우엔 `arm64`, `Stage`일 경우엔 `amd64`에 맞춰 빌드한다.
 
 ```yml
@@ -324,38 +323,10 @@ AMD(x86)의 경우 시간당 $ 0.281, Arm은 시간당 $ 0.195이다.
 jobs:
   # ...... #   
   release_ocir:
-    name: Publish to OCIR Repository
-    needs: release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    # ...... # 
     steps:
       # ...... #   
-      - name: Restore build artifact permissions
-        run: cd dist && setfacl --restore=permissions-backup.acl
-        continue-on-error: true
-
-      - name: Get OCIR repo
-        id: get-ocir-repo
-        uses: oracle-actions/get-ocir-repository@v1.3.0
-        with:
-          name: ${{ vars.REPO_NAME }}
-          compartment: ${{ secrets.OCI_COMPARTMENT_OCID  }}
-
-      - name: Read version
-        id: get-version
-        run: echo "version=$(cat dist/version.txt)" >> $GITHUB_OUTPUT
-
-      - name: Get OCIR region
-        id: get-ocir-region
-        uses: actions/github-script@v7.0.1
-        env:
-          repo_path: ${{ steps.get-ocir-repo.outputs.repo_path }}
-        with:
-          result-encoding: string
-          script: return `${process.env.repo_path}`.split('.')[0]
-
-      # 이 작업까지 끝나면 대상 Container Registry에 접근 권한을 얻게 된다.
+      # 대상 Container Registry에 접근 권한 획득
       - name: Login to OCIR repo
         uses: docker/login-action@v3.5.0
         with:
@@ -399,8 +370,13 @@ jobs:
 
 ```
 
-Docker Buildx로 대부분의 호환성 이슈는 대응 가능하지만,    
-이미지 내부에 설치하는 라이브러리 수준에서의 호환성 이슈의 경우는 Dockerfile에 분기를 넣어 해결하자.
+Docker Buildx를 설정 해준 뒤 **docker build action**의 builder 값을 buildx의 이름으로,  
+platform은 원하는 타겟에 맞춰 빌드 후 레지스트리에 올리면 된다.
+
+대부분의 호환성 이슈는 Docker Buildx로 대응이 가능하지만,    
+이미지 내부에 설치하는 라이브러리 수준에서 문제가 있는 경우 Dockerfile에 분기를 넣어 해결한다.
+
+예를들어:
 ```Dockerfile
 # ...... #
 
@@ -411,7 +387,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # ...... #
 ```
 
-단순 분기 처리로는 대응이 불가능할 경우, 아예 파일을 나눠 사용하도록 하자.
+단순 분기 처리 정도로는 해결이 안 될 정도로 환경이 복잡하다면 아예 파일을 나눠 사용하기도 한다.
 
 ```bash
 .
