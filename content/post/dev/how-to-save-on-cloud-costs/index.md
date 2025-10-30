@@ -692,13 +692,8 @@ CDN을 통해 컨텐츠를 캐싱하여 최종 사용자<sub>(ex: 페이지 방�
 
 AWS의 경우 [CloudFront](https://aws.amazon.com/ko/cloudfront/)라는 서비스가 이에 해당한다.  
 
-
 리전에서 직접 인터넷으로 데이터를 전송하는 것 보다 CloudFront를 통한 전송이 훨씬 저렴하다.  
 캐싱된 데이터는 S3나 EC2에서 다시 전송할 필요가 없으므로 원본 서버의 DTO가 줄어든다.
-
-다만 CloudFront는 후술할 비용 이슈가 별도로 있다.  
-개인적으로 CloudFront 이외의 다른 CDN을 활용하는 걸 추천한다.  
-<sub>(어차피 요즘 CDN 성능이야 다 거기서 거기다)</sub>
 
 <br>
 
@@ -823,7 +818,7 @@ Arm CPU, Spot, Savings Plan등 앞서 언급했던 내용들과 중복되는 것
 
 2. **표준형(Standard)을 사용**
 
-    `표준형`과 `확장형` 가격 차를(6배) 보고 확장형에 엄청난 어드밴티지가 있겠거니 생각하겠지만,  
+    `표준형`과 `확장형`의 가격 차를(6배) 보고 확장형에 엄청난 어드밴티지가 있겠거니 생각하겠지만,  
     사실 둘의 차이는 `Kubernetes API의 지원 기간` 정도가 전부다.
 
     보통 k8s는 3개의 마이너 버전에 대한 패치를 제공하는데 EKS는 이 지원 정책을 따라간다.  
@@ -893,9 +888,9 @@ CloudFront는 상시 무료(Always Free) 혜택으로 `월 1TB 데이터 전송 
         <img width=60% src="images/cloud-flare.png" alt>
     </p>
 
-    개인적으로 CDN은 [Cloudflare](https://www.cloudflare.com/ko-kr/)를 추천한다.
-
-    | 항목 | Cloudflare | AWS CloudFront |
+    개인적으로 CDN은 [Cloudflare](https://www.cloudflare.com/ko-kr/)를 추천한다.  
+    둘을 간단히 비교하면 다음과 같다 :
+    |  | Cloudflare | AWS CloudFront |
     | --- | --- | --- |
     | 네트워크 아키텍처 | 리버스 프록시 | 전통적인 CDN |
     | 기본 설정 방법 | Nameserver | Special URLs |
@@ -903,8 +898,11 @@ CloudFront는 상시 무료(Always Free) 혜택으로 `월 1TB 데이터 전송 
     | 마켓 포지셔닝 | Standalone 플랫폼 | AWS 클라우드 서비스 중 일부 |
     | 프리티어 | 과금 없음 | 매달 1TB 데이터 전송, 천만건 요청, 2백만건 함수 호출 무료  |
 
-    단순히 돈만의 문제가 아니라 Cloudflare가 서버 수도 많고 속도도 더 빠르다.
+    다만 이건 어디까지나 나의 "개인적인" 의견이다.  
 
+    다음과 같은 경우라면 CloudFront를 쓰는 게 낫다.
+    1. AWS 생태계와<sub>(S3 ,EC2등)</sub> 긴밀하게 통합되길 원한다
+    2. 웹 서비스가 대박이 나서 월 1,000TB 정도 트래픽이 나온다 <sub>(사용량이 올라갈수록 비용이 내려간다)</sub>
 
 <br>
 
