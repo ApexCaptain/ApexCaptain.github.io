@@ -441,9 +441,9 @@ AWS에는 ["Lambda"](https://aws.amazon.com/ko/lambda/)라는 서비스가 있�
 구체적인 활용처:
 1. 사용자의 요청에 즉각적인 응답이 필요하지 않은 API 서비스
 
-2. S3에 파일이 업로드 될 때 -> 이미지 썸네일, 동영상 트랜스 코딩, 데이터 필터링등의 데이터 처리 작업
+2. S3에 파일이 업로드 될 때 -> 이미지 썸네일, 동영상 트랜스 코딩, 데이터 필터링 등 데이터 처리 작업
 
-3. 일정 시간이 되면(가령 매일 새벽 1시) -> 불필요한 리소스를 지우는 작업
+3. 일정 시간이 되면(가령 매일 새벽 1시) -> 오래된 스냅샷/AMI 정리 등 관리 자동화 작업
 
 본격적인 Lambda 도입을 고려하고 있다면 [AWS Serverless Appliaction Model](https://docs.aws.amazon.com/ko_kr/serverless-application-model/latest/developerguide/what-is-sam.html)에 대해 알아보도록 하자.  
 `Java`, `Python`, `Go`등 다양한 프로그래밍 언어를 사용 할 수 있는 Lambda 기반의 프레임워크이다.  
