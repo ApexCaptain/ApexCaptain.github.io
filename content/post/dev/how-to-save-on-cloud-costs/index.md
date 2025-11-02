@@ -308,7 +308,7 @@ AMD(x86)의 경우 시간당 $ 0.281, Arm은 시간당 $ 0.195이다.
 
 현재 근무중인 회사에서도 실제 Arm CPU를 굉장히 활발하게 사용하고 있다.  
 신규로 생성하는 서비스는 물론 기존 AMD(x86)으로 동작중인 것들도 하나씩 마이그레이션 중이다.  
-실제 수치상으로도 2~30% 정도의 비용 절감 효과를 보고 있다.
+실제 수치상으로도 25~30% 정도의 비용 절감 효과를 보고 있다.
 
 다만, 이 경우 애플리케이션을 빌드할 때 Arm CPU 아키텍처에 맞춰서 빌드해야 한다.  
 아무래도 이게 걸림돌이 되어서 전환을 망설이는 경우도 있을 것이다.
@@ -363,9 +363,15 @@ jobs:
           push: true
           context: .
           file: ./Dockerfile
+
+          # 위에서 지정한 플랫폼(아키텍처)로 지정
           platforms: ${{ steps.resolve-platforms.outputs.platforms }}
           tags: ${{ steps.get-ocir-repo.outputs.repo_path }}:${{ inputs.target || 'stage' }}-latest,${{ steps.get-ocir-repo.outputs.repo_path }}:${{ inputs.target || 'stage' }}-${{ steps.get-version.outputs.version }}
+
+          # Buildx로 Builder 항목을 지정
           builder: ${{ steps.docker-buildx.outputs.name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
    # ...... #
 
 ```
@@ -992,6 +998,7 @@ AWS에는 워낙 `예상치 못한 숨겨진 추가 비용`이 많아서 관리�
 > - [AWS 비용 할당 태그 (Cost Allocation Tags)](https://docs.aws.amazon.com/ko_kr/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html)  
 > - [AWS EC2 스팟 인스턴스 개요](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html)  
 > - [AWS EC2 예약 인스턴스(Reserved Instances)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/reserved-instances-scope.html)  
+> - [AWS EC2 Auto Scaling Groups 개요](https://docs.aws.amazon.com/ko_kr/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html)  
 > - [AWS Savings Plans 개요](https://docs.aws.amazon.com/savingsplans/latest/userguide/)  
 > - [AWS Lambda 개요](https://aws.amazon.com/ko/lambda/)  
 > - [Docker Buildx 문서](https://docs.docker.com/reference/cli/docker/buildx/)  
@@ -1004,4 +1011,7 @@ AWS에는 워낙 `예상치 못한 숨겨진 추가 비용`이 많아서 관리�
 > - [AWS Elastic IP(IPv4) 문서](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html)  
 > - [Prometheus](https://prometheus.io/)  
 > - [Grafana](https://grafana.com/)  
+> - [Kubernetes HPA (Horizontal Pod Autoscaler)](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)  
+> - [Kubernetes Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler)  
+> - [Helm 공식 문서](https://helm.sh/docs/)  
 > - [Cloudflare CDN](https://www.cloudflare.com/ko-kr/)  
