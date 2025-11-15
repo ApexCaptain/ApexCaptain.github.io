@@ -194,8 +194,8 @@ Docling은 크게 3가지 주요 컴포넌트로 구성되어 있다:
 
 - 임베딩
     <p align='center'>
-        <video controls>
-            <source width=50% src="videos/embedding.mp4" type="video/mp4">
+        <video width=50% controls>
+            <source src="videos/embedding.mp4" type="video/mp4">
         </video>
     </p>
 
