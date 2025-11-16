@@ -1,6 +1,6 @@
 ---
 title: k8s에 Ollama AI 서버 올려보기
-slug: dev/install-ollma-to-k8s
+slug: dev/install-ollama-to-k8s
 date: 2025-10-26 00:00:00+0900
 image: images/cover.png
 categories:
