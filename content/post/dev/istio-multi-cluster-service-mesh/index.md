@@ -30,17 +30,17 @@ weight: 1
 그냥 GPU 서버를 클라우드에 올려 준다면야 나는 매우 편하고 좋겠지만,  
 클라우드의 엄청난 비용 부담을 고려하면 이 방식이 가장 합리적인 판단이라고 생각한다.
 
-RTX A6000 GPU의 성능이 지금 당장은 충분해 보이나, 향후 확장성을 고려하면  
-GPU 서버 역시 k8s 클러스터로 구성해야 한다.
+RTX A6000 GPU의 성능이 지금 당장은 충분해 보이나,  
+향후 확장성을 고려하면 GPU 서버 역시 k8s 클러스터로 구성해야 한다.
 
 하지만 실제 서비스를 사용자에게 제공할 때는 클라우드에 있는 k8s를 사용한다.  
 GPU 클러스터는 GPU 중심의 워크로드만 담당하고 각종 인증, 데이터 처리, 웹 서비스 등은 클라우드에서 제공한다는 의미이다. 
 
-> 요컨대 **클러스터 간 통신을 구축할** 필요성이 생겼다.
+> 요컨대 **클러스터 간의 통신을 구축할** 필요성이 생겼다.
 
 사실 이런 시나리오를 전혀 예측하지 못한 것은 아니다.
 
-현대적인 인프라 아키텍처에서는 점차 여러 개의 k8s 클러스터를 운영하는 것이 일반적인 관습이 되어가고 있다. 처음에 k8s를 사용할 때는 하나의 클러스터로도 필요한 모든 서비스를 처리하는 게 가능해 보이지만, 점차 확장성이나 장애 시 복원 탄력성 등 그 한계에 부딪히게 된다.
+현대적인 인프라 아키텍처에서는 점차 여러 개의 k8s 클러스터를 운영하는 것이 일반적인 관습이 되어가고 있다. 처음에 k8s를 사용할 때는 하나의 클러스터로도 필요한 모든 서비스를 처리하는 게 가능해 보이지만, 확장성이나 장애 시 복원 탄력성 등 머지 않아 그 한계에 부딪히게 된다.
 
 이번 GPU 케이스의 경우 "클라우드에 올리기에 너무 비싸 자체적으로 운영한다"라는 **물리적인 확장성 이슈**이다.  
 
@@ -59,7 +59,7 @@ Istio는 이런 상황에 대응할 수 있도록 **다수의 클러스터를 �
 
     Multiple Clusters 모델의 주요 특징:
 
-    - **서비스 발견**: 여러 클러스터의 서비스 엔드포인트를 자동으로 발견하고 통합
+    - **서비스 발견 (Service Discovery)**: 여러 클러스터의 서비스 엔드포인트를 자동으로 통합
     - **크로스 클러스터 로드 밸런싱**: 요청을 여러 클러스터의 엔드포인트에 자동 분산
     - **네트워크 구성**: 단일 네트워크 또는 다중 네트워크(지리적 분산, 보안 격리) 구성 가능
     - **제어 평면 (Control Plane)**: 단일 제어 평면으로 여러 클러스터 관리 혹은 각 클러스터에 독립적으로 배치
@@ -119,7 +119,7 @@ Multi-Primary와 Primary-Remote의 차이는 **제어 평면을 각 클러스터
 
 앞서 비유를 이어가면 다음과 같다.
 
-> - **Multi-Primary (개별 제어 평면)**: **연방제 국가**의 각 주(州)가 독립적인 정부를 가지는 방식<sub>(주 정부)</sub>.  
+> - **Multi-Primary (개별 제어 평면)**: **연방제 국가**의 각 주(州)가 독립적인 정부를<sub>(주 정부)</sub> 가지는 방식.  
 >
 >   예를 들어, 미국의 캘리포니아, 텍사스, 뉴욕은 각각 독립적인 주 정부를 가지고 있다.  
 >   한 주의 정부가 마비되어도 다른 주는 정상적으로 운영되지만, 각 주마다 정부 조직을 유지해야 하므로 비용과 운영 부담이 크다.
@@ -163,9 +163,18 @@ Remote 클러스터는 Primary가 만든 서비스 메시에 클라이언트로�
 각 클러스터의 이름과 네트워크명을 할당했다.  
 Primary Cluster는 `oke`, Remote Cluster는 `workstation`이다.
 
+---
+
+> ⚠️ 두 클러스터를 왔다갔다 하면서 작업해야 해서 헷갈릴 수 있다.
+>
+> 각 섹션 앞에는 **어느 Context에서 진행하는 내용인지** 명시 해두었으니 참고하자.
+
+---
+
 ### Primary 기본 네트워크 설정
 
-**대상 : Primary**
+
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 Primary 클러스터의 istio-system Namespace에 Network 값을 Label로 달아준다.
 
@@ -177,7 +186,7 @@ kubectl label namespace istio-system topology.istio.io/network=oke
 
 ### OKE 클러스터를 Primary로 구성
 
-**대상 : Primary**
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 우선 istio-base를 설치한다.
 ```
@@ -211,7 +220,7 @@ helm install istiod istio/istiod -n istio-system \
 
 ### Primary에 `east-west gateway` 설치
 
-**대상 : Primary**
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 Istio에는 `north-south`, `east-west` 게이트웨이라는 개념이 있다.  
 남북이니, 동서니 하는데 이게 Istio에서만 쓰는 이상한 용어는 아니고, 트래픽의 **방향**에 대한 얘기이다.
@@ -283,7 +292,7 @@ istio-eastwestgateway   LoadBalancer   <클러스터 내부 IP>   <LB의 IP>    
 
 ### Primary Cluster의 제어 평면 노출
 
-**대상 : Primary**
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 ```yml
 # Primary-Expose-Istiod.yml
@@ -370,7 +379,7 @@ virtualservice.networking.istio.io/istiod-vs  ["istiod-gateway"]   ["*"]   2d4h
 
 ### Remote Cluster 제어 평면 설정
 
-**대상 : Remote**
+<span style="background-color:lightgreen; color:black">**ㅤ⚠️ Context : Remoteㅤ**</span>
 
 Remote 클러스터의 istio-system 네임스페이스에 Primary의 제어 평면을 사용할 것임을 지정해주자.
 
@@ -383,7 +392,7 @@ kubectl  annotate namespace istio-system \
 
 ### Remote 기본 네트워크 설정
 
-**대상 : Remote**
+<span style="background-color:lightgreen; color:black">**ㅤ⚠️ Context : Remoteㅤ**</span>
 
 Remote 클러스터의 istio-system Namespace에도 Network 값을 Label로 달아준다.
 
@@ -395,7 +404,7 @@ kubectl label namespace istio-system topology.istio.io/network=workstation
 
 ### Workstation 클러스터를 Remote로 구성
 
-**대상 : Remote**
+<span style="background-color:lightgreen; color:black">**ㅤ⚠️ Context : Remoteㅤ**</span>
 
 Remote에도 istio-base를 설치한다.
 
@@ -435,7 +444,7 @@ helm install istiod istio/istiod -n istio-system \
 
 ### Remote 클러스터의 연결 정보 생성
 
-**대상 : Remote**
+<span style="background-color:lightgreen; color:black">**ㅤ⚠️ Context : Remoteㅤ**</span>
 
 istioctl 명령어로 Remote Cluster에 Service Account와 Role/RoleBinding을 만들고  
 이 정보를 Primary에 Secret으로 넣어줘야 한다.
@@ -451,7 +460,7 @@ istioctl create-remote-secret \
 
 ### Primary에 Remote 클러스터의 연결 정보 주입
 
-**대상 : Primary**
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 위에서 생성한 `remote-workstation.yml` 파일을 그대로 Primary 클러스터에 배포해준다.
 
@@ -463,7 +472,7 @@ kubectl apply -f remote-workstation.yml
 
 ### Remote에 `east-west gateway` 설치
 
-**대상 : Remote**
+<span style="background-color:lightgreen; color:black">**ㅤ⚠️ Context : Remoteㅤ**</span>
 
 ```yaml
 # Remote-Istio-East-West-Gateway.yml
@@ -530,13 +539,13 @@ spec:
 
 `Cross-Network-Gateway.yml`을 양쪽 클러스터 모두에 배포해준다.
 
-**대상 : Primary**
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 ```
 kubectl apply -f Cross-Network-Gateway.yml -n istio-system
 ```
 
-**대상 : Remote**
+<span style="background-color:lightgreen; color:black">**ㅤ⚠️ Context : Remoteㅤ**</span>
 
 ```
 kubectl apply -f Cross-Network-Gateway.yml -n istio-system
@@ -548,7 +557,7 @@ kubectl apply -f Cross-Network-Gateway.yml -n istio-system
 
 ### istioctl로 멀티 클러스터 상태 확인
 
-**대상 : Primary**
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 ```bash
 istioctl remote-clusters
@@ -569,7 +578,7 @@ OKE 자체가 istio 입장에선 Home이라 그렇다. 모든 클러스터가 `s
 
 ### istioctl로 프록시 상태 확인
 
-**대상 : Primary**
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 ```bash
 istioctl proxy-status
@@ -609,7 +618,7 @@ redis-ui-deployment-65b968c54f-mbxpc.redis-ui                                   
 
 ### Primary에 샘플 앱 배포
 
-**대상 : Primary**
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 ```yml
 # Primary-Sample.yml
@@ -729,7 +738,7 @@ kubectl apply -f Primary-Sample.yml
 
 ### Remote에 샘플 앱 배포
 
-**대상 : Remote**
+<span style="background-color:lightgreen; color:black">**ㅤ⚠️ Context : Remoteㅤ**</span>
 
 Primary와 거의 유사하다. Deployment만 조금 다르다.
 
@@ -851,7 +860,7 @@ kubectl apply -f Remote-Sample.yml
 
 ### Primary에서 연결 테스트
 
-**대상 : Primary**
+<span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
 ```bash
 kubectl exec -n sample -c curl \
@@ -874,7 +883,7 @@ Hello version: v1, instance: helloworld-v1-5787f49bd8-kmgdm
 
 ### Remote에서 연결 테스트
 
-**대상 : Remote**
+<span style="background-color:lightgreen; color:black">**ㅤ⚠️ Context : Remoteㅤ**</span>
 
 ```bash
 kubectl exec -n sample -c curl \
@@ -900,7 +909,7 @@ Hello version: v2, instance: helloworld-v2-6746879bdd-8csng
 > 두 클러스터를 왔다갔다 하며 설정해야 하기에 헷갈릴 수 있는데,  
 > 공식 문서의 시나리오를 천천히 따라가다 보면 어렵지 않게 설정할 수 있을 것이다.
 >
-> 확인이 끝났다면 각 클러스터에서 sample 네임스페이스는 지워도록 하자.
+> 확인이 끝났다면 각 클러스터에서 sample 네임스페이스는 지워 주도록 하자.
 > ```bash
 > kubectl delete ns sample
 > ```
@@ -944,7 +953,7 @@ Istio East-West Gateway가 Istio Ingress Gateway의 기능을 겸하도록 하�
 Nginx Ingress Controller를 통째로 제거했다.
 
 Ingress 처리 방식 자체를 Istio VirtualService 방식으로 마이그레이션 한 것이다.  
-여기에 대해선 할 얘기가 많은데, 주제에서 벗어나므로 추후 포스팅 하도록 하겠다.
+여기에 대해선 할 얘기가 많지만 본 주제에서 벗어나므로 추후 포스팅 하도록 하겠다.
 
 다만 Helm으로 East-West Gateway 배포 시 별도 포트 설정이 안 돼서 엄청 애를 먹었었는데,  
 이를 해결하기 위해 CDK for Terraform으로 별도 Execution 스크립트를 작성해서 강제 할당하였다. 
@@ -1070,18 +1079,19 @@ GitHub OAuth를 사용하는 것이 불가능했다.
 
 엄밀히 말하면 가능은 한데, 여러 도메인을 동시에 보호하는 게 너무 힘들었다.
 
-어차피 언젠가 옮길 생각도 있었어서, 이참에 별도의 인증 앱을 배포했다.
+어차피 언젠가 옮길 생각도 있었어서, 이참에 별도의 인증 앱을 배포하기로 했다.
 
-본래 [Keycloak](https://www.keycloak.org/)을 쓸 생각이었는데,  
-[Keycloak Helm Chart](https://artifacthub.io/packages/helm/bitnami/keycloak)에도 적혀 있는데 Bitnami가 2025년 8월 28일부로  
-기존 무료 컨테이너 이미지 대부분을 레거시 저장소로 옮기고 업데이트를 중단했다. 
+본래 [Keycloak](https://www.keycloak.org/)을 쓸 생각이었으나,  
+[Keycloak Helm Chart](https://artifacthub.io/packages/helm/bitnami/keycloak)에도 적혀 있길, Bitnami가 2025년 8월 28일부로  
+기존 무료 컨테이너 이미지 대부분을 레거시 저장소로 옮기고 업데이트를 중단했다. (...) 
 
 <p align='center'>
     <img src="images/bitnami-keycloak-dockerhub.png" alt>
     <em>이미지가 모두 내려가 있다</em>
 </p>
 
-여기에 대해선 이리저리 말이 많은데 Bitnami가 Broadcom에 인수된 이후 Keycloak을 유료로 바꾸려는 게 아닌가 하는 의견이 지배적이다.
+여기에 대해선 이리저리 말이 많은데,  
+Bitnami가 Broadcom에 인수된 이후 Keycloak을 유료로 바꾸려는 게 아닌가 하는 의견이 지배적이다.
 
 <br>
 
@@ -1098,6 +1108,8 @@ GitHub OAuth를 사용하는 것이 불가능했다.
     </video>
     <em>Authentik으로 인증 거쳐서 Torrent 서비스에 접속</em>
 </p>
+
+<br>
 
 ## 마치며
 
