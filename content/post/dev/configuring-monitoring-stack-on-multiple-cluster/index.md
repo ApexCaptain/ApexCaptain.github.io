@@ -20,12 +20,17 @@ tags:
 weight: 1
 ---
 
+# 연관 포스트
+- ["Istio를 활용해 다중 클러스터에 Service Mesh 구성하기"](../istio-multi-cluster-service-mesh/)
+
+<br>
+
 ## 들어가기 앞서
 
 며칠 전에 건강검진을 받고 왔다.
 
 피도 뽑고, 혈압도 재고, 환청이 들리진 않는지, 눈이 멀진 않았는지 등등 이런저런 점검을 수행한다.  
-행여나 무슨 큰 병이 나기 전에 미리 미리 체크하고 대응할 여지를 만들어 주기 위함이다.
+행여나 무슨 큰 병이 나기 전에 미리 체크하고 대응할 여지를 만들어 주기 위함이다.
 
 > 서버도 마찬가지로 주기적인 건강검진이 필요하다.  
 
@@ -38,7 +43,7 @@ weight: 1
 안색만 살피면 무슨 병을 앓고 있는지 알 수 있을 정도로 실력이 뛰어난 의사가 아니라면,  
 X-Ray, CT와 같은 전문적인 장비와 거기서 산출된 일련의 차트 정보를 바탕으로 판단하는 것이 합리적일 것이다.
 
-이번 포스트에선 `Prometheus`, `Loki`, `Kiali`, `Grafana`를 통해 멀티 클러스터 환경에서  
+이번 포스트에서는 `Prometheus`, `Loki`, `Kiali`, `Grafana`를 통해 멀티 클러스터 환경에서  
 기본적인 모니터링 스택을 구축하는 방법에 대해 공유한다.
 
 <br>
@@ -67,13 +72,13 @@ Multi Cluster 모니터링 스택에 대해 최대한 간략하게 정의한 요
 
 ### ELK 대신 Loki를 택한 이유
 
-이번 작업에선 ELK<sub>(Elasticsearch, Logstash, Kibana)</sub> 대신 Loki를 사용했다.  
+이번 작업에서는 ELK<sub>(Elasticsearch, Logstash, Kibana)</sub> 대신 Loki를 사용했다.  
 이유는 단순하다.
 
 > ELK의 리소스 소모량이 감당이 안 된다.
 
-Oracle에서 무료로 사용 중인 클러스터에 ELK를 설치했다간 배보다 배꼽이 더 커지는 상황이 연출될 것이다.  
-이런저런 대체재를 알아봤는데, **Loki**가 k8s에 경량으로 쓰기 좋다는 소식을 들었다.
+Oracle에서 무료로 사용 중인 클러스터에 ELK를 설치했다면 배보다 배꼽이 더 커지는 상황이 연출될 것이다.  
+여러 대체재를 알아봤는데, **Loki**가 k8s에 경량으로 쓰기 좋다는 소식을 들었다.
 
 Elasticsearch의 검색 기능이 매우 훌륭하긴 하나, 샤드 관리하기도 복잡하고 저장 공간도 엄청나게 잡아먹는다.  
 Logstash 역시 CPU/메모리 사용량이 굉장히 높다.
@@ -86,7 +91,7 @@ Loki는 Elasticsearch와 달리 데이터를 인덱싱하지 않고 레이블을
 
 ## 공통 네임스페이스 구성
 
-각 섹션의 앞에는 ["Istio를 활용해 다중 Cluster에 Service Mesh 구성하기"](../istio-multi-cluster-service-mesh/) 포스트에서와 마찬가지로  
+각 섹션의 앞에는 ["Istio를 활용해 다중 클러스터에 Service Mesh 구성하기"](../istio-multi-cluster-service-mesh/) 포스트에서와 마찬가지로  
 **어떤 Kubernetes Context**에서 작업하는 것인지 명시했다.
 
 > 사용하는 k8s가 1개라면 `Context : Remote` 레이블이 붙은 섹션은 무시하도록 하자.  
@@ -140,7 +145,7 @@ grafana:
   enabled: false
 
 # Loki 설정
-# 로그 데이터가 저장되는 일종의 DB이다
+# 로그 데이터가 저장되는 일종의 데이터베이스다
 # ELK의 Elasticsearch와 유사
 loki:
   config:
@@ -164,7 +169,7 @@ loki:
       memory: 512Mi
 
 # Promtail 설정
-# 로그 수집기이다.
+# 로그 수집기다
 # ELK의 Logstash와 유사
 promtail:
   enabled: true
@@ -221,12 +226,12 @@ daemonset.apps/loki-stack-promtail   2         2         2       2            2 
 
 <span style="background-color:yellow; color:black">**ㅤ⚠️ Context : Primaryㅤ**</span>
 
-Ingress 혹은 VirtualService 등을 사용해 Loki 외부 진입점을 만들어 줘야 한다.  
+Ingress 혹은 VirtualService 등을 사용해 Loki 외부 진입점을 만들어야 한다.  
 이는 Remote Cluster에 추후 설치할 Promtail이 Primary의 Loki에 데이터를 밀어넣을 수 있도록 하기 위함이다.
 
 단일 클러스터를 운영 중이라면 이 부분은 생략하도록 하자.
 
-내 경우 VirtualService를 통해 외부로 노출하였다.
+이 예시에서는 VirtualService를 통해 외부로 노출했다.
 
 #### VirtualService 정의
 
@@ -272,7 +277,7 @@ kubectl apply -f Primary-Loki-VS.yml
 <span style="background-color:lightgreen; color:black">**ㅤ⚠️ Context : Remoteㅤ**</span>
 
 "Loki"는 이미 Primary에 설치되어 있으므로, Remote Cluster에는 Promtail만 설치하면 된다.  
-Promtail 단일 컴포넌트만 배포해도 상관 없지만, 편의를 위해 동일한 Helm Chart를 사용하였다.
+Promtail 단일 컴포넌트만 배포해도 상관 없지만, 편의를 위해 동일한 Helm Chart를 사용했다.
 
 
 #### Helm Values 정의
@@ -540,8 +545,8 @@ statefulset.apps/kube-prometheus-stack-grafana   1/1     5d21h
 
 ### Primary Prometheus 외부 진입점 설정
 
-Loki와 마찬가지로 Prometheus도 Ingress 혹은 VirtualService로 외부 진입점을 만들어줘야 한다.  
-내 경우 VirtualService로 작성했다.
+Loki와 마찬가지로 Prometheus도 Ingress 혹은 VirtualService로 외부 진입점을 만들어야 한다.  
+이 예시에서는 VirtualService로 작성했다.
 
 #### VirtualService 정의
 
@@ -836,7 +841,7 @@ kubectl apply -f Primary-Grafana-VS.yml
 
 #### Grafana 페이지 접속
 
-Ingress 혹은 VirtualService로 설정한 Host에 접속해보자.  
+Ingress 혹은 VirtualService로 설정한 호스트에 접속해보자.  
 
 Primary Cluster에 kube-prometheus-stack 배포 시,  
 Grafana의 대시보드 값을 넣어줬다면, 설정한 대시보드가 미리 프로비저닝되어 있을 것이다.
@@ -1044,7 +1049,8 @@ contexts:
       user: kiali-remote-access-service-account
 current-context: workstation-context
 ```
-<br><br>
+
+<br>
 
 ### Primary Kiali -> Remote Cluster에 접속 가능하도록 Secret 생성
 
@@ -1068,7 +1074,7 @@ metadata:
 type: Opaque
 ```
 
-`workstation`은 내가 쓰는 Remote Cluster의 이름이다.
+`workstation`은 사용 중인 Remote Cluster의 이름이다.
 
 #### Secret 배포
 
@@ -1093,8 +1099,7 @@ metadata:
   namespace: monitoring
 spec:
   auth:
-    # ⚠️ 인증절차 X
-    # 테스트를 위한 것으로 Production에서 사용할 때는 반드시 인증 절차를 구축하도록 하자
+    # ⚠️ 테스트를 위한 것으로 Production에서 사용할 때는 반드시 인증 절차를 구축하도록 하자
     strategy: anonymous
   deployment:
     namespace: monitoring
@@ -1154,7 +1159,7 @@ kubectl apply -f Primary-Kiali-VS.yml
 
 #### Kiali 페이지 접속
 
-Ingress 혹은 VirtualService로 설정한 Host에 접속해보자.
+Ingress 혹은 VirtualService로 설정한 호스트에 접속해보자.
 
 <p align='center'>
     <img src="images/kiali-dashboard.png" alt>
@@ -1170,25 +1175,44 @@ Istio Primary-Remote Multi Cluster Mesh 시나리오에 따라
 OKE(Primary)에 단일 제어 평면(Control Plane),  
 그리고 각 클러스터에 1개씩의 데이터 평면(Data Plane)이 구성된 모습이다.
 
+<br><br>
+
 ## 마치며
 
 이번 포스트에서는 Multi-Cluster 환경에서 모니터링 스택을 구축하는 방법을 다뤘다.
 
-Primary Cluster에는 데이터를 수집/시각화하는 컴포넌트들<sub>(Grafana, Loki, Prometheus, Kiali)</sub>을 배포했고,  
+Primary Cluster에는 데이터를 수집하고 시각화하는 컴포넌트들<sub>(Grafana, Loki, Prometheus, Kiali)</sub>을 배포했고,  
 Remote Cluster에는 데이터를 수집하여 Primary로 전송하는 컴포넌트들<sub>(Promtail, Prometheus)</sub>만 배포하여 리소스 사용을 최적화했다.
 
 이를 통해 여러 클러스터에 분산된 워크로드의 메트릭, 로그, 서비스 메시 정보를 하나의 대시보드에서 통합하여 확인할 수 있게 되었다.
 
-멀티 클러스터 모니터링 스택 구현 자체에 집중하느라 다소 생략된 부분이 있다.  
-예를 들어:
-1. AlertManager를 통한 알림 설정
-2. 리소스 튜닝
-3. 보안 설정(인증/인가)
-4. 트러블슈팅 가이드
-5. 네트워크 정책
-6. 백업 전략 
-
-이들은 추후 별도의 포스트를 통해 내용을 추가하도록 하겠다.
-
 클러스터의 건강 상태를 지속적으로 모니터링하고 이상 징후를 조기에 발견하는 것은 안정적인 서비스 운영을 위한 필수 요소다.  
 이번에 구축한 모니터링 스택이 기반이 되어 당신이 운영하는 클러스터의 건강검진을 수행하는 데 부디 도움이 되길 바란다.
+
+---
+
+이번 포스트에서는 멀티 클러스터 모니터링 스택의 기본 구축에 집중했다.  
+추가로 고려하면 좋을 주제들은 다음과 같다:
+
+- **AlertManager를 통한 알림 설정**: 이상 징후 발생 시 즉시 알림을 받을 수 있도록 구성
+- **리소스 튜닝**: 클러스터 규모와 워크로드에 맞는 리소스 최적화
+- **보안 설정**: 인증/인가를 통한 접근 제어 및 데이터 보호
+- **트러블슈팅 가이드**: 자주 발생하는 문제와 해결 방법
+- **네트워크 정책**: 모니터링 컴포넌트 간 통신 보안 강화
+- **백업 전략**: 모니터링 데이터의 장기 보관 및 복구 계획
+
+이러한 주제들은 추후 별도의 포스트를 통해 다루도록 하겠다.
+
+### 참고자료
+
+#### Helm Charts
+- [loki-stack](https://artifacthub.io/packages/helm/grafana/loki-stack) - Grafana Loki Stack Helm Chart
+- [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) - Prometheus Community Helm Charts
+- [kiali-operator](https://kiali.org/helm-charts/) - Kiali Operator Helm Chart
+
+#### 공식 문서
+- [Prometheus 공식 문서](https://prometheus.io/docs/)
+- [Grafana 공식 문서](https://grafana.com/docs/)
+- [Loki 공식 문서](https://grafana.com/docs/loki/latest/)
+- [Kiali 공식 문서](https://kiali.io/documentation/)
+- [Istio 공식 문서](https://istio.io/latest/docs/)
