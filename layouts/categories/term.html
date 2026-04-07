@@ -45,7 +45,7 @@
     </header>
 
     {{- $currentCategory := .Title -}}
-    {{- $subcategoryList := index .Site.Data.subclist $currentCategory -}}
+    {{- $subcategoryList := index hugo.Data.subclist $currentCategory -}}
     
     {{- if $subcategoryList -}}
         <aside>
