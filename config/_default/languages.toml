@@ -1,0 +1,5 @@
+[ko]
+locale = "ko-kr"
+label = "한국어"
+direction = "ltr"
+weight = 1
