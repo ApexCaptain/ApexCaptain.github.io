@@ -1,0 +1,13 @@
+{
+    "specstory.cloudSync.enabled": "never",
+    "specstory.providers.enabled": {
+        "Cursor IDE": true,
+        "Copilot IDE": false,
+        "Claude Code": false,
+        "Factory Droid CLI": false,
+        "Cursor CLI": false,
+        "Gemini CLI": false,
+        "Codex CLI": false,
+        "DeepSeek TUI": false
+      },
+}

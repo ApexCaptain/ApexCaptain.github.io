@@ -4,3 +4,5 @@ resources
 assets/jsconfig.json
 tmp
 ~$*
+.specstory
+.github/generated
