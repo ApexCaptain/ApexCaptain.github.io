@@ -1,0 +1,378 @@
+<!doctype html><html lang=ko-kr dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="들어가기 앞서 며칠 전에 &ldquo;오프라인 환경에서 RAG 앱 동작시키기&rdquo;라는 포스트를 올렸다.\n마침 지난 금요일에 이 프로젝트가 마무리 되었는데 (포스팅 시간 기준으로는 이틀 전)\n대략적인 개요는 다음과 같다.\n"><title>k8s에 Ollama AI 서버 올려보기</title><link rel=canonical href=https://blog.ayteneve93.com/p/dev/install-ollama-to-k8s/><link rel=stylesheet href=/scss/style.min.86591c898bd806857815fbb8c47e8d3fed97c133b78e83d9bfc27b164dd0aa2b.css><meta property='og:title' content="k8s에 Ollama AI 서버 올려보기"><meta property='og:description' content="들어가기 앞서 며칠 전에 &ldquo;오프라인 환경에서 RAG 앱 동작시키기&rdquo;라는 포스트를 올렸다.\n마침 지난 금요일에 이 프로젝트가 마무리 되었는데 (포스팅 시간 기준으로는 이틀 전)\n대략적인 개요는 다음과 같다.\n"><meta property='og:url' content='https://blog.ayteneve93.com/p/dev/install-ollama-to-k8s/'><meta property='og:site_name' content='ApexCaptain의 기술 블로그'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Helm'><meta property='article:tag' content='Kubernetes'><meta property='article:tag' content='On-Premise'><meta property='article:tag' content='AI'><meta property='article:tag' content='Ollama'><meta property='article:published_time' content='2025-10-26T00:00:00+09:00'><meta property='article:modified_time' content='2025-10-26T00:00:00+09:00'><meta property='og:image' content='https://blog.ayteneve93.com/p/dev/install-ollama-to-k8s/images/cover.png'><meta name=twitter:title content="k8s에 Ollama AI 서버 올려보기"><meta name=twitter:description content="들어가기 앞서 며칠 전에 &ldquo;오프라인 환경에서 RAG 앱 동작시키기&rdquo;라는 포스트를 올렸다.\n마침 지난 금요일에 이 프로젝트가 마무리 되었는데 (포스팅 시간 기준으로는 이틀 전)\n대략적인 개요는 다음과 같다.\n"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://blog.ayteneve93.com/p/dev/install-ollama-to-k8s/images/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="메뉴 여닫기">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_dfa970e81d3cb955.png width=300 height=298 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>👋</span></figure><div class=site-meta><h1 class=site-name><a href=/>ApexCaptain의 기술 블로그</a></h1><h2 class=site-description></h2></div></header><ol class=menu-social><li><a href=https://github.com/ApexCaptain target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>다크 모드</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">목차</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#들어가기-앞서>들어가기 앞서</a><ol><li><a href=#하드웨어-가격이-너무-비싸다>하드웨어 가격이 너무 비싸다</a><ol><li><a href=#모델>모델</a></li><li><a href=#상용-gpu-사용시>상용 GPU 사용시</a></li><li><a href=#클라우드-사용시>클라우드 사용시</a></li></ol></li><li><a href=#클러스터-구성>클러스터 구성</a></li></ol></li><li><a href=#k8s에-ollama-올려보기>k8s에 Ollama 올려보기</a><ol><li><a href=#사용할-gpu>사용할 GPU</a></li></ol></li><li><a href=#nvidia-gpu-operator-설치>Nvidia GPU Operator 설치</a><ol><li><a href=#nvidia-driver-설치>Nvidia Driver 설치</a></li><li><a href=#네임스페이스-생성>네임스페이스 생성</a></li><li><a href=#helm-repository-추가>Helm Repository 추가</a></li><li><a href=#values-설정>values 설정</a></li><li><a href=#차트-배포>차트 배포</a></li></ol></li><li><a href=#ollama-설치>Ollama 설치</a><ol><li><a href=#네임스페이스-생성-1>네임스페이스 생성</a></li><li><a href=#ai-모델을-저장할-pvc-생성>AI 모델을 저장할 PVC 생성</a></li><li><a href=#helm-repository-추가-1>Helm Repository 추가</a></li><li><a href=#values-설정-1>values 설정</a></li><li><a href=#차트-배포-1>차트 배포</a></li></ol></li><li><a href=#open-web-ui-설치>Open Web UI 설치</a><ol><li><a href=#네임스페이스-생성-2>네임스페이스 생성</a></li><li><a href=#환경-설정을-저장할-pvc-생성>환경 설정을 저장할 PVC 생성</a></li><li><a href=#helm-repository-추가-2>Helm Repository 추가</a></li><li><a href=#values-설정-2>values 설정</a></li><li><a href=#차트-배포-2>차트 배포</a></li></ol></li><li><a href=#동작-테스트>동작 테스트</a></li><li><a href=#마치며>마치며</a><ol><li><a href=#추후-계획>추후 계획</a></li></ol></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/dev/install-ollama-to-k8s/><img src=/p/dev/install-ollama-to-k8s/images/cover_hu_d267dc9af0b46f87.png srcset="/p/dev/install-ollama-to-k8s/images/cover_hu_d267dc9af0b46f87.png 800w, /p/dev/install-ollama-to-k8s/images/cover_hu_9df2e2f8b1320bf2.png 1600w" width=800 height=287 loading=lazy alt="Featured image of post k8s에 Ollama AI 서버 올려보기"></a></div><div class=article-details><header class=article-category><a href=/categories/development/ style=background-color:#efbec3;color:#3d0f14>Development</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/dev/install-ollama-to-k8s/>k8s에 Ollama AI 서버 올려보기</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2025-10-26T00:00:00+09:00>2025년 10월 26일</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>11 분 정도</time></div></footer></div></header><section class=article-content><h2 id=들어가기-앞서>들어가기 앞서</h2><p>며칠 전에 <a class=link href=../rag-app-in-an-offline-env/>&ldquo;오프라인 환경에서 RAG 앱 동작시키기&rdquo;</a>라는 포스트를 올렸다.<br>마침 지난 금요일에 이 프로젝트가 마무리 되었는데 <sub>(포스팅 시간 기준으로는 이틀 전)</sub><br>대략적인 개요는 다음과 같다.</p><ol><li><p>자체 인공지능 + VectorStore가 포함된 온전히 동작하는 <code>RAG 서비스를 하나 만들어라</code></p></li><li><p>OS는 <code>Windows</code> 11 Pro이고</p></li><li><p>하드웨어는 <code>8GB VRAM GPU</code>가 장착된 <code>노트북</code>이다.</p></li><li><p>아, 그런데 이제 <code>오프라인</code>을 곁들인 <sub>(아예 와이파이 끊어버림)</sub></p></li></ol><p align=center><img src=images/rag-app.png alt>
+<em>대략적인 시스템 구조</em></p><blockquote><p>Windows, 노트북, 오프라인&mldr; 거를 타선이 없다.</p></blockquote><p>그런데 결과는 의외로 잘 나와서 대표님도 만족하셨다.<br>그렇다고 마냥 기뻐하고 있을 수는 없다. 이런 걸 진행한 의도가 무엇인지 파악해야 한다.</p><p>듣자하니 추후 <strong>자체적인 AI 서버 도입</strong>을 희망하시는 듯 하다.<br>본래 예전부터 신기한 기술 나오면 눈에서 <span style=color:red>붉은 안광</span>을 뿜으시긴 했는데,<br>이번엔 그게 AI인 모양이다.</p><blockquote><p>고민이 깊어져 간다&mldr;</p></blockquote><p>서비스를 만드는 건 그렇다 쳐도 <i>"<strong>인공지능 인프라를 어떻게 구성해야 하는가</strong>"</i>가 주요 과제다.<br>그리고 모든 이슈는 한 가지 <strong>단순한 사실</strong>로부터 시작되었다.</p><br><h3 id=하드웨어-가격이-너무-비싸다>하드웨어 가격이 너무 비싸다</h3><p>내가 회사 인프라를 관리하면서 가장 조심스러워 하는게 바로 <code>비용 문제</code>이다.<br>잘못되면 욕 먹기 제일 쉬운 분야라 눈에 불을 켜고 한 푼이라도 줄이기 위해 노력해야 한다.</p><p>인공지능을 제대로 동작시키기 위해선 <strong>고성능의 병렬 연산 장치</strong>가 필수적인데<br><code>GPU</code><sub>(그래픽 처리 장치)</sub>건 <code>NPU</code><sub>(신경 처리 장치)</sub>건 이런 하드웨어들은 하나같이 무지하게 비싸다.</p><p>NPU는 나도 실물로 본 적이 없으니, GPU를 기준으로 생각해보면<br>데스크탑 PC 전체 가격의 심하면 50% 이상을 차지할 정도로 <strong>엄청난 몸값</strong>을 자랑한다.</p><br><h4 id=모델>모델</h4><p>필요한 하드웨어 사양은 어떤 모델을 사용하는가에 따라 크게 달라진다.<br>마침 대표님이 눈독 들이고 있는 게 하나 있어 이를 예시로 쓰겠다.<br>얼마 전, 8월에 공개된 <a class=link href=https://openai.com/ko-KR/index/introducing-gpt-oss/ target=_blank rel=noopener>gpt-oss</a>이다.</p><div class=table-wrapper><table><thead><tr><th>항목</th><th>gpt-oss-120b</th><th>gpt-oss-20b</th></tr></thead><tbody><tr><td><strong>모델 크기</strong></td><td>120B</td><td>20B</td></tr><tr><td><strong>성능</strong></td><td>o4-mini와 매우 유사한 성능</td><td>o3-mini와 매우 유사한 성능</td></tr><tr><td><strong>아키텍처</strong></td><td>128개의 전문 모델 통합</td><td>32개의 전문 모델 통합</td></tr><tr><td><strong>활성 영역</strong></td><td>동작 시 5.1B 크기 영역 활성화</td><td>동작 시 3.6B 크기 영역 활성화</td></tr><tr><td><strong>권장 VRAM</strong></td><td>약 66GB</td><td>약 13GB</td></tr><tr><td><strong>권장 하드웨어</strong></td><td>H100 80GB 하드웨어 1대로 원활하게 동작</td><td>16GB VRAM 이상의 그래픽카드로 원활하게 동작</td></tr></tbody></table></div><blockquote><p>참고로 <code>H100</code> 1개당 가격은 작성일 기준 <a class=link href="https://itempage3.auction.co.kr/DetailView.aspx?itemno=E315723070" target=_blank rel=noopener>4,000만원</a>정도 한다. 😱</p></blockquote><p>노트북으로 먼저 테스트해보신 것으로 미루어 짐작하면, 여기선 <code>gpt-oss-20b</code>가 더욱 현실성이 있다.</p><br><h4 id=상용-gpu-사용시>상용 GPU 사용시</h4><p><a class=link href=https://huggingface.co/unsloth/gpt-oss-20b-GGUF target=_blank rel=noopener>HuggingFace에 올라온 gpt-oss-20b의 모델 정보</a>를 보면 16GB VRAM 이상의 그래픽 카드를 쓰면 원활하게 쓸 수 있다고 한다.</p><p>실제로는 <a class=link href=https://ollama.com/ target=_blank rel=noopener>Ollama</a>뿐 아니라 <a class=link href=https://www.docling.ai/ target=_blank rel=noopener>Docling</a>같이 보조 AI 서비스도 같이 올라갈 것으로 생각되기에,<br>넉넉하게 그 2배인 32GB VRAM을 생각하고 있다.</p><p><strong>이러한 GPU는 1개당 대략 4~500만원 정도 나간다.</strong></p><br><h4 id=클라우드-사용시>클라우드 사용시</h4><p>AWS에서 32GB VRAM이 장착된 <a class=link href=https://aws-pricing.com/g5g.16xlarge.html target=_blank rel=noopener>g5g.16xlarge 인스턴스</a>의 작성일 기준 1달 평균 사용 비용은 다음과 같다.</p><ul><li><p><strong>온디맨드 : $2388.29</strong></p><p>쓴 만큼 내기, 후불제, 기본가 <sub>(최고가)</sub></p></li><li><p><strong>스팟 : $672.59</strong></p><p>가장 저렴하긴 한데, 스팟을 쓰기엔 무리가 있다.</p><p>필요할 때만 잠깐 쓰는 머신러닝이나 Docling 문서 전처리 정도의 작업을 담당하는 거면 모르겠으나,<br>상용 서비스에는 부적합하다. <sub>저렴한 데는 이유가 있다.</sub></p><p>설마 그러겠냐만 한창 서비스중에 인스턴스가 종료되기라도 하면 인생이 아주 스펙타클 해질 것이다.</p></li><li><p><strong>1년 예약 분할 지불 : $ 1559.73</strong></p></li><li><p><strong>1년 예약 일시불 : $ 1455.74</strong></p></li><li><p><strong>3년 예약 분할 지불: $ 1102.4</strong></p></li><li><p><strong>3년 예약 일시불 : $ 959.5</strong></p><p>달러당 환율 1,400으로 계산하면 <strong>한달에 135만원</strong>이다.<br>3년 일시불이니 총 지출은 대략 <strong>4,800만원</strong>(!!)이다. <sub>그냥 H100 하나 사고 만다.</sub></p></li></ul><p>전반적으로 보면 On-Premise 서버를 쓰는게 보다 합리적으로 보인다.<br>물론 클라우드에 올라가는 서버용 연산장치를 단순히 상용 GPU와 VRAM 크기가 같다고 동일선상에 두는 건 불합리하다.</p><p>더욱이 EC2의 인스턴스 타입은 CPU나 시스템 메모리 사이즈도 티셔츠마냥<sub>(large, x-large)</sub> 모두 딱딱 정해진 값이다.<br>예시로 쓰인 <code>g5g.16xlarge</code>의 경우 Arm 64코어 CPU에 시스템 메모리 128GB가 적용된다.</p><p>그 비용도 포함된 가격임을 고려해봐야 한다.</p><br><h3 id=클러스터-구성>클러스터 구성</h3><p>앞서 H/W 가격과 이어지는 문제이다. 그렇다면 클러스터 구성을 어떻게 할 것인가?<br>포인트는 <code>GPU가 포함된 Node의 위치</code>이다.</p><ol><li><p><strong>싹 다 클라우드에 올리기</strong> <sub>(상남자 스타일)</sub></p><p>문자 그대로의 의미이다.<br>대표님이 Microsoft Azure에 3년 예약 GPU 인스턴스가 저렴하다고 한 번 써보자고 하시는데&mldr;</p><p>개인적으로 가장 편한 방법이긴 하나,<br>GPU 사용료 비싼건 어느 클라우드를 쓰건 오십보백보라 그다지 추천하지는 않는다.</p></li><li><p><strong>전부 IDC에서 운영</strong></p><p><strong>On-Premise에 모든 Node를 배치</strong>하는 방법이다.</p></li><li><p><strong>IDC + 클라우드 &mdash; Istio 다중 클러스터 서비스 메시</strong></p><p>클라우드에 k8s 하나, IDC에도 독립적인 On-Premise k8s 하나씩 두고 On-Premise에는 GPU Node들을 배치하는 방법이다.</p><p>이상적이긴 한데 Istio 구성이 다소 복잡해질 것으로 보인다.</p></li><li><p><strong>EKS Hybrid Node</strong></p><p>이건 나도 이번에 조사해보다가 알게 된 건데, <strong>AWS EKS에 외부 Node를 등록하는 방식</strong>이다.<br>요컨대 Control Plane은 여전히 AWS에 존재하고, Worker Node는 IDC에 둘 수 있다.</p><p>당연히 무료는 아니고, 등록한 Worker Node의 코어당 연결 시간에 비례해서 책정된다.<br>예를들어, 8 코어 16 쓰레드 CPU를 가지는 Node 1개를 연결하면 <code>1달에 대략 33만원</code> 정도가 나온다.</p><ul><li><div class=video-wrapper><iframe loading=lazy src=https://www.youtube.com/embed/tFn9IdlddBw allowfullscreen title="YouTube Video"></iframe></div></li></ul><p>단순 연결하는데 쓰는 비용이 이렇다면 당장의 현실성은 없다.<br>그래도 이 접근방법의 개념은 되게 재밌어서 개인적으로 흥미가 많이 간다.</p><p>자세한 내용은 <a class=link href=https://docs.aws.amazon.com/ko_kr/eks/latest/userguide/hybrid-nodes-overview.html target=_blank rel=noopener>AWS 공식 문서</a>를 참고해보자.</p></li></ol><br><h2 id=k8s에-ollama-올려보기>k8s에 Ollama 올려보기</h2><p>고민거리를 늘어놓느라 서론이 길었는데, 결국 여태 내용 중 아직 확정된 것은 없다. <sub>(사실상 푸념)</sub><br>아무래도 큰 비용이 걸려있는 일이다보니 주말에 나 혼자 머리 싸맨다고 해결될 리 만무하다.</p><p>그래서 일단은 당장 할 수 있는 걸 해보기로 했다.<br>바로 내가 <strong>개인적으로 운영하는 On-Premise 클러스터에 Ollama 서비스를 올려보는 것</strong>이다.</p><br><h3 id=사용할-gpu>사용할 GPU</h3><p align=left><img src=images/rtx-2080.png alt></p><p>이번에 고생해줄 GPU는 <code>NVIDIA의 RTX 2080</code>이다.</p><p>왕년에는 끗발 좀 날리던 녀석이었는데,<br>릴리스<sub>(디아블로 IV)</sub>의 권능 앞에 무너져 새 GPU<sub>(RTX 4070)</sub>에 자리를 내주고 쉬고 있었다.</p><p align=left><img width=70% src=images/rtx-2080.jpg alt></p><p>그러다 몇 달 전에 <a class=link href=https://jellyfin.org/ target=_blank rel=noopener>Jellyfin</a>이라는 서비스의 ffmpeg GPU 가속을 위해 싹 분해해서<br>먼지 청소도 해주고 써멀 패드도 갈아주고 팬도 전부 새걸로 바꿔 끼웠다.<br>분해 당시 부식이나 냉납도 없었다. 고로 사용하는데 지장은 없을 것이다.</p><p>대략적인 스펙은 다음과 같다.</p><div class=table-wrapper><table><thead><tr><th>항목</th><th>내용</th></tr></thead><tbody><tr><td><strong>NVIDIA 칩셋</strong></td><td>RTX 2080</td></tr><tr><td><strong>인터페이스</strong></td><td>PCIe3.0×16</td></tr><tr><td><strong>CUDA 프로세서</strong></td><td>2944개</td></tr><tr><td><strong>메모리 종류</strong></td><td>GDDR6</td></tr><tr><td><strong>메모리 용량</strong></td><td>8GB</td></tr></tbody></table></div><br><h2 id=nvidia-gpu-operator-설치>Nvidia GPU Operator 설치</h2><p>Ollama에 GPU를 연결해야 하므로 Nvidia GPU Operator를 클러스터에 설치해줘야 한다.<br>AMD GPU를 사용한다면 AMD GPU Operator를 설치해야 하는데, 이번 포스트에서는 Nvidia를 기준으로 하겠다.</p><h3 id=nvidia-driver-설치>Nvidia Driver 설치</h3><p>우선 GPU Node에 접속해서 Nvidia Driver부터 설치해야 한다.<br>OS나 CPU Architecture에 따라 방법이 천차만별인데, 일단 가장 보편적인 Ubuntu를 기준으로 하겠다.<br>환경별 설치 방법은 <a class=link href=https://docs.nvidia.com/datacenter/tesla/driver-installation-guide/index.html target=_blank rel=noopener>이 문서</a> 참조.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo add-apt-repository ppa:graphics-drivers/ppa
+</span></span><span class=line><span class=cl>sudo apt update
+</span></span><span class=line><span class=cl>sudo ubuntu-drivers autoinstall
+</span></span></code></pre></td></tr></table></div></div><p>설치가 완료되면 시스템을 재부팅해준다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo reboot
+</span></span></code></pre></td></tr></table></div></div><p>재부팅 후 다음의 명령어를 입력해보자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>nvidia-smi
+</span></span></code></pre></td></tr></table></div></div><p>다음과 같이 출력되면 정상이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>Mon Oct <span class=m>27</span> 01:57:28 <span class=m>2025</span>       
+</span></span><span class=line><span class=cl>+-----------------------------------------------------------------------------------------+
+</span></span><span class=line><span class=cl><span class=p>|</span> NVIDIA-SMI 570.195.03             Driver Version: 570.195.03     CUDA Version: 12.8     <span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span>-----------------------------------------+------------------------+----------------------+
+</span></span><span class=line><span class=cl><span class=p>|</span> GPU  Name                 Persistence-M <span class=p>|</span> Bus-Id          Disp.A <span class=p>|</span> Volatile Uncorr. ECC <span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span> Fan  Temp   Perf          Pwr:Usage/Cap <span class=p>|</span>           Memory-Usage <span class=p>|</span> GPU-Util  Compute M. <span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span>                                         <span class=p>|</span>                        <span class=p>|</span>               MIG M. <span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span><span class=o>=========================================</span>+<span class=o>========================</span>+<span class=o>======================</span><span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span>   <span class=m>0</span>  NVIDIA GeForce RTX <span class=m>2080</span>        Off <span class=p>|</span>   00000000:29:00.0 Off <span class=p>|</span>                  N/A <span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span>  0%   30C    P8              2W /  240W <span class=p>|</span>       1MiB /   8192MiB <span class=p>|</span>      0%      Default <span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span>                                         <span class=p>|</span>                        <span class=p>|</span>                  N/A <span class=p>|</span>
+</span></span><span class=line><span class=cl>+-----------------------------------------+------------------------+----------------------+
+</span></span><span class=line><span class=cl>                                                                                            
+</span></span><span class=line><span class=cl>+-----------------------------------------------------------------------------------------+
+</span></span><span class=line><span class=cl><span class=p>|</span> Processes:                                                                              <span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span> GPU   GI   CI              PID   Type   Process name                        GPU Memory <span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span>        ID   ID                                                               Usage      <span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span><span class=o>=========================================================================================</span><span class=p>|</span>
+</span></span><span class=line><span class=cl><span class=p>|</span> No running processes found                                                             <span class=p>|</span>
+</span></span><span class=line><span class=cl>+-----------------------------------------------------------------------------------------+
+</span></span></code></pre></td></tr></table></div></div><br><h3 id=네임스페이스-생성>네임스페이스 생성</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl create ns gpu-operator
+</span></span><span class=line><span class=cl>kubectl label --overwrite ns gpu-operator pod-security.kubernetes.io/enforce<span class=o>=</span>privileged
+</span></span><span class=line><span class=cl>kubectl get ns --show-labels <span class=p>|</span> grep gpu
+</span></span></code></pre></td></tr></table></div></div><p>Nvidia GPU Operator가 설치될 네임스페이스를 만든 후 네임스페이스 내 pod의 보안정책을 <code>privileged</code>로 설정해 GPU 접근을 허용해야 한다.</p><br><h3 id=helm-repository-추가>Helm Repository 추가</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
+</span></span><span class=line><span class=cl>helm repo update
+</span></span></code></pre></td></tr></table></div></div><br><h3 id=values-설정>values 설정</h3><p>다음의 커맨드로 기본 차트 values 값을 가져와 로컬에 저장해보자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm show values nvidia/gpu-operator &gt; nvidia-gpu-operator.yml
+</span></span></code></pre></td></tr></table></div></div><p><code>nvidia-gpu-operator.yml</code>에 보면 여러 옵션들이 있는데, 몇 가지 수정해줘야 할 것이 있다.</p><ul><li><p>Driver 설정 변경</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># 위에서 이미 Nvidia Driver를 설치했으므로 제외</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>driver</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># 이 아래 옵션은 H100 등에서만 사용 가능하다</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>migManager</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>vgpuDeviceManager</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>vfioManager</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div></li><li><p>Toolkit 설정 변경</p><p>나는 <code>containerd</code>를 기본 Runtime으로 사용하고 있어서 다음과 같이 설정해주었다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=nt>operator</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>defaultRuntime</span><span class=p>:</span><span class=w> </span><span class=l>containerd </span><span class=w> </span><span class=c># 기본 런타임을 containerd로 설정</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>toolkit</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>env</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>CONTAINERD_CONFIG</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=l>/etc/containerd/config.toml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>CONTAINERD_SOCKET</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=l>/run/containerd/containerd.sock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>CONTAINERD_SET_AS_DEFAULT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;1&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div></li></ul><br><h3 id=차트-배포>차트 배포</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm install gpu-operator nvidia/gpu-operator <span class=se>\
+</span></span></span><span class=line><span class=cl>    -n gpu-operator <span class=se>\
+</span></span></span><span class=line><span class=cl>    -f ./nvidia-gpu-operator.yml
+</span></span></code></pre></td></tr></table></div></div><br><h2 id=ollama-설치>Ollama 설치</h2><p>Ollama도 Helm으로 설치할 수 있다.</p><h3 id=네임스페이스-생성-1>네임스페이스 생성</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl create namespace ollama
+</span></span></code></pre></td></tr></table></div></div><br><h3 id=ai-모델을-저장할-pvc-생성>AI 모델을 저장할 PVC 생성</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># ollama-pvc.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>PersistentVolumeClaim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>ollama-models-pvc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>ollama</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>accessModes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>ReadWriteOnce</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class=l>30Gi</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f ollama-pvc.yaml
+</span></span></code></pre></td></tr></table></div></div><br><h3 id=helm-repository-추가-1>Helm Repository 추가</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm repo add ollama https://ollama.ai/kubernetes/ollama
+</span></span><span class=line><span class=cl>helm repo update
+</span></span></code></pre></td></tr></table></div></div><br><h3 id=values-설정-1>values 설정</h3><p>Nvidia GPU Operator와 마찬가지로 values를 가져와 살펴볼 수 있다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># ollama.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>ollama</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gpu</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w> </span><span class=c># GPU 사용 여부</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>runtimeClassName</span><span class=p>:</span><span class=w> </span><span class=l>nvidia</span><span class=w> </span><span class=c># nvidia runtime 사용 (Nvidia GPU Operator)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>persistentVolume</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>existingClaim</span><span class=p>:</span><span class=w> </span><span class=l>ollama-models-pvc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># (선택) GPU가 설치되어 있는 Node에만 파드가 스케쥴링 되도록 하기</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>affinity</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nodeAffinity</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>requiredDuringSchedulingIgnoredDuringExecution</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>nodeSelectorTerms</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>matchExpressions</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>nvidia.com/gpu.present</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>operator</span><span class=p>:</span><span class=w> </span><span class=l>Exists</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>여담으로 Helm Chart를 통해 AI Models를 관리하는 것도 가능하다.</p><p>예를 들어:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=nt>ollama</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>models</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pull</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>deepseek-r1:8b</span><span class=w> </span><span class=c># DeepSeek 모델을 다운로드</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>run</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>deepseek-r1:8b</span><span class=w> </span><span class=c># 원하는 모델을 메모리에 상주</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># 혹은 다음과 같은 방식으로 커스텀 모델 생성도 가능</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>create</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>deepseek-r1-ctx32768</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>template</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>            FROM deepseek-r1:8b
+</span></span></span><span class=line><span class=cl><span class=sd>            PARAMETER num_ctx 32768</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>clean</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w> </span><span class=c># 이 값을 true로 하면 위에서 지정한 모델만 남기고 다 지운다</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>그런데 그다지 추천하지는 않는다.</p><p>AI 모델 변경이 의외로 자주 일어나는데 그때마다 Helm 차트를 다시 배포하는 건 꽤나 번거롭다.</p><br><h3 id=차트-배포-1>차트 배포</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm install ollama ollama/ollama -f ollama.yml -n ollama
+</span></span></code></pre></td></tr></table></div></div><br><h2 id=open-web-ui-설치>Open Web UI 설치</h2><p>Ollama Chart는 오로지 <strong>Ollama</strong>만 설치해준다.<br>직접 테스트해볼 수 있게 UI도 별도 Chart로 배포했다.<br>기본적인 AI 인프라만 필요하다면 이 섹션은 무시해도 된다.</p><h3 id=네임스페이스-생성-2>네임스페이스 생성</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl create namespace open-webui
+</span></span></code></pre></td></tr></table></div></div><br><h3 id=환경-설정을-저장할-pvc-생성>환경 설정을 저장할 PVC 생성</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># open-webui-pvc.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>PersistentVolumeClaim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>open-webui-pvc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>open-webui</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>accessModes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>ReadWriteOnce</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class=l>2Gi</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f open-webui-pvc.yaml
+</span></span></code></pre></td></tr></table></div></div><br><h3 id=helm-repository-추가-2>Helm Repository 추가</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm repo add open-webui https://open-webui.github.io/helm-charts
+</span></span><span class=line><span class=cl>helm repo update
+</span></span></code></pre></td></tr></table></div></div><br><h3 id=values-설정-2>values 설정</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># open-webui-values.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>ollama</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w> </span><span class=c># Ollama 설치 안 함</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># 이 부분이 좀 의아할텐데 Open Web UI 차트에서는</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># 내부적으로 Ollama를 설치하는 것도 가능하다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># 여기에 위 Ollama 차트의 설정을 그대로 넣으면 가능하다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># 하지만 가급적 분리해서 배포하는 걸 추천한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># 자체 Ollama를 안 쓰기 때문에 UI가 연결할 Ollama의 URL을 지정해줘야 한다</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># FQDN을 다 쓸 필요는 없고 http://&lt;서비스&gt;.&lt;네임스페이스&gt;:&lt;포트&gt;로 적으면 된다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># 서비스와 네임스페이스는 모두 &#34;ollama&#34;이고 포트는 기본적으로 11434이다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># 따라서 &#34;http://ollama.ollama:11434&#34;를 적어준다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>ollamaUrls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>http://ollama.ollama:11434</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># (선택) Tika 설정</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>tika</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># (선택) Health Check 설정</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>livenessProbe</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>httpGet</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/health</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>failureThreshold</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>periodSeconds</span><span class=p>:</span><span class=w> </span><span class=m>10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>readinessProbe</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>httpGet</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/health/db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>failureThreshold</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>periodSeconds</span><span class=p>:</span><span class=w> </span><span class=m>10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>startupProbe</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>httpGet</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/health</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>failureThreshold</span><span class=p>:</span><span class=w> </span><span class=m>20</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>periodSeconds</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>initialDelaySeconds</span><span class=p>:</span><span class=w> </span><span class=m>30</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># (선택) Ingress 설정</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>ingress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>class</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;&lt;보유한 도메인 레코드, 가령 ai.example.com&gt;&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># Persistence 설정</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>persistence</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>existingClaim</span><span class=p>:</span><span class=w> </span><span class=l>open-webui-pvc</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><h3 id=차트-배포-2>차트 배포</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm install open-webui open-webui/open-webui <span class=se>\
+</span></span></span><span class=line><span class=cl>    -f open-webui-values.yaml <span class=se>\
+</span></span></span><span class=line><span class=cl>    -n open-webui
+</span></span></code></pre></td></tr></table></div></div><br><h2 id=동작-테스트>동작 테스트</h2><p>ingress 설정을 해두었다면 설정한 domain으로, 별도 설정을 안 했다면<br>다음의 커맨드로 포트포워딩 후 <code>localhost:8080</code>으로 접속해보자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl port-forward -n open-webui svc/open-webui 8080:80
+</span></span></code></pre></td></tr></table></div></div><p>간단하게 관리자 설정을 마치고 로그인한 뒤<br><code>우측 상단의 프로필</code> 클릭 -> <code>관리자 패널</code> -> <code>설정</code>으로 들어가보자.<br>혹은 단순히 <code>&lt;Open Web UI Base URL>/admin/settings/general</code>로 들어갈 수 있다.</p><p align=center><img src=images/screenshot/admin-panel.png alt></p><p>굉장히 다양한 옵션이 있다.<br>우선 기본 동작 테스트를 해야하므로, <code>모델</code>로 이동해 AI 모델 하나를 다운로드 받아보도록 하자.</p><p align=center><img src=images/screenshot/models.png alt></p><p><a class=link href=https://ollama.com/search target=_blank rel=noopener>Ollama.com 검색 페이지</a>에 접속해서 원하는 모델을 찾아보자<br>AI 모델이 워낙 종류가 다양해서 뭐 하나 고르는 게 쉽지는 않다.<br>몇 가지 추천을 해보자면 다음과 같다.</p><ul><li><p><a class=link href=https://ollama.com/joonoh/HyperCLOVAX-SEED-Text-Instruct-1.5B target=_blank rel=noopener>Naver Clova</a></p></li><li><p><a class=link href=https://ollama.com/library/exaone-deep target=_blank rel=noopener>LG Exaone Deep</a></p></li><li><p><a class=link href=https://ollama.com/library/gemma3 target=_blank rel=noopener>Gemma3</a></p></li></ul><p>하드웨어 사양과 취향에 맞춰 원하는 모델을 다운로드 받아보자.<br>내 경우 <a class=link href=https://ollama.com/library/exaone-deep:7.8b target=_blank rel=noopener>exaone-deep:7.8b</a>란 모델을 다운로드 받았다.</p><p>모델 다운로드가 완료되면 간단하게 AI와 채팅해볼 수 있다.</p><p align=center><img src=images/screenshot/chat.png alt></p><br><h2 id=마치며>마치며</h2><p>이번 포스트에서는 Kubernetes 클러스터에 Ollama AI 서버를 구축하는 과정을 다뤄봤다.<br>Nvidia GPU Operator 설치부터 Ollama, Open Web UI 배포까지 전 과정을 Helm 차트를 통해 간단하게 구성할 수 있었다.</p><p>물론 실제 상용 환경에서는 앞서 언급한 <strong>비용 문제</strong>와 <strong>클러스터 구성 방식</strong>에 대한 고민이 필요하다.<br>특히 GPU 하드웨어의 높은 가격대와 클라우드 사용료는 여전히 큰 부담으로 남아있다.</p><p>하지만 이번 실험을 통해 얻은 경험은 향후 실제 AI 인프라 도입 시 큰 도움이 될 것 같다.<br>On-Premise 환경에서도 충분히 동작하는 것을 확인했으니, 비용 효율성을 고려한 하이브리드 구성도 충분히 검토해볼 만하다.</p><br><h3 id=추후-계획>추후 계획</h3><p>포스트에는 굳이 명시하지 않았는데, Ollama Chart 역시 별도의 Ingress 설정을 해주었다.</p><p>사용한 도메인 레코드는 <code>ollama.ayteneve93.com</code>.</p><p>OAuth2 Proxy를 보안 레이어로 감싸주고 Terraform이 랜덤하게<br>생성한 OAuth Bypass Key 헤더를 설정, 인증된 사용자라면 외부에서도 들어올 수 있게 환경을 마련하였다.</p><p>테스트로 설치한 Ollama지만 일단 자원을 잡아먹고는 있으니 이걸 앞으로 어떻게 활용할까도 생각해봐야 한다.</p><p>가령:</p><ul><li><p>Cursor와 같은 인공지능 IDE와 연결한다거나</p></li><li><p><a class=link href=https://ollama.com/library/deepseek-coder-v2 target=_blank rel=noopener>deepseek-coder</a> 모델을 사용해서 코드 분석을 맡겨본다거나</p></li><li><p><a class=link href=https://ollama.com/library/llava target=_blank rel=noopener>llava</a> 같은 Vision 모델을 사용해서 그림을 그리게 시킨다거나</p></li></ul><p>또한 <a class=link href=https://github.com/NVIDIA/dcgm-exporter target=_blank rel=noopener>DCGM Exporter</a> 차트를 배포해 Prometheus에서<br>GPU 사용량을 모니터링할 수 있도록 할 계획이다.</p><hr><blockquote><p><strong>참고 자료</strong></p><ul><li><a class=link href=https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/overview.html target=_blank rel=noopener>Nvidia GPU Operator 공식 문서</a></li><li><a class=link href=https://artifacthub.io/packages/helm/ollama-helm/ollama target=_blank rel=noopener>Ollama Kubernetes Helm Chart</a></li><li><a class=link href=https://artifacthub.io/packages/helm/open-webui/open-webui target=_blank rel=noopener>Open Web UI Helm Chart</a></li></ul></blockquote></section><footer class=article-footer><section class=article-tags><a href=/tags/helm/>Helm</a>
+<a href=/tags/kubernetes/>Kubernetes</a>
+<a href=/tags/on-premise/>On-Premise</a>
+<a href=/tags/ai/>AI</a>
+<a href=/tags/ollama/>Ollama</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>관련 글</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/dev/install-metallb-to-on-premise-k8s/><div class=article-image><img src=/p/dev/install-metallb-to-on-premise-k8s/images/cover.2c0e356b72e9a7a9380e959e98ea4e20_hu_777ca3fd721abd81.png width=250 height=150 loading=lazy alt="Featured image of post On-Premise k8s에 Metallb 설치" data-key=dev/install-metallb-to-on-premise-k8s data-hash="md5-LA41a3Lpp6k4DpWemOpOIA=="></div><div class=article-details><h2 class=article-title>On-Premise k8s에 Metallb 설치</h2></div></a></article><article class=has-image><a href=/p/dev/init-linux-using-ventoy/><div class=article-image><img src=/p/dev/init-linux-using-ventoy/images/cover.e7058149f4d64cdb9b20cdb1bd266ad7_hu_afe4fcc38280b927.png width=250 height=150 loading=lazy alt="Featured image of post Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기" data-key=dev/init-linux-using-ventoy data-hash="md5-5wWBSfTWTNubIM2xvSZq1w=="></div><div class=article-details><h2 class=article-title>Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기</h2></div></a></article><article class=has-image><a href=/p/dev/nfs-subdir-external-provisioner/><div class=article-image><img src=/p/dev/nfs-subdir-external-provisioner/images/cover.1fc53b8a4b7e37ff70dc14f192254e6a_hu_b683c0901dd0406b.png width=250 height=150 loading=lazy alt="Featured image of post Nfs subdir external provisioner" data-key=dev/nfs-subdir-external-provisioner data-hash="md5-H8U7ikt+N/9w3BTxkiVOag=="></div><div class=article-details><h2 class=article-title>Nfs subdir external provisioner</h2></div></a></article><article class=has-image><a href=/p/dev/install-lxcfs-to-k8s/><div class=article-image><img src=/p/dev/install-lxcfs-to-k8s/images/cover.0632ef054b50fa9e2854c6dd611af5e6_hu_3455f26d4d182c8e.png width=250 height=150 loading=lazy alt="Featured image of post LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법" data-key=dev/install-lxcfs-to-k8s data-hash="md5-BjLvBUtQ+p4oVMbdYRr15g=="></div><div class=article-details><h2 class=article-title>LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법</h2></div></a></article><article class=has-image><a href=/p/dev/configuring-monitoring-stack-on-multiple-cluster/><div class=article-image><img src=/p/dev/configuring-monitoring-stack-on-multiple-cluster/images/cover.681d13adab6bda2e4d88aa163c5941c2_hu_8a165ec2662c71d7.png width=250 height=150 loading=lazy alt="Featured image of post Multi-Cluster 모니터링 스택 구축하기" data-key=dev/configuring-monitoring-stack-on-multiple-cluster data-hash="md5-aB0Tratr2i5NiKoWPFlBwg=="></div><div class=article-details><h2 class=article-title>Multi-Cluster 모니터링 스택 구축하기</h2></div></a></article></div></div></aside><script src=https://utteranc.es/client.js repo=ApexCaptain/ApexCaptain.github.io issue-term=pathname label=comments crossorigin=anonymous async></script><style>.utterances{max-width:unset}</style><script>let utterancesLoaded=!1;function setUtterancesTheme(e){let t=document.querySelector(".utterances iframe");t&&t.contentWindow.postMessage({type:"set-theme",theme:`github-${e}`},"https://utteranc.es")}addEventListener("message",e=>{if(e.origin!=="https://utteranc.es")return;utterancesLoaded=!0,setUtterancesTheme(document.documentElement.dataset.scheme)}),window.addEventListener("onColorSchemeChange",e=>{if(!utterancesLoaded)return;setUtterancesTheme(e.detail)})</script><footer class=site-footer><section class=copyright>&copy;
+2025 -
+2026 ApexCaptain의 기술 블로그</section><section class=powerby><a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a>로 만듦<br><a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a>의 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.34.2>Stack</a></b> 테마 사용 중</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

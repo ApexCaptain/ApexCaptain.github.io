@@ -1,0 +1,1045 @@
+<!doctype html><html lang=ko-kr dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="들어가기 앞서 지난 달 말에 &ldquo;k8s에 Ollama AI 서버 올려보기&rdquo;라는 포스트를 통해\n&ldquo;GPU가 포함된 인프라 구축에 대해 고민 중&ldquo;이라는 내용을 언급했다.\n"><title>Istio를 활용해 다중 Cluster에 Service Mesh 구성하기</title><link rel=canonical href=https://blog.ayteneve93.com/p/dev/istio-multi-cluster-service-mesh/><link rel=stylesheet href=/scss/style.min.86591c898bd806857815fbb8c47e8d3fed97c133b78e83d9bfc27b164dd0aa2b.css><meta property='og:title' content="Istio를 활용해 다중 Cluster에 Service Mesh 구성하기"><meta property='og:description' content="들어가기 앞서 지난 달 말에 &ldquo;k8s에 Ollama AI 서버 올려보기&rdquo;라는 포스트를 통해\n&ldquo;GPU가 포함된 인프라 구축에 대해 고민 중&ldquo;이라는 내용을 언급했다.\n"><meta property='og:url' content='https://blog.ayteneve93.com/p/dev/istio-multi-cluster-service-mesh/'><meta property='og:site_name' content='ApexCaptain의 기술 블로그'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Kubernetes'><meta property='article:tag' content='Istio'><meta property='article:tag' content='ServiceMesh'><meta property='article:published_time' content='2025-11-15T00:00:00+09:00'><meta property='article:modified_time' content='2025-11-15T00:00:00+09:00'><meta property='og:image' content='https://blog.ayteneve93.com/p/dev/istio-multi-cluster-service-mesh/images/cover.png'><meta name=twitter:title content="Istio를 활용해 다중 Cluster에 Service Mesh 구성하기"><meta name=twitter:description content="들어가기 앞서 지난 달 말에 &ldquo;k8s에 Ollama AI 서버 올려보기&rdquo;라는 포스트를 통해\n&ldquo;GPU가 포함된 인프라 구축에 대해 고민 중&ldquo;이라는 내용을 언급했다.\n"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://blog.ayteneve93.com/p/dev/istio-multi-cluster-service-mesh/images/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="메뉴 여닫기">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_dfa970e81d3cb955.png width=300 height=298 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>👋</span></figure><div class=site-meta><h1 class=site-name><a href=/>ApexCaptain의 기술 블로그</a></h1><h2 class=site-description></h2></div></header><ol class=menu-social><li><a href=https://github.com/ApexCaptain target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>다크 모드</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">목차</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#들어가기-앞서>들어가기 앞서</a><ol><li><a href=#service-mesh-확장-방식>Service Mesh 확장 방식</a></li><li><a href=#멀티-클러스터-서비스-메시-시나리오>멀티 클러스터 서비스 메시 시나리오</a></li></ol></li><li><a href=#멀티-클러스터-서비스-메시-구현>멀티 클러스터 서비스 메시 구현</a><ol><li><a href=#primary-기본-네트워크-설정>Primary 기본 네트워크 설정</a></li><li><a href=#oke-클러스터를-primary로-구성>OKE 클러스터를 Primary로 구성</a></li><li><a href=#primary에-east-west-gateway-설치>Primary에 <code>east-west gateway</code> 설치</a></li><li><a href=#primary-cluster의-제어-평면-노출>Primary Cluster의 제어 평면 노출</a></li><li><a href=#remote-cluster-제어-평면-설정>Remote Cluster 제어 평면 설정</a></li><li><a href=#remote-기본-네트워크-설정>Remote 기본 네트워크 설정</a></li><li><a href=#workstation-클러스터를-remote로-구성>Workstation 클러스터를 Remote로 구성</a></li><li><a href=#remote-클러스터의-연결-정보-생성>Remote 클러스터의 연결 정보 생성</a></li><li><a href=#primary에-remote-클러스터의-연결-정보-주입>Primary에 Remote 클러스터의 연결 정보 주입</a></li><li><a href=#remote에-east-west-gateway-설치>Remote에 <code>east-west gateway</code> 설치</a></li><li><a href=#primary--remote-양쪽-모두에-cross-network-gateway-배포>Primary / Remote 양쪽 모두에 Cross Network Gateway 배포</a></li></ol></li><li><a href=#기본-연결-상태-확인>기본 연결 상태 확인</a><ol><li><a href=#istioctl로-멀티-클러스터-상태-확인>istioctl로 멀티 클러스터 상태 확인</a></li><li><a href=#istioctl로-프록시-상태-확인>istioctl로 프록시 상태 확인</a></li></ol></li><li><a href=#크로스-클러스터-트래픽-테스트>크로스 클러스터 트래픽 테스트</a><ol><li><a href=#primary에-샘플-앱-배포>Primary에 샘플 앱 배포</a></li><li><a href=#remote에-샘플-앱-배포>Remote에 샘플 앱 배포</a></li><li><a href=#primary에서-연결-테스트>Primary에서 연결 테스트</a></li><li><a href=#remote에서-연결-테스트>Remote에서 연결 테스트</a></li></ol></li><li><a href=#당면했던-문제들>당면했던 문제들</a><ol><li><a href=#ingress>Ingress</a></li><li><a href=#oauth2-proxy>OAuth2 Proxy</a></li></ol></li><li><a href=#마치며>마치며</a></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/dev/istio-multi-cluster-service-mesh/><img src=/p/dev/istio-multi-cluster-service-mesh/images/cover_hu_8e4cbbb394b499ee.png srcset="/p/dev/istio-multi-cluster-service-mesh/images/cover_hu_8e4cbbb394b499ee.png 800w, /p/dev/istio-multi-cluster-service-mesh/images/cover_hu_e8684aa9d9568b27.png 1600w" width=800 height=244 loading=lazy alt="Featured image of post Istio를 활용해 다중 Cluster에 Service Mesh 구성하기"></a></div><div class=article-details><header class=article-category><a href=/categories/development/ style=background-color:#efbec3;color:#3d0f14>Development</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/dev/istio-multi-cluster-service-mesh/>Istio를 활용해 다중 Cluster에 Service Mesh 구성하기</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2025-11-15T00:00:00+09:00>2025년 11월 15일</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>16 분 정도</time></div></footer></div></header><section class=article-content><h2 id=들어가기-앞서>들어가기 앞서</h2><p>지난 달 말에 <a class=link href=../install-ollama-to-k8s/>&ldquo;k8s에 Ollama AI 서버 올려보기&rdquo;</a>라는 포스트를 통해<br>&ldquo;<strong>GPU가 포함된 인프라 구축에 대해 고민 중</strong>&ldquo;이라는 내용을 언급했다.</p><p align=center><img src=images/gpu-server-property.png alt>
+<em>GPU 서버 스펙</em></p><p>이리저리 정보를 취합해 비교/토의한 결과,<br>결국 <strong>독립된 GPU 서버를 IDC 센터에 설치하는 형태</strong>로 마무리 되었다.</p><p>그냥 GPU 서버를 클라우드에 올려 준다면야 나는 매우 편하고 좋겠지만,<br>클라우드의 엄청난 비용 부담을 고려하면 이 방식이 가장 합리적인 판단이라고 생각한다.</p><p>RTX A6000 GPU의 성능이 지금 당장은 충분해 보이나,<br>향후 확장성을 고려하면 GPU 서버 역시 k8s 클러스터로 구성해야 한다.</p><p>하지만 실제 서비스를 사용자에게 제공할 때는 클라우드에 있는 k8s를 사용한다.<br>GPU 클러스터는 GPU 중심의 워크로드만 담당하고 각종 인증, 데이터 처리, 웹 서비스 등은 클라우드에서 제공한다는 의미이다.</p><blockquote><p>요컨대 <strong>클러스터 간의 통신을 구축할</strong> 필요성이 생겼다.</p></blockquote><p>사실 이런 시나리오를 전혀 예측하지 못한 것은 아니다.</p><p>현대적인 인프라 아키텍처에서는 점차 여러 개의 k8s 클러스터를 운영하는 것이 일반적인 관습이 되어가고 있다. 처음에 k8s를 사용할 때는 하나의 클러스터로도 필요한 모든 서비스를 처리하는 게 가능해 보이지만, 확장성이나 장애 시 복원 탄력성 등 머지 않아 그 한계에 부딪히게 된다.</p><p>이번 GPU 케이스의 경우 &ldquo;클라우드에 올리기에 너무 비싸 자체적으로 운영한다"라는 <strong>물리적인 확장성 이슈</strong>이다.</p><p>Istio는 이런 상황에 대응할 수 있도록 <strong>다수의 클러스터를 하나의 서비스 메시로 통합</strong>해 여러 클러스터에 걸친 워크로드 간 통신을 안전하고<sub>(mTLS, Authorization Policy)</sub>, 일관된 방식<sub>(트래픽 제어)</sub>으로 구성할 수 있는 기능을 제공한다.</p><br><h3 id=service-mesh-확장-방식>Service Mesh 확장 방식</h3><p><a class=link href=https://istio.io/latest/docs/ops/deployment/deployment-models target=_blank rel=noopener>Istio Deployment Models 공식 문서</a>에 따르면 서비스 메시 확장은 크게 2가지 모델이 존재한다.</p><ol><li><p><a class=link href=https://istio.io/latest/docs/ops/deployment/deployment-models/#multiple-clusters target=_blank rel=noopener>Multiple Clusters</a></p><p>동일한 Service Mesh가 여러 k8s 클러스터에 걸쳐 뻗어있는 방식이다. <sub><del>(클러스터 클러스터)</del></sub><br>여러 클러스터의 서비스들이 <strong>하나의 통합된 메시</strong>로 관리되며, 클러스터 간 자동 서비스 발견 및 로드 밸런싱이 가능하다.</p><p>Multiple Clusters 모델의 주요 특징:</p><ul><li><strong>서비스 발견 (Service Discovery)</strong>: 여러 클러스터의 서비스 엔드포인트를 자동으로 통합</li><li><strong>크로스 클러스터 로드 밸런싱</strong>: 요청을 여러 클러스터의 엔드포인트에 자동 분산</li><li><strong>네트워크 구성</strong>: 단일 네트워크 또는 다중 네트워크(지리적 분산, 보안 격리) 구성 가능</li><li><strong>제어 평면 (Control Plane)</strong>: 단일 제어 평면으로 여러 클러스터 관리 혹은 각 클러스터에 독립적으로 배치</li></ul><p>클러스터 간 엔드포인트 발견을 위해서는 각 제어 평면에 <strong>remote secret</strong>을 배포하여 다른 클러스터의 API 서버에 접근할 수 있도록 구성해야 한다.</p><p align=center><img src=images/istio-multi-cluster.png alt></p><blockquote><p>하나의 국가 내에 존재하는 여러 도시들을 생각해보자, 예를 들면 <strong>대한민국</strong>의 <strong>서울/부산/대구</strong>.</p><p>지리적 위치는 물론 수도, 가스, 전기, 하다못해 지하철 노선 등등 분명 독립된 인프라가 존재한다.<br>하지만 모든 도시는 &ldquo;대한민국"이라는 국가 내에서 동일한 법률, 정부, 화폐, 신분증 체계를 공유한다.<br>도시 간 이동은 상당히 자유로우며, 다른 도시에 있는 사람을 같은 국가의 시민으로 인식한다.</p></blockquote></li><li><p><a class=link href=https://istio.io/latest/docs/ops/deployment/deployment-models/#multiple-meshes target=_blank rel=noopener>Multiple Meshes</a></p><p>여러 개의 독립적인 서비스 메시를 연합(Mesh Federation)하는 방식이다. <sub><del>(클러스터 클러스터 클러스터)</del></sub><br>각 메시는 고유한 <strong>mesh ID</strong>를 가지며, 서비스 이름이나 네임스페이스 이름을 재사용할 수 있다.</p><p>Multiple Meshes 모델은 다음과 같은 상황에서 유용하다:</p><ul><li><strong>조직 경계</strong>: 서로 다른 조직이나 사업부가 독립적인 메시를 운영</li><li><strong>강한 격리</strong>: 테스트 워크로드와 프로덕션 워크로드 간 완전한 격리</li></ul><p>메시 간 통신을 위해서는 <strong>Mesh Federation</strong>을 구성해야 하며, 서로 다른 trust domain을 가진 메시 간 통신을 위해서는 <strong>trust bundle 교환</strong>이 필요하다.</p><p align=center><img src=images/istio-multi-mesh.png alt></p><blockquote><p>세상에는 여러 개의 나라가 있다. 예를 들면 대한민국, 일본, 미국 등등.</p><p>각각의 국가는 기본적인 인프라는 물론 저마다 다른 법률, 정부, 통화, 언어 및 신분증 체계를 가지고 있다.<br>국가 간 이동은 <strong>여권</strong>과 <strong>비자</strong>가 필요하며, 행동에 상당한 제약이 따른다.<br>가령, 미국에 여행 간 사람이 총기를 구매한다거나 투표를 한다거나 하는 것은 불가능하다.</p></blockquote></li></ol><br><h3 id=멀티-클러스터-서비스-메시-시나리오>멀티 클러스터 서비스 메시 시나리오</h3><p>위 언급한 2가지 모델 중 이번에 사용할 것은 <strong>멀티 클러스터</strong>이다.<br>멀티 클러스터 메시를 구성할 때는 <strong>네트워크 분리 여부</strong>와 <strong>제어 평면 배포 방식</strong>에 따라 4개의 시나리오가 있다.</p><div class=table-wrapper><table><thead><tr><th>시나리오</th><th>네트워크</th><th>제어 평면(Control Plane)</th></tr></thead><tbody><tr><td><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/multi-primary/ target=_blank rel=noopener>1. Multi-Primary</a></td><td>동일 네트워크</td><td>개별 배포</td></tr><tr><td><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/primary-remote/ target=_blank rel=noopener>2. Primary-Remote</a></td><td>동일 네트워크</td><td>단일 배포</td></tr><tr><td><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/multi-primary_multi-network/ target=_blank rel=noopener>3. Multi-Primary on different network</a></td><td>개별 네트워크</td><td>개별 배포</td></tr><tr><td><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/primary-remote_multi-network/ target=_blank rel=noopener>4. Primary-Remote on different network</a></td><td>개별 네트워크</td><td>단일 배포</td></tr></tbody></table></div><p>내 경우 연결할 두 클러스터의 네트워크가 물리적으로 완전히 분리된 상황이므로 3번 혹은 4번만 보면 된다.</p><p>Multi-Primary와 Primary-Remote의 차이는 <strong>제어 평면을 각 클러스터마다 배포 할 것인지</strong>(Multi-Primary),<br>아니면 <strong>하나의 제어 평면만 두고(Primary), 다른 클러스터를(Remote) 관리만 할 것인지</strong>(Primary-Remote)이다.</p><p>앞서 비유를 이어가면 다음과 같다.</p><blockquote><ul><li><p><strong>Multi-Primary (개별 제어 평면)</strong>: <strong>연방제 국가</strong>의 각 주(州)가 독립적인 정부를<sub>(주 정부)</sub> 가지는 방식.</p><p>예를 들어, 미국의 캘리포니아, 텍사스, 뉴욕은 각각 독립적인 주 정부를 가지고 있다.<br>한 주의 정부가 마비되어도 다른 주는 정상적으로 운영되지만, 각 주마다 정부 조직을 유지해야 하므로 비용과 운영 부담이 크다.</p></li></ul><br><ul><li><p><strong>Primary-Remote (단일 제어 평면)</strong>: <strong>단일 국가</strong>의 중앙 정부가 여러 지역을 관리하는 방식.</p><p>예를 들어, 우리나라는 중앙정부(서울)가 서울, 부산, 대구 등 모든 도시를 관리한다.<br>하나의 정부로 통합 관리하므로 운영이 간단하지만, 중앙정부가 마비되면 전국이 위험해진다.<br><sub>(물론 우리나라도 지방 자치가 있긴 한데, 미국이나 독일 등의 주 정부에 비하면 권한이 매우 약하다.)</sub></p></li></ul></blockquote><div class=table-wrapper><table><thead><tr><th></th><th>개별 제어 평면(Multi-Primary)</th><th>단일 제어 평면(Primary-Remote)</th></tr></thead><tbody><tr><td>장점</td><td>고 가용성, 장애 격리</td><td>구성과 운영 난이도가 낮음</td></tr><tr><td>단점</td><td>리소스 소모가 많아지고 운영 난이도가 높음</td><td>Primary의 Istiod 다운 시 전체 메시가 위험해짐</td></tr></tbody></table></div><p>2가지 시나리오를 모두 경험해보고 싶어서, 내가 개인적으로 운영하는 k8s는 <strong>단일 제어 평면</strong>,<br>회사의 k8s는 <strong>개별 제어 평면</strong>으로 구성하려고 한다.</p><p>이번 포스트에선 개인 k8s에 멀티 클러스터 서비스 메시를 <strong>Primary-Remote on different network</strong> 시나리오에 맞춰 구성한 내용을 담는다.</p><br><h2 id=멀티-클러스터-서비스-메시-구현>멀티 클러스터 서비스 메시 구현</h2><p>실습한 시나리오는 <strong>Primary-Remote</strong>이다.</p><p><strong>Primary Cluster</strong>는 Oracle Cloud Infrastructure에 <strong>OKE Cluster</strong>,<br><strong>Remote Cluster</strong>는 집에 있는 <strong>On-Premise Cluster</strong>이다.</p><p>Primary 클러스터에 단일 제어 평면(Istio Control Plane)을 설치하고,<br>Remote 클러스터는 Primary가 만든 서비스 메시에 클라이언트로서 참여한다.</p><p>전체 클러스터를 아우르는 <code>Mesh ID</code> 값을 정해야 한다.<br>내 경우 <code>apex-captain-mesh</code>로 지정했다.</p><p>각 클러스터에 Istio 리소스가 배포되는 <code>Namespace</code>는 <code>istio-system</code>이다. (기본값)</p><p>각 클러스터의 이름과 네트워크명을 할당했다.<br>Primary Cluster는 <code>oke</code>, Remote Cluster는 <code>workstation</code>이다.</p><hr><blockquote><p>⚠️ 두 클러스터를 왔다갔다 하면서 작업해야 해서 헷갈릴 수 있다.</p><p>각 섹션 앞에는 <strong>어느 Context에서 진행하는 내용인지</strong> 명시 해두었으니 참고하자.</p></blockquote><hr><h3 id=primary-기본-네트워크-설정>Primary 기본 네트워크 설정</h3><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><p>Primary 클러스터의 istio-system Namespace에 Network 값을 Label로 달아준다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl label namespace istio-system topology.istio.io/network<span class=o>=</span>oke
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=oke-클러스터를-primary로-구성>OKE 클러스터를 Primary로 구성</h3><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><p>우선 istio-base를 설치한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>helm install istio-base istio/base -n istio-system 
+</span></span></code></pre></td></tr></table></div></div><br><p>istiod는 다음과 같은 values를 사용해 설치한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># Primary-Istiod.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>global</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>meshID</span><span class=p>:</span><span class=w> </span><span class=l>apex-captain-mesh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>externalIstiod</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network</span><span class=p>:</span><span class=w> </span><span class=l>oke</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>multiCluster</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>clusterName</span><span class=p>:</span><span class=w> </span><span class=l>oke</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=c># 기타 설정...</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>helm install istiod istio/istiod -n istio-system \
+</span></span><span class=line><span class=cl>        -f Primary-Istiod.yml
+</span></span></code></pre></td></tr></table></div></div><p><code>global.externalIstiod</code>를 <code>true</code>로 설정하는 것이 중요하다.<br>이는 OKE 클러스터에 설치되는 Istiod가 <code>외부 제어 평면</code>으로 기능 할 수 있도록 하는 플래그이다.</p><p><br><br></p><h3 id=primary에-east-west-gateway-설치>Primary에 <code>east-west gateway</code> 설치</h3><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><p>Istio에는 <code>north-south</code>, <code>east-west</code> 게이트웨이라는 개념이 있다.<br>남북이니, 동서니 하는데 이게 Istio에서만 쓰는 이상한 용어는 아니고, 트래픽의 <strong>방향</strong>에 대한 얘기이다.</p><p align=center><img src=images/traffic.png alt></p><p>위 그림의 Data Center를 각각 하나의 k8s라고 생각해 보자.</p><p>External Network, 즉 &ldquo;인터넷"을 북쪽, &ldquo;k8s"를 남쪽에 두면<br><code>north-south</code> 트래픽이란 것은 인터넷과 서비스 간, 즉 외부 사용자와의 통신을 의미한다.<br>일반적으로 많이 쓰는 &ldquo;Nginx Ingress Controller"가 담당하는 것이 <code>north-south</code> 트래픽인 것이다.</p><p>반면, 두 k8s를 나란히 옆으로 두면 두 k8s 간의 통신은<br>동-서 간, 즉 <code>east-west</code> 간의 통신이 된다.<br><code>east-west</code> 게이트웨이는 k8s 간의 istio mesh 구성을 위해 통신하는 출입문이다.<br>멀티 클러스터 서비스 메시를 구성하는 모든 k8s에 하나씩 필요하다.</p><p>우선 Primary 클러스터에 east-west gateway를 설치해보자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Primary-Istio-East-West-Gateway.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>istio-eastwestgateway</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>networkGateway</span><span class=p>:</span><span class=w> </span><span class=l>oke</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>LoadBalancer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># Reserved IP를 생성해서 고정된 값을 넣는 것을 추천한다</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>loadBalancerIP</span><span class=p>:</span><span class=w> </span><span class=l>&lt;할당할 LB의 IP&gt; </span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># 기타 추가할 Annotations</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># 아래는 OCI Free Tier에 부합하는 로드밸런서 설정이다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># 사용하는 클라우드 혹은 LB 공급자에 맞춰 설정하자.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># annotations: </span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c>#     &#39;service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode&#39;:&#39;None&#39;,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c>#     &#39;service.beta.kubernetes.io/oci-load-balancer-shape&#39;:&#39;flexible&#39;,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c>#     &#39;service.beta.kubernetes.io/oci-load-balancer-shape-flex-max&#39;:&#39;10&#39;,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c>#     &#39;service.beta.kubernetes.io/oci-load-balancer-shape-flex-min&#39;:&#39;10&#39;,</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><p>helm 차트 배포:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm install istio-eastwestgateway istio/gateway <span class=se>\
+</span></span></span><span class=line><span class=cl>    -n istio-system <span class=se>\
+</span></span></span><span class=line><span class=cl>    -f Primary-Istio-East-West-Gateway.yml
+</span></span></code></pre></td></tr></table></div></div><br><p>배포 상태 확인:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>kubectl get svc -n istio-system -l app=istio-eastwestgateway
+</span></span></code></pre></td></tr></table></div></div><p>다음과 같이 나오면 정상이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>NAME                    TYPE           CLUSTER-IP          EXTERNAL-IP     PORT<span class=o>(</span>S<span class=o>)</span>                                                           AGE
+</span></span><span class=line><span class=cl>istio-eastwestgateway   LoadBalancer   &lt;클러스터 내부 IP&gt;   &lt;LB의 IP&gt;       15021:30358/TCP,15443:30461/TCP,15012:30494/TCP,15017:32510/TCP   2d4h
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=primary-cluster의-제어-평면-노출>Primary Cluster의 제어 평면 노출</h3><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># Primary-Expose-Istiod.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>networking.istio.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Gateway</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>istiod-gateway</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>istio</span><span class=p>:</span><span class=w> </span><span class=l>eastwestgateway</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>servers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>port</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>tls-istiod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class=m>15012</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>tls</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>tls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>mode</span><span class=p>:</span><span class=w> </span><span class=l>PASSTHROUGH        </span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>hosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=s2>&#34;*&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>port</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>tls-istiodwebhook</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class=m>15017</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>tls</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>tls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>mode</span><span class=p>:</span><span class=w> </span><span class=l>PASSTHROUGH          </span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>hosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=s2>&#34;*&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>networking.istio.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>VirtualService</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>istiod-vs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>hosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=s2>&#34;*&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gateways</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>istiod-gateway</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>tls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>match</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>15012</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>sniHosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;*&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>route</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>destination</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>istiod.istio-system.svc.cluster.local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>port</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class=m>15012</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>match</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>15017</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>sniHosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;*&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>route</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>destination</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>istiod.istio-system.svc.cluster.local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>port</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class=m>443</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><p>k8s manifest 배포:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f Primary-Expose-Istiod.yml -n istio-system
+</span></span></code></pre></td></tr></table></div></div><p>배포 상태 확인:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl get gateway,vs -n istio-system
+</span></span></code></pre></td></tr></table></div></div><p>다음과 같이 나오면 정상이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>NAME                                          AGE
+</span></span><span class=line><span class=cl>gateway.networking.istio.io/istiod-gateway    2d4h
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>NAME                                          GATEWAYS             HOSTS   AGE
+</span></span><span class=line><span class=cl>virtualservice.networking.istio.io/istiod-vs  <span class=o>[</span><span class=s2>&#34;istiod-gateway&#34;</span><span class=o>]</span>   <span class=o>[</span><span class=s2>&#34;*&#34;</span><span class=o>]</span>   2d4h
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=remote-cluster-제어-평면-설정>Remote Cluster 제어 평면 설정</h3><p><span style=background-color:#90ee90;color:#000><strong>ㅤ⚠️ Context : Remoteㅤ</strong></span></p><p>Remote 클러스터의 istio-system 네임스페이스에 Primary의 제어 평면을 사용할 것임을 지정해주자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl  annotate namespace istio-system <span class=se>\
+</span></span></span><span class=line><span class=cl>    topology.istio.io/controlPlaneClusters<span class=o>=</span>oke
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=remote-기본-네트워크-설정>Remote 기본 네트워크 설정</h3><p><span style=background-color:#90ee90;color:#000><strong>ㅤ⚠️ Context : Remoteㅤ</strong></span></p><p>Remote 클러스터의 istio-system Namespace에도 Network 값을 Label로 달아준다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl label namespace istio-system topology.istio.io/network<span class=o>=</span>workstation
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=workstation-클러스터를-remote로-구성>Workstation 클러스터를 Remote로 구성</h3><p><span style=background-color:#90ee90;color:#000><strong>ㅤ⚠️ Context : Remoteㅤ</strong></span></p><p>Remote에도 istio-base를 설치한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>helm install istio-base istio/base -n istio-system \
+</span></span><span class=line><span class=cl>    --set profile=remote 
+</span></span></code></pre></td></tr></table></div></div><p>profile 값을 &ldquo;<strong>remote</strong>&ldquo;로 해준다.</p><br><p>istiod는 다음과 같은 values를 사용해 설치한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># Remote-Istiod.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>profile</span><span class=p>:</span><span class=w> </span><span class=l>remote</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>global</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>configCluster</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>remotePilotAddress</span><span class=p>:</span><span class=w> </span><span class=l>&lt;Primary 클러스터의 East-West Gateway LB IP&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>multiCluster</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>clusterName</span><span class=p>:</span><span class=w> </span><span class=l>workstation</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network</span><span class=p>:</span><span class=w> </span><span class=l>workstation</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>istiodRemote</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>injectionPath</span><span class=p>:</span><span class=w> </span><span class=l>/inject/cluster/workstation/net/workstation</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          
+</span></span></span><span class=line><span class=cl><span class=c># 기타 설정...</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm install istiod istio/istiod -n istio-system <span class=se>\
+</span></span></span><span class=line><span class=cl>    -f Remote-Istiod.yml
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=remote-클러스터의-연결-정보-생성>Remote 클러스터의 연결 정보 생성</h3><p><span style=background-color:#90ee90;color:#000><strong>ㅤ⚠️ Context : Remoteㅤ</strong></span></p><p>istioctl 명령어로 Remote Cluster에 Service Account와 Role/RoleBinding을 만들고<br>이 정보를 Primary에 Secret으로 넣어줘야 한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>istioctl create-remote-secret <span class=se>\
+</span></span></span><span class=line><span class=cl>    --name<span class=o>=</span>workstation &gt; remote-workstation.yml
+</span></span></code></pre></td></tr></table></div></div><p><code>remote-workstation.yml</code> 파일이 생성되었다면 성공이다.</p><p><br><br></p><h3 id=primary에-remote-클러스터의-연결-정보-주입>Primary에 Remote 클러스터의 연결 정보 주입</h3><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><p>위에서 생성한 <code>remote-workstation.yml</code> 파일을 그대로 Primary 클러스터에 배포해준다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f remote-workstation.yml
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=remote에-east-west-gateway-설치>Remote에 <code>east-west gateway</code> 설치</h3><p><span style=background-color:#90ee90;color:#000><strong>ㅤ⚠️ Context : Remoteㅤ</strong></span></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Remote-Istio-East-West-Gateway.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>istio-eastwestgateway</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>networkGateway</span><span class=p>:</span><span class=w> </span><span class=l>workstation</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>LoadBalancer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>loadBalancerIP</span><span class=p>:</span><span class=w> </span><span class=l>&lt;할당할 LB의 IP&gt; </span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># 이 부분이 좀 특이한데,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># 내가 운영 중인 Workstation Cluster의 경우 Iptime Router 뒤에서 동작한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># 단순 LB IP만 가지고는 Primary가 접근할 수 없으므로</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># 실제 Router의 IP를 넣어줘야 한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>externalIPs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>&lt;Router의 외부 IP&gt;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><p>helm 차트 배포:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm install istio-eastwestgateway istio/gateway <span class=se>\
+</span></span></span><span class=line><span class=cl>    -n istio-system <span class=se>\
+</span></span></span><span class=line><span class=cl>    -f Remote-Istio-East-West-Gateway.yml
+</span></span></code></pre></td></tr></table></div></div><br><p>배포 상태 확인:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>kubectl get svc -n istio-system -l app=istio-eastwestgateway
+</span></span></code></pre></td></tr></table></div></div><p>다음과 같이 나오면 정상이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>NAME                    TYPE           CLUSTER-IP           EXTERNAL-IP              PORT<span class=o>(</span>S<span class=o>)</span>                                                           AGE
+</span></span><span class=line><span class=cl>istio-eastwestgateway   LoadBalancer   &lt;클러스터 내부 IP&gt;   &lt;LB의 IP&gt;,&lt;Router의 IP&gt;   15021:30358/TCP,15443:30461/TCP,15012:30494/TCP,15017:32510/TCP   35h
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=primary--remote-양쪽-모두에-cross-network-gateway-배포>Primary / Remote 양쪽 모두에 Cross Network Gateway 배포</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># Cross-Network-Gateway.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>networking.istio.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Gateway</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cross-network-gateway</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>istio</span><span class=p>:</span><span class=w> </span><span class=l>eastwestgateway</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>servers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>port</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class=m>15443</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>tls</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TLS</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>tls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>mode</span><span class=p>:</span><span class=w> </span><span class=l>AUTO_PASSTHROUGH</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>hosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=s2>&#34;*.local&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><code>Cross-Network-Gateway.yml</code>을 양쪽 클러스터 모두에 배포해준다.</p><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>kubectl apply -f Cross-Network-Gateway.yml -n istio-system
+</span></span></code></pre></td></tr></table></div></div><p><span style=background-color:#90ee90;color:#000><strong>ㅤ⚠️ Context : Remoteㅤ</strong></span></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>kubectl apply -f Cross-Network-Gateway.yml -n istio-system
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h2 id=기본-연결-상태-확인>기본 연결 상태 확인</h2><h3 id=istioctl로-멀티-클러스터-상태-확인>istioctl로 멀티 클러스터 상태 확인</h3><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>istioctl remote-clusters
+</span></span></code></pre></td></tr></table></div></div><p>다음과 같이 나오면 정상이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>NAME            SECRET                                           STATUS     ISTIOD
+</span></span><span class=line><span class=cl>oke                                                              synced     istiod-59fc7749cd-2bvtx
+</span></span><span class=line><span class=cl>workstation     istio-system/istio-remote-secret-workstation     synced     istiod-59fc7749cd-2bvtx
+</span></span></code></pre></td></tr></table></div></div><p>Primary(oke)에 Secret이 안 보이는 건 당연하다.<br>OKE 자체가 istio 입장에선 Home이라 그렇다. 모든 클러스터가 <code>synced</code>이면 정상이다.</p><p><br><br></p><h3 id=istioctl로-프록시-상태-확인>istioctl로 프록시 상태 확인</h3><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>istioctl proxy-status
+</span></span></code></pre></td></tr></table></div></div><p>다음과 같이 나오면 정상이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>NAME                                                                                CLUSTER         ISTIOD                      VERSION     SUBSCRIBED TYPES
+</span></span><span class=line><span class=cl>ak-outpost-oke-authentik-proxy-outpost-57bd89b88c-9968m.authentik                   oke             istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>ak-outpost-workstation-authentik-proxy-outpost-fcfb6fd5b-5hs99.authentik            workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>authentik-postgresql-0.authentik                                                    oke             istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>authentik-redis-master-0.authentik                                                  oke             istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>authentik-server-7bc95fb9b9-qgnsp.authentik                                         oke             istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>authentik-worker-586897c75d-vspq7.authentik                                         oke             istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>cloudbeaver-deployment-5dcf4cd996-nwmjs.cloudbeaver                                 oke             istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>game-sdtd-deployment-f9dd8578b-llhks.game                                           workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>4</span> <span class=o>(</span>CDS,LDS,EDS,RDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>game-sftp-deployment-75ddb69cb4-pmbx7.game                                          workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>4</span> <span class=o>(</span>CDS,LDS,EDS,RDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>home-l2tp-vpn-proxy-stateful-set-1.home-l2tp-vpn-proxy                              oke             istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>4</span> <span class=o>(</span>CDS,LDS,EDS,RDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>ingress-controller-ingress-nginx-controller-85cf749c6f-xzh4d.ingress-controller     workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>istio-eastwestgateway-6cfbb6f579-j8rgd.istio-system                                 oke             istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,SDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>istio-eastwestgateway-787568f5ff-w5jr5.istio-system                                 workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,SDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>jellyfin-859d64757b-qrh4m.nas                                                       workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>nas-sftp-deployment-6544d44588-5kvng.nas                                            workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>4</span> <span class=o>(</span>CDS,LDS,EDS,RDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>ollama-75d4d849bc-xzlfz.ollama                                                      workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>open-webui-0.open-webui                                                             workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>open-webui-pipelines-996f759d7-gzxwg.open-webui                                     workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>5</span> <span class=o>(</span>CDS,LDS,EDS,RDS,NDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>open-webui-tika-fb987c668-8zswp.open-webui                                          workstation     istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>4</span> <span class=o>(</span>CDS,LDS,EDS,RDS<span class=o>)</span>
+</span></span><span class=line><span class=cl>redis-ui-deployment-65b968c54f-mbxpc.redis-ui                                       oke             istiod-59fc7749cd-2bvtx     1.28.0      <span class=m>4</span> <span class=o>(</span>CDS,LDS,EDS,RDS<span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h2 id=크로스-클러스터-트래픽-테스트>크로스 클러스터 트래픽 테스트</h2><p><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/verify/ target=_blank rel=noopener>Istio 공식 가이드</a>에 따라 두 클러스터에 샘플 서비스를 배포해 정상적으로 동작하는지 테스트해보자.</p><h3 id=primary에-샘플-앱-배포>Primary에 샘플 앱 배포</h3><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># Primary-Sample.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Namespace</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>istio-injection</span><span class=p>:</span><span class=w> </span><span class=l>enabled</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>5000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>helloworld-v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/istio/examples-helloworld-v1:1.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;100m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>imagePullPolicy</span><span class=p>:</span><span class=w> </span><span class=l>IfNotPresent</span><span class=w> </span><span class=c>#Always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>5000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ServiceAccount</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>80</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>terminationGracePeriodSeconds</span><span class=p>:</span><span class=w> </span><span class=m>0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>serviceAccountName</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/curlimages/curl:8.16.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/bin/sleep&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;infinity&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>imagePullPolicy</span><span class=p>:</span><span class=w> </span><span class=l>IfNotPresent</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/etc/curl/tls</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>secret-volume</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>secret-volume</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>secret</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>secretName</span><span class=p>:</span><span class=w> </span><span class=l>curl-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>optional</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>k8s manifest 배포:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f Primary-Sample.yml
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=remote에-샘플-앱-배포>Remote에 샘플 앱 배포</h3><p><span style=background-color:#90ee90;color:#000><strong>ㅤ⚠️ Context : Remoteㅤ</strong></span></p><p>Primary와 거의 유사하다. Deployment만 조금 다르다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=c># Remote-Sample.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Namespace</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>istio-injection</span><span class=p>:</span><span class=w> </span><span class=l>enabled</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>5000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>helloworld-v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=l>v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=l>v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=l>v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>helloworld</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/istio/examples-helloworld-v2:1.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;100m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>imagePullPolicy</span><span class=p>:</span><span class=w> </span><span class=l>IfNotPresent</span><span class=w> </span><span class=c>#Always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>5000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ServiceAccount</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>80</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>sample</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>terminationGracePeriodSeconds</span><span class=p>:</span><span class=w> </span><span class=m>0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>serviceAccountName</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>curl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/curlimages/curl:8.16.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/bin/sleep&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;infinity&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>imagePullPolicy</span><span class=p>:</span><span class=w> </span><span class=l>IfNotPresent</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/etc/curl/tls</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>secret-volume</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>secret-volume</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>secret</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>secretName</span><span class=p>:</span><span class=w> </span><span class=l>curl-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>optional</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nn>---</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>k8s manifest 배포:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f Remote-Sample.yml
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=primary에서-연결-테스트>Primary에서 연결 테스트</h3><p><span style=background-color:#ff0;color:#000><strong>ㅤ⚠️ Context : Primaryㅤ</strong></span></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl <span class=nb>exec</span> -n sample -c curl <span class=se>\
+</span></span></span><span class=line><span class=cl>    <span class=s2>&#34;</span><span class=k>$(</span>kubectl get pod -n sample -l <span class=se>\
+</span></span></span><span class=line><span class=cl>    <span class=nv>app</span><span class=o>=</span>curl -o <span class=nv>jsonpath</span><span class=o>=</span><span class=s1>&#39;{.items[0].metadata.name}&#39;</span><span class=k>)</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl>    -- curl -sS helloworld.sample:5000/hello
+</span></span></code></pre></td></tr></table></div></div><p>위 명령어를 여러 번 반복해보자.<br>다음과 같이 v1과 v2가 출력되면 정상이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>Hello version: v2, instance: helloworld-v2-6746879bdd-8csng
+</span></span><span class=line><span class=cl>Hello version: v1, instance: helloworld-v1-5787f49bd8-kmgdm
+</span></span><span class=line><span class=cl>Hello version: v1, instance: helloworld-v1-5787f49bd8-kmgdm
+</span></span><span class=line><span class=cl>...
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=remote에서-연결-테스트>Remote에서 연결 테스트</h3><p><span style=background-color:#90ee90;color:#000><strong>ㅤ⚠️ Context : Remoteㅤ</strong></span></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl <span class=nb>exec</span> -n sample -c curl <span class=se>\
+</span></span></span><span class=line><span class=cl>    <span class=s2>&#34;</span><span class=k>$(</span>kubectl get pod -n sample -l <span class=se>\
+</span></span></span><span class=line><span class=cl>    <span class=nv>app</span><span class=o>=</span>curl -o <span class=nv>jsonpath</span><span class=o>=</span><span class=s1>&#39;{.items[0].metadata.name}&#39;</span><span class=k>)</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl>    -- curl -sS helloworld.sample:5000/hello
+</span></span></code></pre></td></tr></table></div></div><p>위 명령어를 여러 번 반복해보자.<br>다음과 같이 v1과 v2가 출력되면 정상이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>Hello version: v1, instance: helloworld-v1-5787f49bd8-kmgdm
+</span></span><span class=line><span class=cl>Hello version: v1, instance: helloworld-v1-5787f49bd8-kmgdm
+</span></span><span class=line><span class=cl>Hello version: v2, instance: helloworld-v2-6746879bdd-8csng
+</span></span><span class=line><span class=cl>...
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><blockquote><p>여기까지 결과를 봤다면 멀티 클러스터 서비스 메시 구성은 끝이다. 🎉</p><p>두 클러스터를 왔다갔다 하며 설정해야 하기에 헷갈릴 수 있는데,<br>공식 문서의 시나리오를 천천히 따라가다 보면 어렵지 않게 설정할 수 있을 것이다.</p><p>확인이 끝났다면 각 클러스터에서 sample 네임스페이스는 지워 주도록 하자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl delete ns sample
+</span></span></code></pre></td></tr></table></div></div></blockquote><p><br><br></p><h2 id=당면했던-문제들>당면했던 문제들</h2><p>멀티 클러스터 메시 구성 자체는 그렇게 어렵지는 않았다.</p><p>다만 메시를 구성하면서 온갖 종류의 문제에 직면 했었는데,<br>어떤 일이 있었고 어떤식으로 대응했는지 간단하게 서술하겠다.</p><h3 id=ingress>Ingress</h3><ol><li><p>로드밸런서는 공짜가 아니다</p><p>클라우드에서 제공하는 LoadBalancer는 당연히 비용이 발생한다.</p><p align=left><img src=images/oci-lb-price.png alt></p><p>OCI의 Flexible LB는 1개까지는 무료이고, 초과분부터는 1달에 개당 $8.41이 부과된다.<br>환율 1,450원으로 계산하면 12,000원 정도이다.</p><p>그렇게 비싸진 않지만<br>어쨌든 <strong>LB가 늘어나면 비용이 발생</strong>한다.</p></li><li><p>Nginx Ingress Controller와 같은 LB를 공유할 수 없다</p><p>Nginx Ingress Controller로 Ingress 처리를 하고 있었는데,<br>Istio East-West Gateway를 배포하려면 별도의 LB를 따로 구해야 한다.</p><p><strong>메시 구성을 위해 달 12,000원이 부과</strong>된다는 것이다.</p></li></ol><br><p><strong>해결책:</strong></p><p>Istio East-West Gateway가 Istio Ingress Gateway의 기능을 겸하도록 하고,<br>Nginx Ingress Controller를 통째로 제거했다.</p><p>Ingress 처리 방식 자체를 Istio VirtualService 방식으로 마이그레이션 한 것이다.<br>여기에 대해선 할 얘기가 많지만 본 주제에서 벗어나므로 추후 포스팅 하도록 하겠다.</p><p>다만 Helm으로 East-West Gateway 배포 시 별도 포트 설정이 안 돼서 엄청 애를 먹었었는데,<br>이를 해결하기 위해 CDK for Terraform으로 별도 Execution 스크립트를 작성해서 강제 할당하였다.</p><p align=left><img src=images/cdktf-note.png alt></p><p><a class=link href=https://github.com/ApexCaptain/ApexCaptain.IaC/blob/main/src/terraform/stacks/k8s/oke/apps/istio.stack.ts target=_blank rel=noopener>Github 저장소</a>에 올려 두었다. 누군가에게는 도움이 되지 않을까 싶다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-typescript data-lang=typescript><span class=line><span class=cl>  <span class=nx>istioEastWestGatewayServicePortPatch</span> <span class=o>=</span> <span class=k>this</span><span class=p>.</span><span class=nx>provide</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=nx>Resource</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s1>&#39;istioEastWestGatewayServicePortPatch&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>()</span> <span class=o>=&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=kr>const</span> <span class=nx>kubeConfigPath</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>this</span><span class=p>.</span><span class=nx>k8sOkeEndpointStack</span><span class=p>.</span><span class=nx>okeEndpointSource</span><span class=p>.</span><span class=nx>shared</span><span class=p>.</span><span class=nx>kubeConfigFilePath</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>      <span class=kr>const</span> <span class=nx>proxyUrl</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>this</span><span class=p>.</span><span class=nx>k8sOkeEndpointStack</span><span class=p>.</span><span class=nx>okeEndpointSource</span><span class=p>.</span><span class=nx>shared</span><span class=p>.</span><span class=nx>proxyUrl</span><span class=p>.</span><span class=nx>socks5</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>      <span class=kr>const</span> <span class=nx>serviceName</span> <span class=o>=</span> <span class=k>this</span><span class=p>.</span><span class=nx>istioEastWestGatewayRelease</span><span class=p>.</span><span class=nx>shared</span><span class=p>.</span><span class=nx>name</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>      <span class=kr>const</span> <span class=kr>namespace</span> <span class=o>=</span> <span class=k>this</span><span class=p>.</span><span class=kr>namespace</span><span class=p>.</span><span class=nx>element</span><span class=p>.</span><span class=nx>metadata</span><span class=p>.</span><span class=nx>name</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=kr>const</span> <span class=nx>additionalPorts</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nx>port</span>: <span class=kt>number</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=nx>name</span>: <span class=kt>string</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=nx>targetPort</span>: <span class=kt>number</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=nx>protocol</span>: <span class=kt>string</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=nx>present</span>: <span class=kt>boolean</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>      <span class=p>}[]</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=nx>port</span>: <span class=kt>80</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nx>name</span><span class=o>:</span> <span class=s1>&#39;http&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nx>targetPort</span>: <span class=kt>80</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nx>protocol</span><span class=o>:</span> <span class=s1>&#39;TCP&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nx>present</span>: <span class=kt>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=nx>port</span>: <span class=kt>443</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nx>name</span><span class=o>:</span> <span class=s1>&#39;https&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nx>targetPort</span>: <span class=kt>443</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nx>protocol</span><span class=o>:</span> <span class=s1>&#39;TCP&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nx>present</span>: <span class=kt>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>      <span class=p>];</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=kr>const</span> <span class=nx>provisioners</span> <span class=o>=</span> <span class=nx>additionalPorts</span><span class=p>.</span><span class=nx>map</span><span class=p>&lt;</span><span class=nt>LocalExecProvisioner</span><span class=p>&gt;(</span>
+</span></span><span class=line><span class=cl>        <span class=p>({</span> <span class=nx>port</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=nx>targetPort</span><span class=p>,</span> <span class=nx>protocol</span><span class=p>,</span> <span class=nx>present</span> <span class=p>})</span> <span class=o>=&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=k>if</span> <span class=p>(</span><span class=nx>present</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=c1>// 포트 추가
+</span></span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>              <span class=kr>type</span><span class=o>:</span> <span class=s1>&#39;local-exec&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nx>command</span>: <span class=kt>dedent</span><span class=sb>`
+</span></span></span><span class=line><span class=cl><span class=sb>                port_exists=$(kubectl get svc </span><span class=si>${</span><span class=nx>serviceName</span><span class=si>}</span><span class=sb> -n </span><span class=si>${</span><span class=kr>namespace</span><span class=si>}</span><span class=sb> </span><span class=err>\</span><span class=sb>
+</span></span></span><span class=line><span class=cl><span class=sb>                  -o jsonpath=&#39;{.spec.ports[?(@.port==</span><span class=si>${</span><span class=nx>port</span><span class=si>}</span><span class=sb>)].port}&#39; 2&gt;/dev/null || echo &#39;&#39;)
+</span></span></span><span class=line><span class=cl><span class=sb>                if [ -z &#34;$port_exists&#34; ]; then
+</span></span></span><span class=line><span class=cl><span class=sb>                  kubectl patch svc </span><span class=si>${</span><span class=nx>serviceName</span><span class=si>}</span><span class=sb> -n </span><span class=si>${</span><span class=kr>namespace</span><span class=si>}</span><span class=sb> </span><span class=err>\</span><span class=sb>
+</span></span></span><span class=line><span class=cl><span class=sb>                    --type=&#39;json&#39; </span><span class=err>\</span><span class=sb>
+</span></span></span><span class=line><span class=cl><span class=sb>                    -p=&#39;[{&#34;op&#34;: &#34;add&#34;, &#34;path&#34;: &#34;/spec/ports/-&#34;, &#34;value&#34;: {&#34;name&#34;: &#34;</span><span class=si>${</span><span class=nx>name</span><span class=si>}</span><span class=sb>&#34;, &#34;port&#34;: </span><span class=si>${</span><span class=nx>port</span><span class=si>}</span><span class=sb>, &#34;protocol&#34;: &#34;</span><span class=si>${</span><span class=nx>protocol</span><span class=si>}</span><span class=sb>&#34;, &#34;targetPort&#34;: </span><span class=si>${</span><span class=nx>targetPort</span><span class=si>}</span><span class=sb>}}]&#39; || true
+</span></span></span><span class=line><span class=cl><span class=sb>                fi
+</span></span></span><span class=line><span class=cl><span class=sb>              `</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nx>environment</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nx>KUBECONFIG</span>: <span class=kt>kubeConfigPath</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nx>HTTPS_PROXY</span>: <span class=kt>proxyUrl</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=p>},</span>
+</span></span><span class=line><span class=cl>            <span class=p>};</span>
+</span></span><span class=line><span class=cl>          <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>              <span class=kr>type</span><span class=o>:</span> <span class=s1>&#39;local-exec&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nx>command</span>: <span class=kt>dedent</span><span class=sb>`
+</span></span></span><span class=line><span class=cl><span class=sb>                  port_exists=$(kubectl get svc </span><span class=si>${</span><span class=nx>serviceName</span><span class=si>}</span><span class=sb> -n </span><span class=si>${</span><span class=kr>namespace</span><span class=si>}</span><span class=sb> </span><span class=err>\</span><span class=sb>
+</span></span></span><span class=line><span class=cl><span class=sb>                    -o jsonpath=&#34;{.spec.ports[?(@.port==</span><span class=si>${</span><span class=nx>port</span><span class=si>}</span><span class=sb>)].port}&#34; 2&gt;/dev/null || echo &#39;&#39;)
+</span></span></span><span class=line><span class=cl><span class=sb>
+</span></span></span><span class=line><span class=cl><span class=sb>                  if [ -z &#34;$port_exists&#34; ]; then
+</span></span></span><span class=line><span class=cl><span class=sb>                    exit 0
+</span></span></span><span class=line><span class=cl><span class=sb>                  fi
+</span></span></span><span class=line><span class=cl><span class=sb>
+</span></span></span><span class=line><span class=cl><span class=sb>                  ports_list=$(kubectl get svc </span><span class=si>${</span><span class=nx>serviceName</span><span class=si>}</span><span class=sb> -n </span><span class=si>${</span><span class=kr>namespace</span><span class=si>}</span><span class=sb> </span><span class=err>\</span><span class=sb>
+</span></span></span><span class=line><span class=cl><span class=sb>                    -o jsonpath=&#39;{.spec.ports[*].port}&#39; 2&gt;/dev/null || echo &#39;&#39;)
+</span></span></span><span class=line><span class=cl><span class=sb>                  
+</span></span></span><span class=line><span class=cl><span class=sb>                  idx=0
+</span></span></span><span class=line><span class=cl><span class=sb>                  for port_item in $ports_list; do
+</span></span></span><span class=line><span class=cl><span class=sb>                    if [ &#34;$port_item&#34; = &#34;</span><span class=si>${</span><span class=nx>port</span><span class=si>}</span><span class=sb>&#34; ]; then
+</span></span></span><span class=line><span class=cl><span class=sb>                      kubectl patch svc </span><span class=si>${</span><span class=nx>serviceName</span><span class=si>}</span><span class=sb> -n </span><span class=si>${</span><span class=kr>namespace</span><span class=si>}</span><span class=sb> </span><span class=err>\</span><span class=sb>
+</span></span></span><span class=line><span class=cl><span class=sb>                        --type=&#39;json&#39; </span><span class=err>\</span><span class=sb>
+</span></span></span><span class=line><span class=cl><span class=sb>                        -p=&#34;[{</span><span class=err>\</span><span class=sb>&#34;op</span><span class=err>\</span><span class=sb>&#34;: </span><span class=err>\</span><span class=sb>&#34;remove</span><span class=err>\</span><span class=sb>&#34;, </span><span class=err>\</span><span class=sb>&#34;path</span><span class=err>\</span><span class=sb>&#34;: </span><span class=err>\</span><span class=sb>&#34;/spec/ports/$idx</span><span class=err>\</span><span class=sb>&#34;}]&#34; || exit 1
+</span></span></span><span class=line><span class=cl><span class=sb>                      exit 0
+</span></span></span><span class=line><span class=cl><span class=sb>                    fi
+</span></span></span><span class=line><span class=cl><span class=sb>                    idx=$((idx + 1))
+</span></span></span><span class=line><span class=cl><span class=sb>                  done
+</span></span></span><span class=line><span class=cl><span class=sb>                  
+</span></span></span><span class=line><span class=cl><span class=sb>                  exit 1
+</span></span></span><span class=line><span class=cl><span class=sb>              `</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nx>environment</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nx>KUBECONFIG</span>: <span class=kt>kubeConfigPath</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nx>HTTPS_PROXY</span>: <span class=kt>proxyUrl</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=p>},</span>
+</span></span><span class=line><span class=cl>            <span class=p>};</span>
+</span></span><span class=line><span class=cl>          <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>      <span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>return</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nx>triggers</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=nx>releaseId</span>: <span class=kt>this.istioEastWestGatewayRelease.element.id</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nx>ports</span>: <span class=kt>JSON.stringify</span><span class=p>(</span><span class=nx>additionalPorts</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>        <span class=nx>dependsOn</span><span class=o>:</span> <span class=p>[</span><span class=k>this</span><span class=p>.</span><span class=nx>istioEastWestGatewayRelease</span><span class=p>.</span><span class=nx>element</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>        <span class=nx>provisioners</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=p>};</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=p>);</span>
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=oauth2-proxy>OAuth2 Proxy</h3><p>위에서 이어지는 문제이다.</p><p>기존 Nginx Ingress를 썼을 때는 GitHub OAuth2 앱을 기반으로 OAuth2 Proxy를<br>Nginx Auth 레이어에 추가해 보호 했었는데, Istio Gateway + VirtualService에서는<br>GitHub OAuth를 사용하는 것이 불가능했다.</p><p>엄밀히 말하면 가능은 한데, 여러 도메인을 동시에 보호하는 게 너무 힘들었다.</p><p>어차피 언젠가 옮길 생각도 있었어서, 이참에 별도의 인증 앱을 배포하기로 했다.</p><p>본래 <a class=link href=https://www.keycloak.org/ target=_blank rel=noopener>Keycloak</a>을 쓸 생각이었으나,<br><a class=link href=https://artifacthub.io/packages/helm/bitnami/keycloak target=_blank rel=noopener>Keycloak Helm Chart</a>에도 적혀 있길, Bitnami가 2025년 8월 28일부로<br>기존 무료 컨테이너 이미지 대부분을 레거시 저장소로 옮기고 업데이트를 중단했다. (&mldr;)</p><p align=center><img src=images/bitnami-keycloak-dockerhub.png alt>
+<em>이미지가 모두 내려가 있다</em></p><p>여기에 대해선 이리저리 말이 많은데,<br>Bitnami가 Broadcom에 인수된 이후 Keycloak을 유료로 바꾸려는 게 아닌가 하는 의견이 지배적이다.</p><br><p><strong>해결책:</strong></p><p>다행히 Keycloak을 사용 중이던 것은 아니어서 그냥 대체 앱을 설치해서 쓰고 있다.<br>선택한 앱은 <a class=link href=https://goauthentik.io/ target=_blank rel=noopener>Authentik</a>. 이거에 대해서도 추후 포스팅 하도록 하겠다.</p><p>다음은 실제 시연 영상이다.</p><p align=center><video width=100% controls>
+<source src=videos/authentik.mp4 type=video/mp4></video>
+<em>Authentik으로 인증 거쳐서 Torrent 서비스에 접속</em></p><br><h2 id=마치며>마치며</h2><p>이번 작업을 통해 클라우드와 온프레미스 환경에 있는<br>두 개의 Kubernetes 클러스터를 하나의 통합된 서비스 메시로 연결할 수 있게 되었다.</p><p>멀티 클러스터 서비스 메시 구성 자체는 공식 문서를 따라하면 그렇게 어렵지 않았지만,<br>실제 운영 환경에서 마주한 문제들 — 특히 Ingress와 인증 레이어의 재구성 — 은 예상보다 많은 시간을 소모했다.</p><p>다만 이러한 과정을 통해 Istio의 Gateway/VirtualService 아키텍처에 대해 더 깊이 이해할 수 있었고, 결국 Nginx Ingress Controller에서 Istio로의 마이그레이션까지 완료할 수 있었다.</p><p>앞서 언급했듯이, 다음 단계로는 회사에서 운영 중인 Kubernetes 클러스터에 <strong>Multi-Primary</strong> 모델을 적용해볼 계획이다. 이렇게 하면 더 높은 가용성과 장애 격리를 확보할 수 있을 것이다.</p><p>또한 이번에 도입한 Authentik과 Istio Gateway 기반의 인증/라우팅 구조에 대해서도 별도의 포스팅으로 정리할 예정이다. 이 부분은 멀티 클러스터 구성보다는 일반적인 Istio 사용 사례에 가깝지만,
+실제 운영 환경에서 겪은 경험들을 공유하면 누군가에게는 도움이 되지 않을까 싶다.</p><p>현대적인 마이크로서비스 아키텍처에서는 단일 클러스터의 한계를 넘어 여러 클러스터를 운영하는 것이 점차 표준이 되어가고 있다.
+Istio는 이러한 트렌드에 부합하는 강력한 도구이며, 잘 활용한다면 복잡한 인프라를 일관된 방식으로 관리할 수 있다.</p><p>혹시 이 글을 읽는 누군가가 비슷한 작업을 계획하고 있다면,<br>이 글이 조금이나마 도움이 되기를 바란다.</p><br><hr><blockquote><p><strong>참고 자료</strong></p><ul><li><a class=link href=https://istio.io/latest/docs/ops/deployment/deployment-models target=_blank rel=noopener>Istio Deployment Models</a></li><li><a class=link href=https://istio.io/latest/docs/ops/deployment/deployment-models/#multiple-clusters target=_blank rel=noopener>Istio Multiple Clusters</a></li><li><a class=link href=https://istio.io/latest/docs/ops/deployment/deployment-models/#multiple-meshes target=_blank rel=noopener>Istio Multiple Meshes</a></li><li><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/multi-primary/ target=_blank rel=noopener>Istio Multi-Primary 설치 가이드</a></li><li><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/primary-remote/ target=_blank rel=noopener>Istio Primary-Remote 설치 가이드</a></li><li><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/multi-primary_multi-network/ target=_blank rel=noopener>Istio Multi-Primary on different network</a></li><li><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/primary-remote_multi-network/ target=_blank rel=noopener>Istio Primary-Remote on different network</a></li><li><a class=link href=https://istio.io/latest/docs/setup/install/multicluster/verify/ target=_blank rel=noopener>Istio 멀티클러스터 검증 가이드</a></li></ul></blockquote></section><footer class=article-footer><section class=article-tags><a href=/tags/kubernetes/>Kubernetes</a>
+<a href=/tags/istio/>Istio</a>
+<a href=/tags/servicemesh/>ServiceMesh</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>관련 글</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/dev/configuring-monitoring-stack-on-multiple-cluster/><div class=article-image><img src=/p/dev/configuring-monitoring-stack-on-multiple-cluster/images/cover.681d13adab6bda2e4d88aa163c5941c2_hu_8a165ec2662c71d7.png width=250 height=150 loading=lazy alt="Featured image of post Multi-Cluster 모니터링 스택 구축하기" data-key=dev/configuring-monitoring-stack-on-multiple-cluster data-hash="md5-aB0Tratr2i5NiKoWPFlBwg=="></div><div class=article-details><h2 class=article-title>Multi-Cluster 모니터링 스택 구축하기</h2></div></a></article><article class=has-image><a href=/p/dev/init-linux-using-ventoy/><div class=article-image><img src=/p/dev/init-linux-using-ventoy/images/cover.e7058149f4d64cdb9b20cdb1bd266ad7_hu_afe4fcc38280b927.png width=250 height=150 loading=lazy alt="Featured image of post Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기" data-key=dev/init-linux-using-ventoy data-hash="md5-5wWBSfTWTNubIM2xvSZq1w=="></div><div class=article-details><h2 class=article-title>Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기</h2></div></a></article><article class=has-image><a href=/p/dev/install-lxcfs-to-k8s/><div class=article-image><img src=/p/dev/install-lxcfs-to-k8s/images/cover.0632ef054b50fa9e2854c6dd611af5e6_hu_3455f26d4d182c8e.png width=250 height=150 loading=lazy alt="Featured image of post LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법" data-key=dev/install-lxcfs-to-k8s data-hash="md5-BjLvBUtQ+p4oVMbdYRr15g=="></div><div class=article-details><h2 class=article-title>LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법</h2></div></a></article><article class=has-image><a href=/p/dev/how-to-save-on-cloud-costs/><div class=article-image><img src=/p/dev/how-to-save-on-cloud-costs/images/cover.14b59636c30192a3efc4c6f489887f77_hu_9bae20601bdbb0bd.png width=250 height=150 loading=lazy alt="Featured image of post 클라우드 비용 절약을 위한 노력" data-key=dev/how-to-save-on-cloud-costs data-hash="md5-FLWWNsMBkqPvxMb0iYh/dw=="></div><div class=article-details><h2 class=article-title>클라우드 비용 절약을 위한 노력</h2></div></a></article><article class=has-image><a href=/p/dev/install-ollama-to-k8s/><div class=article-image><img src=/p/dev/install-ollama-to-k8s/images/cover.890153c8439a4d0f4a4200a801147e5d_hu_70d411d22563d643.png width=250 height=150 loading=lazy alt="Featured image of post k8s에 Ollama AI 서버 올려보기" data-key=dev/install-ollama-to-k8s data-hash="md5-iQFTyEOaTQ9KQgCoARR+XQ=="></div><div class=article-details><h2 class=article-title>k8s에 Ollama AI 서버 올려보기</h2></div></a></article></div></div></aside><script src=https://utteranc.es/client.js repo=ApexCaptain/ApexCaptain.github.io issue-term=pathname label=comments crossorigin=anonymous async></script><style>.utterances{max-width:unset}</style><script>let utterancesLoaded=!1;function setUtterancesTheme(e){let t=document.querySelector(".utterances iframe");t&&t.contentWindow.postMessage({type:"set-theme",theme:`github-${e}`},"https://utteranc.es")}addEventListener("message",e=>{if(e.origin!=="https://utteranc.es")return;utterancesLoaded=!0,setUtterancesTheme(document.documentElement.dataset.scheme)}),window.addEventListener("onColorSchemeChange",e=>{if(!utterancesLoaded)return;setUtterancesTheme(e.detail)})</script><footer class=site-footer><section class=copyright>&copy;
+2025 -
+2026 ApexCaptain의 기술 블로그</section><section class=powerby><a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a>로 만듦<br><a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a>의 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.34.2>Stack</a></b> 테마 사용 중</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

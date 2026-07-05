@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Cursor on ApexCaptain의 기술 블로그</title><link>https://blog.ayteneve93.com/tags/cursor/</link><description>Recent content in Cursor on ApexCaptain의 기술 블로그</description><generator>Hugo -- gohugo.io</generator><language>ko-kr</language><lastBuildDate>Thu, 16 Oct 2025 00:00:00 +0900</lastBuildDate><atom:link href="https://blog.ayteneve93.com/tags/cursor/index.xml" rel="self" type="application/rss+xml"/><item><title>Projen ESLint 9 마이그레이션 시도</title><link>https://blog.ayteneve93.com/p/fool/projen-eslint-migration-attempt/</link><pubDate>Thu, 16 Oct 2025 00:00:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/fool/projen-eslint-migration-attempt/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/fool/projen-eslint-migration-attempt/images/cover.png" alt="Featured image of post Projen ESLint 9 마이그레이션 시도" /&gt;&lt;p&gt;기나긴 추석 연휴가 지나고 나니 &lt;strong&gt;엄청난 후유증&lt;/strong&gt;이 몰려왔다&lt;br&gt;
+추적추적&amp;hellip; 끝도 없이 쏟아지는 비에 몸까지 천근만근이다.&lt;br&gt;
+도무지 출근길에 적응이 되질 않는다.&lt;/p&gt;
+&lt;p&gt;그래서 휴가를 냈다! 그렇다. 오늘은 쉬는 날이다. 🤗&lt;br&gt;
+회사 메신져에서 들려오는 직원들의 곡소리를 자장가 삼아&lt;br&gt;
+12시까지 정말이지 신나게 늦잠을 잤다.&lt;/p&gt;
+&lt;p&gt;나른한 아침&lt;sub&gt;(낮)&lt;/sub&gt;이 지나간다.&lt;br&gt;
+가볍게 기지개를 편다.&lt;/p&gt;
+&lt;p&gt;오늘은 하고싶은 일을 해야겠다.&lt;/p&gt;
+&lt;p&gt;향긋한 커피, 함께 먹을 달달한 간식까지 준비해 책상 앞에 앉는다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;게임하게? 아님 영화?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;물론 둘 다 너무나 좋아하는 취미생활이지만&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;오늘 내가 할 건 &lt;code&gt;k8s 클러스터&lt;/code&gt;에 올릴 새로운 프로젝트 구성이다.&lt;/strong&gt;&lt;/p&gt;
+&lt;br&gt;
+&lt;p align='left'&gt;
+&lt;img width=40% src="images/ridiculous.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;진정한 개발자&lt;sub&gt;&lt;del&gt;(변태)&lt;/del&gt;&lt;/sub&gt;라면 이런 날,&lt;br&gt;
+평소 개인적으로 흥미를 가지고 있던 주제에 몰두하며&lt;br&gt;
+하루종일 컴퓨터와 씨름하는 것이야 말로 최고의 힐링이지 않겠는가
+&lt;br&gt;&lt;/p&gt;
+&lt;h2 id="들어가기-앞서"&gt;들어가기 앞서
+&lt;/h2&gt;&lt;p&gt;&lt;a class="link" href="https://github.com/ApexCaptain/ApexCaptain.IaC" target="_blank" rel="noopener"
+&gt;내가 k8s 클러스터를 관리하는 프로젝트&lt;/a&gt;는 기본적으로 &lt;a class="link" href="https://code.visualstudio.com/docs/devcontainers/containers" target="_blank" rel="noopener"
+&gt;개발 컨테이너(devContainer)&lt;/a&gt; 위에서 동작하는 &lt;a class="link" href="https://developer.hashicorp.com/terraform" target="_blank" rel="noopener"
+&gt;Terraform&lt;/a&gt; 프로젝트이다.&lt;/p&gt;
+&lt;p&gt;다만 일반적인 Terraform 프로젝트와는 몇 가지 다른 점이 있는데:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;HCL을 사용하지 않는다.&lt;/strong&gt;&lt;br&gt;
+CDK for Terraform을 사용해서 개발하고 있기 때문이다.&lt;br&gt;
+간단하게 말 하면, &lt;code&gt;Java&lt;/code&gt;나 &lt;code&gt;C#&lt;/code&gt;, &lt;code&gt;Python&lt;/code&gt;같은 익숙한 프로그래밍 언어로 HCL를 대신하는 프로젝트이다.&lt;br&gt;
+내 경우 &lt;code&gt;Typescript&lt;/code&gt;로 작업한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Nest.js 프레임워크를 적용했다.&lt;/strong&gt;&lt;br&gt;
+당연히 일반적인 nodejs에서 사용하는 프레임워크 적용도 가능하다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;프로젝트 관리 도구 &amp;lsquo;Projen&amp;rsquo;을 사용한다.&lt;/strong&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h3 id="projen"&gt;&lt;a class="link" href="https://projen.io/" target="_blank" rel="noopener"
+&gt;Projen&lt;/a&gt;?
+&lt;/h3&gt;&lt;p&gt;이번 포스트는 카테고리부터가 &lt;code&gt;Fool(바보짓, 삽질)&lt;/code&gt;이다. &lt;sub&gt;(아니면 하소연)&lt;/sub&gt;&lt;br&gt;
+그래서 정보성 내용은 최대한 간결하게 맛보기 정도로만 쓰고, 추후 기회가 되면 더 자세하게 쓰도록 하겠다.&lt;br&gt;
+그래도 밑밥은 깔고 가야 하므로-&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Projen은 소프트웨어 프로젝트 관리를 위한 프로젝트, 일명 &lt;strong&gt;CDK for Project&lt;/strong&gt;이다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;a class="link" href="https://github.com/projen/projen" target="_blank" rel="noopener"
+&gt;Projen Github 프로젝트&lt;/a&gt;에 보면 설명이 잘 되어 있지만, 경험에 비추어 간략하게 설명 해보겠다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h4 id="설정-파일의-파편화"&gt;&lt;strong&gt;설정 파일의 파편화&lt;/strong&gt;
+&lt;/h4&gt;&lt;p align='center'&gt;
+&lt;img src="images/project-tree.png" alt&gt;
+&lt;br&gt;
+&lt;em&gt;프로젝트 루트 트리&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;위 사진은 앞서 기술한 IaC 프로젝트의 루트 디렉토리이다.&lt;br&gt;
+루트 경로에서부터 벌써 오만가지 다양한 폴더와 파일들이 있는 걸 볼 수 있다.&lt;br&gt;
+이는 비단 어떤 형태의 프로젝트이든 상황은 매한가지일 것이다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;이거 다 필요한 파일인가?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;당연히 다 필요하다.&lt;/p&gt;
+&lt;p&gt;예를 들어&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;.gitignore&lt;/code&gt;는 git tracking에서 제외할 파일이나 폴더들을 기술한다.&lt;br&gt;
+요컨대, 원치 않는 파일들이 GitHub나 GitLab, Bitbucket등에 업로드 되는 것을 필터링 하는 규칙 설정이다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-ini" data-lang="ini"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 폴더나 파일&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;.DS_STORE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;/.secrets&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;/.kube&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;/cdktf.out.json&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;/env&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;/keys&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;/cdktf.out&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;/scripts/generated&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;/tmp&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# Glob 패턴&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;*.log&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;*.pid&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;*.seed&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;*.pid.lock&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 혹은 반대로 반드시 Tracking 하도록 명시&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;!/.gitattributes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;!/.projen/tasks.json&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;!/.projen/deps.json&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;!/.projen/files.json&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;!/.github/workflows/pull-request-lint.yml&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;!/package.json&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="na"&gt;!/LICENSE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;strong&gt;자동으로 생성되는 파일&lt;/strong&gt;, &lt;strong&gt;비밀 파일&lt;/strong&gt;, &lt;strong&gt;임시 파일&lt;/strong&gt;등이 주로 기술된다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;.github&lt;/code&gt; 디렉토리 밑에는 &lt;code&gt;PR Template&lt;/code&gt;, &lt;code&gt;Issue Template&lt;/code&gt;, &lt;code&gt;Github Action Workflow&lt;/code&gt;등이 포함되어 있다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/workflow-example.png" alt&gt;
+&lt;em&gt;PR 제출시 제목에 `test`, `feat`, `fix` 이런식으로 앞에 붙여놔야지만 승인 되도록 하는 Workflow&lt;/em&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;package.json&lt;/code&gt;은 nodejs 개발자라면 아주 익숙할 것이다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/package-json-example.png" alt&gt;
+&lt;em&gt;프로젝트 명, 스크립트 구성, 디펜더시 등이 기술 된다.&lt;/em&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;이렇듯 수많은 설정 파일들이 있다.&lt;br&gt;
+모두 각자의 역할을 담당하며, 사용하는 키워드는 물론 표기방식(&lt;code&gt;json&lt;/code&gt;, &lt;code&gt;yaml&lt;/code&gt;, &lt;code&gt;ini&lt;/code&gt;, &lt;code&gt;toml&lt;/code&gt; 등)도 제각각이다.&lt;/p&gt;
+&lt;p&gt;여기엔 크게 2가지의 문제가 있는데:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;학습 곡선이 가팔라진다.&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;yaml? toml? 아니 개발자면 소스코드만 기가막히게 잘 짜면 됬지 이런걸 또 배우라고?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;이해가 되는 불만이지만, 그래도 배워야 한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;설정 파일이 여기저기 흩어져 있다.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;사실 이게 진짜 문제다.&lt;/p&gt;
+&lt;p&gt;앞서 얘기했듯, 프로젝트를 구성하는 파일들은 모두 고유의 역할을 가지고 있다.&lt;br&gt;
+하지만 동시에 서로 유기적으로 연동되는 경우도 많다.&lt;/p&gt;
+&lt;p&gt;예를들어 프로젝트 루트의 &lt;code&gt;logs&lt;/code&gt; 디렉토리에 애플리케이션 로그를 기록하고 싶다고 하자.&lt;br&gt;
+그렇다면 애플리케이션의 환경변수에 로그 저장 경로는 &lt;code&gt;logs&lt;/code&gt;라고 지정해줄 것이다.&lt;br&gt;
+그리고 &lt;code&gt;.gitignore&lt;/code&gt;에도 해당 경로를 입력해줘야 한다.&lt;br&gt;
+같은 &lt;code&gt;값&lt;/code&gt;을 2번 넣어주는 것이다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;로그 저장 위치가 바뀐다면?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;그럴 일은 자주 일어나지 않겠지만, 이러면 위에서 한 작업, 가령 &lt;code&gt;logs-v2&lt;/code&gt;로 바뀌었다면&lt;br&gt;
+마찬가지로 환경변수와 &lt;code&gt;.gitignore&lt;/code&gt; 모두에 &lt;code&gt;logs-v2&lt;/code&gt;라는 값을 넣어줘야 한다.&lt;/p&gt;
+&lt;p&gt;실수로 이중 하나를 제대로 처리 해주지 못 했다면 이제 &lt;code&gt;github&lt;/code&gt;에 테스트하면서 생긴 로그 파일들이 잔뜩 올라가는 진풍경을 보게 될 것이다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h4 id="single-source-of-config"&gt;&lt;strong&gt;Single Source of Config&lt;/strong&gt;
+&lt;/h4&gt;&lt;p align='center'&gt;
+&lt;img width=50% src="images/single-source-of-config.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Projen&lt;/code&gt;은 이런 수많은 파일들을 &lt;strong&gt;하나&lt;/strong&gt;의 설정으로 정의 함으로써 생성 / 삭제 / 업데이트 하는 역할을 한다.&lt;br&gt;
+일종의 &lt;code&gt;Signle Source of Truth&lt;/code&gt;이다.&lt;/p&gt;
+&lt;p&gt;이 프로젝트에선 &lt;code&gt;.projenrc.ts&lt;/code&gt;라는 파일이 그것인데, &lt;code&gt;.projenrc.java&lt;/code&gt;나 &lt;code&gt;.projenrc.py&lt;/code&gt;도 가능하다.&lt;/p&gt;
+&lt;p&gt;구체적인 코드 예시 하나를 들자면 다음과 같다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/upgrade-workflow.png" alt&gt;
+&lt;em&gt;일주일에 1번씩 nodejs package를 최신화 하는 workflow&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;예시에서는 &lt;code&gt;.projenrc.ts&lt;/code&gt;에 의존성 최신화 workflow를 사용 하겠다고 설정했다.&lt;br&gt;
+업데이트 주기는 1주일로 명시 해뒀다.&lt;/p&gt;
+&lt;p&gt;그 결과, &lt;code&gt;.github/workflows/upgrade-develop.yml&lt;/code&gt; 파일이 생성된 모습이다.&lt;/p&gt;
+&lt;p&gt;이 Workflow는 실제로 매우 잘 동작한다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/upgrade-workflow-in-github.png" alt&gt;
+&lt;em&gt;의존성 최신화 동작 기록&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;위 사진에서 볼 수 있듯 &lt;code&gt;1주일&lt;/code&gt;에 한번, 꼬박꼬박 잘 동작하는 모습이다.&lt;/p&gt;
+&lt;p&gt;그리고&amp;hellip;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;오늘 터진 사건의 원흉이다&amp;hellip;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;br&gt;
+&lt;h2 id="발단"&gt;발단
+&lt;/h2&gt;&lt;p&gt;아직 부시시한 머리를 만지작 거리며 메인 PC의 전원을 킨다.&lt;br&gt;
+화려한 바탕화면이 반겨준다.&lt;/p&gt;
+&lt;p&gt;심호흡 한 번 하고-&lt;br&gt;
+커피로 목을 축인다.&lt;/p&gt;
+&lt;p&gt;공유기 서버로 접속해 WOL로 개발 서버 컴퓨터의 전원도 켜준다.&lt;br&gt;
+서버가 켜질 때까지는 시간이 조금 필요하다.&lt;/p&gt;
+&lt;p&gt;전 날 선물받은 초코 크루키를 한 입 베어문다.&lt;br&gt;
+너무 달아. 이가 썩을 거 같아. 커피로 입가심을 한다.&lt;/p&gt;
+&lt;p&gt;Cursor IDE를 열고 SSH로 개발서버에 접속한다.&lt;br&gt;
+프로젝트를 열고 &lt;code&gt;Open in Container&lt;/code&gt; 버튼을 클릭한다.&lt;/p&gt;
+&lt;p&gt;Docker가 요청받은 작업들을 실행한다.&lt;br&gt;
+기반 이미지는 Ubuntu Noble, MS에서 배포하는 베이스 이미지다.&lt;/p&gt;
+&lt;p&gt;그야말로 git 정도 외에는 아무것도 설치되어 있지 않아 마치 도화지 같다.&lt;br&gt;
+Docker가 이 깡통 컨테이너에 지정한 Features와 Extension을 설치한다.&lt;/p&gt;
+&lt;p&gt;Python, Projen, Github Cli, Terraform, Kubectl, Istio, Vault, DinD&amp;hellip;&lt;br&gt;
+작업이 끝나면 GitHub에서 업데이트 된 코드를 받고 개발 의존성을 설치한다.&lt;/p&gt;
+&lt;p&gt;이게 끝나면 projen을 통해 설정 파일들을 최신화 하고&lt;br&gt;
+Terraform Provider가 각 Stack에 맞춰 다운로드 될 것이다.&lt;/p&gt;
+&lt;p&gt;앗, 뭔가 잘못 되었다. &lt;strong&gt;ESLint 오류?&lt;/strong&gt;&lt;br&gt;
+눈을 비비며 발견한 로그를 복사해 Cursor에게 진단을 맡긴다.&lt;/p&gt;
+&lt;p&gt;Cursor의 진단이 끝나고, 조금 전 오류를 Reproduce하기 위해&lt;br&gt;
+ESLint를 터미널에서 실행해본다.&lt;br&gt;
+역시 뭔가 잘못되었다.&lt;/p&gt;
+&lt;p&gt;아무래도 오늘도 하루가 순탄치 않을 것 같다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ yarn eslint --fix
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;yarn run v1.22.22
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ npx projen eslint --fix
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;👾 eslint &lt;span class="p"&gt;|&lt;/span&gt; eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern --fix src scripts projenrc .projenrc.ts
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Oops! Something went wrong! :&lt;span class="o"&gt;(&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ESLint: 9.37.0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ESLint couldn&lt;span class="err"&gt;&amp;#39;&lt;/span&gt;t find a configuration file. To &lt;span class="nb"&gt;set&lt;/span&gt; up a configuration file &lt;span class="k"&gt;for&lt;/span&gt; this project, please run:
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; npm init @eslint/config@latest
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;If you think you already have a configuration file or &lt;span class="k"&gt;if&lt;/span&gt; you need more help, please stop by the ESLint Discord server: https://eslint.org/chat
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;(&lt;/span&gt;node:14980&lt;span class="o"&gt;)&lt;/span&gt; ESLintRCWarning: You are using an eslintrc configuration file, which is deprecated and support will be removed in v10.0.0. Please migrate to an eslint.config.js file. See https://eslint.org/docs/latest/use/configure/migration-guide &lt;span class="k"&gt;for&lt;/span&gt; details. An eslintrc configuration file is used because you have the ESLINT_USE_FLAT_CONFIG environment variable &lt;span class="nb"&gt;set&lt;/span&gt; to false. If you want to use an eslint.config.js file, remove the environment variable. If you want to find the location of the eslintrc configuration file, use the --debug flag.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;(&lt;/span&gt;Use &lt;span class="sb"&gt;`&lt;/span&gt;node --trace-warnings ...&lt;span class="sb"&gt;`&lt;/span&gt; to show where the warning was created&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;👾 Task &lt;span class="s2"&gt;&amp;#34;eslint&amp;#34;&lt;/span&gt; failed when executing &lt;span class="s2"&gt;&amp;#34;eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern --fix src scripts projenrc .projenrc.ts&amp;#34;&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;cwd: /home/vscode/workspace/ApexCaptain.IaC&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;error Command failed with &lt;span class="nb"&gt;exit&lt;/span&gt; code 1.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;info Visit https://yarnpkg.com/en/docs/cli/run &lt;span class="k"&gt;for&lt;/span&gt; documentation about this command.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;br&gt;
+&lt;h3 id="eslint"&gt;ESLint
+&lt;/h3&gt;&lt;p align='left'&gt;
+&lt;img src="images/eslint.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;ESLint, 여기서 ES는 &lt;code&gt;Ecma Script&lt;/code&gt;의 약자이다. &lt;a class="link" href="https://ecma-international.org/" target="_blank" rel="noopener"
+&gt;Ecma International&lt;/a&gt;이라는 기구에서 만든 Script라는 뜻으로&lt;br&gt;
+통상적으로 &lt;code&gt;표준 Javascript&lt;/code&gt;를 의미한다.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Lint&lt;/code&gt; 혹은 &lt;code&gt;Linter&lt;/code&gt;는 코드베이스를 탐색, 사전에 정의한 규칙에 맞지 않는 코드를 찾아내고 교정하는 도구이다.&lt;br&gt;
+단순하게 우리말로 번역하면 &lt;code&gt;맞춤법 검사기&lt;/code&gt; 정도로 보면 된다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/washer-lint.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;Lint의 의미를 영어사전에서 찾아보면 &lt;code&gt;보풀&lt;/code&gt;이라고 나온다.&lt;br&gt;
+세탁기에 있는 보푸라기 필터처럼 문제의 소지가 있는 코드를 걸러내는 것이다.&lt;/p&gt;
+&lt;p&gt;ESLint는 &lt;code&gt;ES&lt;/code&gt; + &lt;code&gt;Lint&lt;/code&gt;, 즉 &lt;strong&gt;Javascript 맞춤법 검사기&lt;/strong&gt;이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="eslint-migration"&gt;ESLint Migration
+&lt;/h3&gt;&lt;blockquote&gt;
+&lt;p&gt;당신의 &lt;code&gt;.eslintrc.json&lt;/code&gt;, &lt;code&gt;eslint.config.js&lt;/code&gt;로 대체되었다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;ESLint를 프로젝트에서 사용하기 위해선 자체적인 설정파일이 필요하다.&lt;br&gt;
+원래 사용하던 설정파일은 &lt;code&gt;.eslintrc.json&lt;/code&gt;으로 &lt;code&gt;json&lt;/code&gt; 파일이었다.&lt;/p&gt;
+&lt;p&gt;이는 Projen이 생성해주는 파일이다.&lt;br&gt;
+에러 내용을 조사해보니 ESLint에서 사용하는 설정파일 방식이 기존 &lt;code&gt;json&lt;/code&gt;에서 &lt;code&gt;js&lt;/code&gt;로 바뀌었다는 것이다.&lt;/p&gt;
+&lt;p&gt;이를 ESLint에서는 &lt;code&gt;flat config&lt;/code&gt;라고 한다. ESLint v8.23.0부터 등장이 예고되었던 것으로 바뀌는 점을 간단히 요약하면 다음과 같다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Parser Option과 ENV 설정은 &lt;code&gt;languageOptions&lt;/code&gt;라는 것으로 통합되었다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;배열방식의 설정으로 변환되었다 (그래서 Flat이라고 하는 모양이다.)&lt;/p&gt;
+&lt;p&gt;기존 JSON 방식에서는 오브젝트 루트에 Key를 사용했었는데&lt;br&gt;
+이제는 rule, plugin, files 이런것들 다 하나의 배열에서 처리한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;이제 &lt;code&gt;extends&lt;/code&gt; 안 쓰고 일반 javascript처럼 모듈을 &lt;code&gt;import&lt;/code&gt;(mjs) 혹은 &lt;code&gt;require&lt;/code&gt;(cjs) 해서 사용한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;솔직한 감상으로는? 좋다. 아주 좋다. ESLint Json 문법이 아주 골치가 아팠는데,&lt;br&gt;
+만일 ESLint에 이제 입문하는 사람이라면 평소 쓰던 스크립트 문법과 비슷해져서 아주 편할 것이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="projen은-여전히-json으로-만들어준다"&gt;Projen은 여전히 Json으로 만들어준다
+&lt;/h3&gt;&lt;blockquote&gt;
+&lt;p&gt;하지만 난 Projen 통해서 ESLint 설정을 관리하는데?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/generated-eslint-json.png" alt&gt;
+&lt;em&gt;.projenrc.ts를 통해 간편하게 .eslintrc.json 파일이 관리되는 모습이다.&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;Projen이 생성해주는 ESLint 설정 파일은 &lt;code&gt;json&lt;/code&gt;이다. &lt;code&gt;Flat Config&lt;/code&gt;는 아직 미지원이다.&lt;/p&gt;
+&lt;p&gt;사실 이 &lt;code&gt;Flat Config&lt;/code&gt;로의 Migration 이슈는 이미 1년 전부터 알고 있었다.&lt;br&gt;
+하지만 Projen으로 관리되는 프로젝트에서는 ESLint의 Wrapper라고 볼 수 있는 Projen에서 자체적으로 지원을 안 해주면 뾰족한 방법이 없어서 방치하고 있었다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;flat 방식으로 변환 하라는 것도 어디까지나 &lt;code&gt;deprecation warning&lt;/code&gt;이라 그렇게 급한 것도 아니고&amp;hellip;&lt;/p&gt;
+&lt;p&gt;뭐 나중에 해주지 않을까?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;하는 안일한 생각을 했던 것이다.&lt;br&gt;
+Cursor의 진단에 따르면, ESLint 설정 파일에 JSON은 더 이상 쓸 수가 없으니 조치를 취해야 한다고 한다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="삽질의-시작"&gt;삽질의 시작
+&lt;/h2&gt;&lt;h3 id="방법-1-eslint의-major-version을-8로-제한-다운그레이드"&gt;방법 1) ESLint의 Major Version을 &lt;code&gt;8&lt;/code&gt;로 제한 (다운그레이드)
+&lt;/h3&gt;&lt;p&gt;어찌 보면 젤 심플한 방법이다. 굳이 구태여 최신 버전을 유지 할 필요도 없으니까?&lt;/p&gt;
+&lt;p&gt;회사에서 사용하는 프로젝트에도 Projen을 사용하는 경우가 간혹 있는데,&lt;br&gt;
+핵심 로직에 포함되는 컴포넌트도 아니고 기껏해야 &lt;code&gt;맞춤법 검사기&lt;/code&gt;이다.&lt;/p&gt;
+&lt;p&gt;그냥 구버전으로 제한을 걸어두면 그만이다.&lt;/p&gt;
+&lt;p&gt;실제 issue 탭을 조사해보니 그런 답변이 있었다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/use-v8.png" alt&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&amp;hellip;&amp;hellip;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/mad-ai.png" alt&gt;
+&lt;br&gt;
+&lt;em&gt;그걸 말이라고 합니까 휴먼?&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;이건 안된다.&lt;br&gt;
+비즈니스 로직이 걸린 프로젝트면 쿨하게 묻어두고 넘어가겠는데, 개인 플젝에서 이런 흠이 있는 건 찝찝해서 잠에 들 수가 없다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="방법-2-projen에서-eslint-비활성화-하고-eslint-설정은-수동으로-하기-cursor-추천"&gt;방법 2) Projen에서 ESLint 비활성화 하고 ESLint 설정은 수동으로 하기 (Cursor 추천)
+&lt;/h3&gt;&lt;p&gt;&lt;code&gt;projenrc.ts&lt;/code&gt;에서 ESLint를 비활성화 하고, 아예 자체적으로 &lt;code&gt;eslint.config.js&lt;/code&gt;를 만들어서 쓰라는 거다.&lt;/p&gt;
+&lt;p&gt;Cursor가 추천한 방법인데&amp;hellip; 이건 너무나도 번거로워서 기각했다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="방법-3-eslint-migration-config-사용하기"&gt;방법 3) &lt;a class="link" href="https://www.npmjs.com/package/@eslint/migrate-config" target="_blank" rel="noopener"
+&gt;ESLint Migration Config&lt;/a&gt; 사용하기
+&lt;/h3&gt;&lt;p&gt;최종적으로 내가 택한 방법이다.&lt;br&gt;
+다행이도 ESLint에서 기존 &lt;code&gt;json&lt;/code&gt;을 &lt;code&gt;js&lt;/code&gt;로 바꿔주는 스크립트를 &lt;a class="link" href="https://www.npmjs.com/package/@eslint/migrate-config" target="_blank" rel="noopener"
+&gt;NPM&lt;/a&gt;에 게시해 뒀던 것이다.&lt;/p&gt;
+&lt;p&gt;구체적인 방법을 여기에 적어두진 않겠다. 결국 이 역시 폐기한 방법이니까.&lt;/p&gt;
+&lt;p&gt;대신, 시도한 내용을 정리해서 &lt;a class="link" href="https://github.com/projen/projen/issues/4403" target="_blank" rel="noopener"
+&gt;&amp;ldquo;이런식으로 migration 했는데 이게 맞느냐? 하는 내용의 issue&amp;rdquo;&lt;/a&gt;를 남겨 두었는데, 그 스크린샷으로 대체하겠다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/issues/1.png" alt&gt;
+&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/issues/2.png" alt&gt;
+&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/issues/3.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;여차저차 이렇게 저렇게 해서 &lt;code&gt;ESLint Flat Config&lt;/code&gt;를 사용할 수 있는 상황까지 만들었다.&lt;br&gt;
+근데 너무 설정이 번잡해서 개선을 요청하는 Issue를 남겨두고 답변을 기다렸다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="반전"&gt;반전
+&lt;/h2&gt;&lt;p&gt;Issue 작성까지 끝나고 나서 뒤늦은 샤워를 한다.&lt;br&gt;
+종일 쌓였던 짜증도 따뜻한 물에 녹여 흘려보낸다.&lt;/p&gt;
+&lt;p&gt;아직 날이 밝아 잔뜩 화가 난 강아지와 산책을 다녀왔다.&lt;br&gt;
+비가 오지 않아서 다행이다.&lt;/p&gt;
+&lt;p&gt;오늘 저녁은 짜장면에 짬뽕, 탕수육도 있다.&lt;br&gt;
+이 호화로운 저녁을 다 먹고 나면 게임을 하든 영화를 보든 해야지.&lt;/p&gt;
+&lt;p&gt;돌연듯 핸드폰에서 알림이 온다. &lt;br&gt;
+아까 게시한 Issue에 답글이 달렸다.&lt;/p&gt;
+&lt;p&gt;이자식들, 뭐라고 하려나?&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="되는데요"&gt;되는데요??
+&lt;/h3&gt;&lt;p align='left'&gt;
+&lt;img src="images/goni.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;게시한 Issue에 달린 답글은 의외였다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/issues/4.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;ESLint v9에서도 기존 방식(Legacy Config)이 아직 사용 가능하다는 내용이다.&lt;/p&gt;
+&lt;p&gt;특히나 &lt;code&gt;Mr Grain&lt;/code&gt;이 구체적으로 지적한 부분은 &lt;code&gt;.projenrc.ts&lt;/code&gt;의 다음 라인이었다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-typescript" data-lang="typescript"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;project&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;eslint&lt;/span&gt;&lt;span class="o"&gt;?&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;eslintTask&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;env&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ESLINT_USE_FLAT_CONFIG&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;true&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;이 옵션은 ESLint로 하여금 &lt;code&gt;Flat Config&lt;/code&gt;를 &lt;code&gt;사용하라&lt;/code&gt;라는 의미의 환경변수를 적용하는 코드이다.&lt;br&gt;
+&lt;code&gt;Flat Config&lt;/code&gt;에 해당하는 파일이 없는데 ESLint를 실행하려고 하니 최초 발생했던 그 에러가 생길 수 밖에 없다.&lt;br&gt;
+에러 내용을 잘 읽어보면 실제로 그렇게 적혀있다.&lt;/p&gt;
+&lt;p&gt;지적한대로 모든 설정을 처음으로 돌려서 다시 실행했더니 정상적으로 ESLint 커맨드가 동작했다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ yarn eslint
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;yarn run v1.22.22
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ npx projen eslint
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;👾 eslint &lt;span class="p"&gt;|&lt;/span&gt; eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern src scripts projenrc .projenrc.ts
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;(&lt;/span&gt;node:7648&lt;span class="o"&gt;)&lt;/span&gt; ESLintRCWarning: You are using an eslintrc configuration file, which is deprecated and support will be removed in v10.0.0. Please migrate to an eslint.config.js file. See https://eslint.org/docs/latest/use/configure/migration-guide &lt;span class="k"&gt;for&lt;/span&gt; details. An eslintrc configuration file is used because you have the ESLINT_USE_FLAT_CONFIG environment variable &lt;span class="nb"&gt;set&lt;/span&gt; to false. If you want to use an eslint.config.js file, remove the environment variable. If you want to find the location of the eslintrc configuration file, use the --debug flag.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;(&lt;/span&gt;Use &lt;span class="sb"&gt;`&lt;/span&gt;node --trace-warnings ...&lt;span class="sb"&gt;`&lt;/span&gt; to show where the warning was created&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;Flat Config&lt;/code&gt;로 바꾸라는 경고가 뜨긴 하는데, 이건 어디까지 경고일 뿐이다.&lt;br&gt;
+&lt;code&gt;json&lt;/code&gt;방식의 설정 파일도 아직 사용하는데 지장이 없다는 거다.&lt;/p&gt;
+&lt;p&gt;더욱이 내가 경고문을 제대로 읽어보지 않은 것도 문제였다.&lt;br&gt;
+엄연히 &lt;code&gt;v10부터 지원 끊깁니다&lt;/code&gt;라고 적혀 있는데 &lt;code&gt;v9&lt;/code&gt;으로 업뎃 하면서 생긴 문제인 줄 알고 호들갑을 떤 것이다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;얼레? 내가 언제 이런 코드를 작성했지?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;아니&amp;hellip; 이건 내 잘못이 아니지. 문제의 원인은 따로 있다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/cursor-ide.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;잘 생각해보니, 내가 아직 잠에서 덜 깨서 헤롱헤롱 할 때 멋대로 코드를 이리저리 수정하면서 망가뜨린 주범은 이 녀석이다.&lt;/p&gt;
+&lt;p&gt;나 몰래 &lt;code&gt;Flat Config&lt;/code&gt; 옵션을 활성화 해놓고 나의 휴일을 망치기 위한 수작을 부린 것이 분명하다!&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/smiling-ai.png" alt&gt;
+&lt;br&gt;
+&lt;em&gt;정신이 듭니까 휴먼?&lt;/em&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="사과-그리고-추후-지원-약속"&gt;사과, 그리고 추후 지원 약속
+&lt;/h3&gt;&lt;p&gt;애꿎은 AI 탓 해서 뭘 하겠는가&amp;hellip; 결국 내가 바보짓을 한 건데.&lt;br&gt;
+Mr Grain에게는 미안하다고 코멘트를 달았다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/issues/5.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;그래도 ESLint v10에서는 무조건적으로 &lt;code&gt;Flat Config&lt;/code&gt;를 써야한다고 하길래 앞으로 어떻게 할 예정인지도 물어봤다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/issues/6.png" alt&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="마치며"&gt;마치며
+&lt;/h2&gt;&lt;p&gt;결국 남은 건 상처뿐인 하루다.&lt;br&gt;
+그나마 ESLint v10에 대한 Projen 개발팀의 지원 약속이라도 받았으니 다행이라면 다행일까.&lt;/p&gt;
+&lt;p&gt;아무래도 최근 AI를 지나치게 신뢰하고 또 의존하고 있었던 것은 아닐까 반성하게 되는 하루이다.&lt;/p&gt;
+&lt;p&gt;너무 길지 않다면 가급적 &lt;code&gt;경고 / 에러&lt;/code&gt; 로그는 직접 읽어보는 습관을 가지도록 하자.&lt;/p&gt;</description></item><item><title>Win11 작업 표시줄에 Cursor Workspace 올리는 법</title><link>https://blog.ayteneve93.com/p/etc/how-to-add-workspace-to-win11-taskbar/</link><pubDate>Tue, 30 Sep 2025 00:00:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/etc/how-to-add-workspace-to-win11-taskbar/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/etc/how-to-add-workspace-to-win11-taskbar/images/cover.png" alt="Featured image of post Win11 작업 표시줄에 Cursor Workspace 올리는 법" /&gt;&lt;h2 id="문제의-시작"&gt;문제의 시작
+&lt;/h2&gt;&lt;p&gt;윈도우 11로 업데이트 하면서 몇 가지 불편해진 점이 있다.&lt;/p&gt;
+&lt;p&gt;예를들어 :&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;여러 압축 파일을 각각의 폴더에 해제 할 수 있던 기능이 없어졌다.&lt;/li&gt;
+&lt;li&gt;파일이나 폴더를 &lt;code&gt;우클릭&lt;/code&gt; -&amp;gt; &lt;code&gt;추가 옵션 표시&lt;/code&gt;를 눌러줘야 기존에 쓰던 기능을 쓸 수 있다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;그중 하나가 바로가기 파일이 윈도우 작업 표시줄에 드래그 앤 드롭으로 추가가 안 된다는 것이다.&lt;/p&gt;
+&lt;p&gt;이번 포스트에선 &lt;code&gt;Cursor&lt;/code&gt;나 &lt;code&gt;VsCode&lt;/code&gt; 작업 영역(Workspace)의 바로가기를 만들고&lt;/p&gt;
+&lt;p&gt;이를 작업 표시줄에 추가하는 방법을 공유하겠다.&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h2 id="해결방안"&gt;해결방안
+&lt;/h2&gt;&lt;h3 id="workspace-파일-생성"&gt;Workspace 파일 생성
+&lt;/h3&gt;&lt;p&gt;&lt;code&gt;Cursor&lt;/code&gt; 혹은 &lt;code&gt;VsCode&lt;/code&gt;로 Workspace파일을 생성한 후 원하는 이름으로 변경한다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/cursor-image.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;생성한 Workspace 파일을 적당히 아무 위치로 옮겨준다.&lt;/p&gt;
+&lt;p&gt;내 경우 &lt;code&gt;C:\&lt;/code&gt;에 넣어줬다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/workspace-file.png" alt&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="바로가기-생성"&gt;바로가기 생성
+&lt;/h3&gt;&lt;p&gt;Workspace 파일의 바로가기를 만들어서 바탕화면으로 옮겨준다.&lt;/p&gt;
+&lt;p&gt;하는 김에 아이콘도 이쁜 걸로 바꿔줬다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/workspace-file-on-wallpaper.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h3 id="바로가기-파일-속성-편집"&gt;바로가기 파일 속성 편집
+&lt;/h3&gt;&lt;p&gt;바로가기 파일 &lt;code&gt;우클릭&lt;/code&gt; -&amp;gt; &lt;code&gt;속성&lt;/code&gt; -&amp;gt; &lt;code&gt;대상&lt;/code&gt; 값 앞에 &lt;code&gt;explorer&lt;/code&gt;라고 추가해준다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/edit-link-file.png" alt&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="작업-표시줄에-바로가기-등록"&gt;작업 표시줄에 바로가기 등록
+&lt;/h3&gt;&lt;p&gt;편집한 바로가기 파일을 작업 표시줄에 추가한다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/drag-and-drop-link.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h2 id="마치며"&gt;마치며
+&lt;/h2&gt;&lt;p align='center'&gt;
+&lt;img src="images/current-wallpaper.png" alt&gt;
+&lt;em&gt;집 메인 PC 바탕화면&lt;/em&gt;
+&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;작업 표시줄 오른쪽의 3개 아이콘은 모두 서로 독립된 개발 서버로 연결되는 &lt;code&gt;Cursor Workspace&lt;/code&gt;이다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/current-task-bar.png" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;이중 하나를 누르면 &lt;code&gt;SSH&lt;/code&gt;연결까지 자연스럽게 Cursor IDE로 접속된다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/open-workstation-from-task-bar.gif" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;윈도우 검색으로도 들어갈 수 있다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/open-workstation-using-search.gif" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;추가한 파일 자체가 &lt;code&gt;바로가기&lt;/code&gt;이기 때문에 비단 &lt;code&gt;VsCode&lt;/code&gt;나 &lt;code&gt;Cursor&lt;/code&gt;의 Workspace 뿐 아니라 모든 종류의 바로가기를 다 이런식으로 등록할 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

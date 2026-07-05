@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Autoinstall on ApexCaptain의 기술 블로그</title><link>https://blog.ayteneve93.com/tags/autoinstall/</link><description>Recent content in Autoinstall on ApexCaptain의 기술 블로그</description><generator>Hugo -- gohugo.io</generator><language>ko-kr</language><lastBuildDate>Wed, 24 Dec 2025 00:00:00 +0900</lastBuildDate><atom:link href="https://blog.ayteneve93.com/tags/autoinstall/index.xml" rel="self" type="application/rss+xml"/><item><title>Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기</title><link>https://blog.ayteneve93.com/p/dev/init-linux-using-ventoy/</link><pubDate>Wed, 24 Dec 2025 00:00:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/dev/init-linux-using-ventoy/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/dev/init-linux-using-ventoy/images/cover.png" alt="Featured image of post Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기" /&gt;&lt;h2 id="들어가기-앞서"&gt;들어가기 앞서
+&lt;/h2&gt;&lt;p&gt;k8s 클러스터를 운영할 때는 &lt;code&gt;Node 레벨에서의 작업&lt;/code&gt;이 필요한 경우가 왕왕 있다.&lt;/p&gt;
+&lt;p&gt;클러스터를 구성하고 운영하는 방식은 여러가지가 있겠지만,&lt;br&gt;
+우선 현재 회사에서 사용하는 EKS의 경우 k8s API나 kubelet version&lt;br&gt;
+혹은 Node 자체(EC2)의 OS를 업데이트하거나 하는 작업이 생각보다 자주 있는 편이다.&lt;/p&gt;
+&lt;p&gt;다행히 EKS와 같은 KaaS를 사용할 때는 EKS 서비스 자체적으로 혹은 Karpenter Node Autoscaler를 통해&lt;br&gt;
+이런 기능들이 지원되기 때문에 복잡하게 생각할 거 없이 자연스럽고 신뢰성 높게 작업을 수행할 수 있다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;그렇담 On-Premise는?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;당연히 Karpenter 같은 친절한 도구가 있을 리 만무하다.&lt;/strong&gt;&lt;br&gt;
+Node Autoscaling은 고사하고 방금 산 따끈따끈한 컴퓨터에 마치 마법처럼 OS에서부터 각종 패키지, k8s가 설치되고 그게 저절로 기존 클러스터에 Join 하길 기대하긴 힘들다.&lt;br&gt;
+&lt;sub&gt;(진짜 이게 그냥 되면 정말 좋겠지만&amp;hellip;)&lt;/sub&gt;&lt;/p&gt;
+&lt;p&gt;본래 이런 작업은 수동으로 진행하곤 했는데,&lt;br&gt;
+이를 보다 일관적이고 신뢰성 높게 구성하고자 &lt;code&gt;Ansible&lt;/code&gt;을 통한 k8s 구성을 하기로 마음 먹었다.&lt;/p&gt;
+&lt;br&gt;
+&lt;blockquote&gt;
+&lt;p&gt;갑자기 왠 &lt;code&gt;Ansible&lt;/code&gt;?&lt;br&gt;
+내용이 제목이랑 다른데?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Terraform이나 Pulumi와 같은 도구의 역할이 &lt;code&gt;이미 존재하는 k8s 위에 서비스를 배포&lt;/code&gt;하는 것이라면,&lt;br&gt;
+여기서 Ansible의 역할은 &lt;code&gt;깡통 컴퓨터들을 모아다가 k8s를 최초 구성&lt;/code&gt;하는 것이다.&lt;/p&gt;
+&lt;p&gt;Ansible은 기본적으로 다음과 같이 동작한다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/ansible-how-does-it-work.png" alt&gt;
+&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;대상 컴퓨터의 SSH(리눅스) 혹은 Winrm(윈도우) 서비스를 통해 접속&lt;/li&gt;
+&lt;li&gt;사전에 지정한 작업을 수행. 가령, 어떤 패키지를 설치한다거나 특정 서비스를 활성화 한다거나 등등&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;code&gt;깡통 컴퓨터&lt;/code&gt;라고는 했으나, 그래도 최소한의 조건은 있다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;우선 연결하고자 하는 컴퓨터에 &lt;code&gt;SSHD&lt;/code&gt;가 동작 중이어야 한다.&lt;/li&gt;
+&lt;li&gt;당연히 &lt;code&gt;IP, Username, SSH Private Key File 혹은 패스워드&lt;/code&gt;가 필요하다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;요컨대, 진짜 아무리 깡통 옵션이라고 해도 최소한 열쇠 놓고 돌리면 시동은 걸려야 한다는 거다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;전체 인프라 구성을 시간 순서대로 보면 다음과 같다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Node가 될 컴퓨터에 Linux OS 설치, SSH 설정, IP 고정&lt;/li&gt;
+&lt;li&gt;Ansible을 통해 k8s 구성&lt;/li&gt;
+&lt;li&gt;Helm / Terraform / Pulumi 등으로 서비스 배포&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;여기서 &lt;code&gt;1&lt;/code&gt;의 작업을 자동화하고 싶다는 생각이 들었다.&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h2 id="문제의-시작"&gt;문제의 시작
+&lt;/h2&gt;&lt;p&gt;앞서 어느정도 문제 상황을 제시했지만, 한번 더 요약하자면 다음과 같다.&lt;/p&gt;
+&lt;p&gt;Kubernetes 위에 올릴 애플리케이션은 Helm이나 Pulumi로 자동화할 수 있지만,&lt;br&gt;
+&lt;strong&gt;그 기저에 존재하는 Linux OS 설치 작업&lt;/strong&gt;은 여전히 손이 많이 간다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;설치 USB를 Rufus로 매번 새로 굽기&lt;/li&gt;
+&lt;li&gt;IP, SSH key, hostname등을 설치 화면에서 일일이 입력&lt;/li&gt;
+&lt;li&gt;같은 설정으로 재설치할 때마다 무한 반복&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;OS 설치 및 초기화라는 게 별 것도 아닌데 은근히 귀찮고 시간을 많이 잡아 먹는다.&lt;br&gt;
+거의 유일하게 원격 작업이 불가능한 영역이기도 하다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;이번 포스트에서는 &lt;strong&gt;Ventoy&lt;/strong&gt;와 &lt;strong&gt;Ubuntu Autoinstall&lt;/strong&gt;을 조합해서,&lt;br&gt;
+USB 한 장으로 &lt;strong&gt;질문 없이 Ubuntu Server가 설치&lt;/strong&gt;되도록 만든 과정을 정리한다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;왜 하필 Ubuntu?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;k8s 노드 OS로는 Rocky, Debian 등도 충분히 쓸 만하지만,&lt;br&gt;
+이번 작업의 목표가 **&amp;ldquo;설치 질문 없이 SSH까지 열어 두고 Ansible에 넘기기&amp;rdquo;**였기 때문에 OS 선택의 기준은 &lt;strong&gt;무인 설치 가능 여부&lt;/strong&gt;가 됐다.&lt;/p&gt;
+&lt;p&gt;Ubuntu Server는 &lt;strong&gt;Autoinstall(Subiquity + cloud-init)&lt;/strong&gt; 을 공식 지원하고, &lt;code&gt;user-data&lt;/code&gt; 한 파일로 IP·SSH key·디스크 레이아웃까지 선언할 수 있다.&lt;/p&gt;
+&lt;p&gt;kubeadm·containerd로 노드를 맞출 때도 문서와 Ansible 예제가 가장 많고, &lt;strong&gt;24.04 LTS&lt;/strong&gt;면 지원 기간도 넉넉하다.&lt;/p&gt;
+&lt;p&gt;실제로 Ventoy의 Auto Install 플러그인도 Ubuntu autoinstall 조합으로 쓰는 사례가 많아, on-prem 노드를 반복해서 포맷·재설치하는 흐름에 맞았다.&lt;/p&gt;
+&lt;p&gt;그리고 무엇보다 내가 가장 오랫동안 써서 익숙하기도 하다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="기존-방식의-한계"&gt;기존 방식의 한계
+&lt;/h3&gt;&lt;p&gt;물리 PC에 Ubuntu Server를 깔 때 흔히 쓰는 방법은 대략 네 가지다.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;방식&lt;/th&gt;
+&lt;th&gt;USB 1장&lt;/th&gt;
+&lt;th&gt;설정 수정&lt;/th&gt;
+&lt;th&gt;ISO 여러 개&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Rufus + 원본 ISO&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;✅&lt;/td&gt;
+&lt;td&gt;❌ 매번 재플래시&lt;/td&gt;
+&lt;td&gt;❌&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;커스텀 ISO&lt;/strong&gt; (autoinstall 내장)&lt;/td&gt;
+&lt;td&gt;✅&lt;/td&gt;
+&lt;td&gt;❌ ISO 재빌드&lt;/td&gt;
+&lt;td&gt;❌&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Rufus + cidata 파티션&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;✅&lt;/td&gt;
+&lt;td&gt;△ 파일만 교체&lt;/td&gt;
+&lt;td&gt;❌&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Ventoy&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;✅&lt;/td&gt;
+&lt;td&gt;✅ 파일만 교체&lt;/td&gt;
+&lt;td&gt;✅&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;Rufus + 원본 ISO&lt;/strong&gt;는 가장 단순하지만, autoinstall 설정을 넣으려면&lt;br&gt;
+같은 USB에 &lt;strong&gt;&lt;code&gt;cidata&lt;/code&gt; 라벨 FAT 파티션&lt;/strong&gt;을 추가로 만들어 &lt;code&gt;user-data&lt;/code&gt; / &lt;code&gt;meta-data&lt;/code&gt;를 넣어야 한다.&lt;br&gt;
+파티션 작업이 번거롭고, USB 용량도 ISO + cidata를 동시에 담을 만큼 넉넉해야 한다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;커스텀 ISO&lt;/strong&gt;는 &lt;a class="link" href="https://github.com/linuxrrze/ubuntu-24.04-autoinstall-generator" target="_blank" rel="noopener"
+&gt;ubuntu-autoinstall-generator&lt;/a&gt; 같은 도구로&lt;br&gt;
+설정을 ISO 안에 박아 넣은 뒤 Rufus로 굽는 방식이다. USB 1장으로 끝나지만,&lt;br&gt;
+IP나 SSH key를 바꿀 때마다 &lt;strong&gt;ISO를 다시 빌드&lt;/strong&gt;해야 한다.&lt;/p&gt;
+&lt;p&gt;나는 on-prem k8s 노드를 포맷하고 다시 깔아보는 실험을 반복할 예정이었고,&lt;br&gt;
+&lt;strong&gt;설정만 고치면 되는 USB&lt;/strong&gt;가 필요했다. 그래서 &lt;strong&gt;Ventoy&lt;/strong&gt;를 선택했다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="ventoy란-무엇인가"&gt;Ventoy란 무엇인가
+&lt;/h2&gt;&lt;p&gt;&lt;a class="link" href="https://www.ventoy.net" target="_blank" rel="noopener"
+&gt;Ventoy&lt;/a&gt;는 USB를 &lt;strong&gt;한 번만 초기화&lt;/strong&gt;해 두면,&lt;br&gt;
+이후에는 ISO 파일을 &lt;strong&gt;그냥 복사&lt;/strong&gt;만 해도 부팅 USB로 쓸 수 있게 해 주는 오픈소스 도구다.&lt;/p&gt;
+&lt;p&gt;Rufus처럼 ISO를 디스크에 &lt;strong&gt;덮어쓰는&lt;/strong&gt; 방식이 아니라, 구조는 대략 이렇다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;16GB USB
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── [작은 Ventoy 부팅 파티션]
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── [큰 데이터 파티션 exFAT] ← &amp;#34;남는 공간&amp;#34; 전체
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; ├── ubuntu-24.04.3-live-server-amd64.iso (파일 ~3GB)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; └── ventoy/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; ├── ventoy.json
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; └── user-data/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; └── node.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;ISO도 &lt;strong&gt;파일 하나&lt;/strong&gt;로 복사하고, autoinstall 설정도 &lt;strong&gt;같은 파티션&lt;/strong&gt;에 같이 둔다.&lt;br&gt;
+16GB USB면 ISO 하나 + 설정 파일 여러 개를 넣기에 충분하다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="ubuntu-autoinstall"&gt;Ubuntu Autoinstall
+&lt;/h2&gt;&lt;p&gt;Ubuntu Server &lt;strong&gt;24.04 LTS&lt;/strong&gt;(&lt;code&gt;ubuntu-24.04.3-live-server-amd64.iso&lt;/code&gt;)는 &lt;strong&gt;Autoinstall(Subiquity + cloud-init)&lt;/strong&gt; 을 지원한다.&lt;br&gt;
+설치 USB가 부팅될 때 &lt;strong&gt;&lt;code&gt;user-data&lt;/code&gt;&lt;/strong&gt;(설치 설정)를 읽어 &lt;strong&gt;질문 없이 설치&lt;/strong&gt;한다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Ubuntu Server ISO 부팅
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; → autoinstall + nocloud 데이터 소스
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; → user-data: IP, SSH key, hostname, 디스크, 패키지
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; → (선택) meta-data: 인스턴스 ID
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;user-data&lt;/code&gt; 파일의 첫 줄에는 반드시 &lt;code&gt;#cloud-config&lt;/code&gt;가 와야 하고,&lt;br&gt;
+그 아래에 &lt;code&gt;autoinstall:&lt;/code&gt; 블록을 작성한다.&lt;/p&gt;
+&lt;p&gt;Ventoy의 &lt;strong&gt;Auto Install&lt;/strong&gt; 플러그인을 쓰면,&lt;br&gt;
+&lt;code&gt;ventoy.json&lt;/code&gt;에서 &lt;strong&gt;ISO ↔ user-data&lt;/strong&gt;를 연결해 줄 수 있다.&lt;br&gt;
+이 방식에서는 파일명이 &lt;code&gt;user-data&lt;/code&gt;일 필요는 없다.&lt;br&gt;
+&lt;code&gt;node.yaml&lt;/code&gt;처럼 &lt;strong&gt;자유로운 이름&lt;/strong&gt;을 써도 된다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="ventoy-usb-구성"&gt;Ventoy USB 구성
+&lt;/h2&gt;&lt;h3 id="ventoyjson"&gt;ventoy.json
+&lt;/h3&gt;&lt;p&gt;ISO &lt;strong&gt;파일명&lt;/strong&gt;과 &lt;code&gt;image&lt;/code&gt; 경로가 &lt;strong&gt;정확히 일치&lt;/strong&gt;해야 한다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;auto_install&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;image&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/ubuntu-24.04.3-live-server-amd64.iso&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;template&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/ventoy/user-data/node.yaml&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;autosel&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;],&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;control&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;VTOY_MENU_TIMEOUT&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;5&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;VTOY_DEFAULT_IMAGE&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/ubuntu-24.04.3-live-server-amd64.iso&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;VTOY_SECONDARY_BOOT_MENU&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;1&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;VTOY_SECONDARY_TIMEOUT&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;5&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;키&lt;/th&gt;
+&lt;th&gt;역할&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;auto_install[].image&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;부팅할 ISO 파일 경로 (USB 루트 기준)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;auto_install[].template&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;autoinstall에 넘길 user-data 파일(다음 섹션 참고)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;auto_install[].autosel&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;1&lt;/code&gt;이면 해당 ISO 선택 시 template 자동 적용&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;control&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Ventoy 메뉴 타임아웃, 기본 ISO 등&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;code&gt;ventoy.json&lt;/code&gt;은 &lt;strong&gt;Ventoy 설정&lt;/strong&gt;이고,&lt;br&gt;
+&lt;code&gt;node.yaml&lt;/code&gt;은 &lt;strong&gt;Ubuntu autoinstall 내용&lt;/strong&gt;이다. 역할이 다르다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;경로 정리&lt;/strong&gt; — Ventoy는 &lt;code&gt;ventoy/ventoy.json&lt;/code&gt; 위치를 고정으로 읽는다.&lt;br&gt;
+&lt;code&gt;image&lt;/code&gt;·&lt;code&gt;template&lt;/code&gt;에 적는 &lt;code&gt;/...&lt;/code&gt; 경로는 &lt;strong&gt;USB 데이터 파티션 루트&lt;/strong&gt; 기준이며, ISO는 루트에, autoinstall YAML은 &lt;code&gt;ventoy/user-data/&lt;/code&gt; 아래에 둔다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;br&gt;
+&lt;h3 id="user-data-핵심"&gt;user-data 핵심
+&lt;/h3&gt;&lt;p&gt;on-prem k8s 노드 여러 대를 &lt;strong&gt;USB 한 장&lt;/strong&gt;으로 깔려면,&lt;br&gt;
+&lt;code&gt;user-data&lt;/code&gt; &lt;strong&gt;하나&lt;/strong&gt;에 &lt;strong&gt;NIC MAC별 netplan&lt;/strong&gt;을 넣는 방식이 깔끔하다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;span class="lnt"&gt;37
+&lt;/span&gt;&lt;span class="lnt"&gt;38
+&lt;/span&gt;&lt;span class="lnt"&gt;39
+&lt;/span&gt;&lt;span class="lnt"&gt;40
+&lt;/span&gt;&lt;span class="lnt"&gt;41
+&lt;/span&gt;&lt;span class="lnt"&gt;42
+&lt;/span&gt;&lt;span class="lnt"&gt;43
+&lt;/span&gt;&lt;span class="lnt"&gt;44
+&lt;/span&gt;&lt;span class="lnt"&gt;45
+&lt;/span&gt;&lt;span class="lnt"&gt;46
+&lt;/span&gt;&lt;span class="lnt"&gt;47
+&lt;/span&gt;&lt;span class="lnt"&gt;48
+&lt;/span&gt;&lt;span class="lnt"&gt;49
+&lt;/span&gt;&lt;span class="lnt"&gt;50
+&lt;/span&gt;&lt;span class="lnt"&gt;51
+&lt;/span&gt;&lt;span class="lnt"&gt;52
+&lt;/span&gt;&lt;span class="lnt"&gt;53
+&lt;/span&gt;&lt;span class="lnt"&gt;54
+&lt;/span&gt;&lt;span class="lnt"&gt;55
+&lt;/span&gt;&lt;span class="lnt"&gt;56
+&lt;/span&gt;&lt;span class="lnt"&gt;57
+&lt;/span&gt;&lt;span class="lnt"&gt;58
+&lt;/span&gt;&lt;span class="lnt"&gt;59
+&lt;/span&gt;&lt;span class="lnt"&gt;60
+&lt;/span&gt;&lt;span class="lnt"&gt;61
+&lt;/span&gt;&lt;span class="lnt"&gt;62
+&lt;/span&gt;&lt;span class="lnt"&gt;63
+&lt;/span&gt;&lt;span class="lnt"&gt;64
+&lt;/span&gt;&lt;span class="lnt"&gt;65
+&lt;/span&gt;&lt;span class="lnt"&gt;66
+&lt;/span&gt;&lt;span class="lnt"&gt;67
+&lt;/span&gt;&lt;span class="lnt"&gt;68
+&lt;/span&gt;&lt;span class="lnt"&gt;69
+&lt;/span&gt;&lt;span class="lnt"&gt;70
+&lt;/span&gt;&lt;span class="lnt"&gt;71
+&lt;/span&gt;&lt;span class="lnt"&gt;72
+&lt;/span&gt;&lt;span class="lnt"&gt;73
+&lt;/span&gt;&lt;span class="lnt"&gt;74
+&lt;/span&gt;&lt;span class="lnt"&gt;75
+&lt;/span&gt;&lt;span class="lnt"&gt;76
+&lt;/span&gt;&lt;span class="lnt"&gt;77
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-yaml" data-lang="yaml"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;#cloud-config&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;x-static-net&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="cp"&gt;&amp;amp;static-net&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;dhcp4&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kc"&gt;no&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;routes&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;to&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;default&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;via&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;&amp;lt;GW 주소, 예를 들어 192.168.0.1&amp;gt;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;nameservers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;addresses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="m"&gt;1.1.1.1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# Nameserver 입력&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="m"&gt;8.8.8.8&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;autoinstall&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;version&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;locale&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;en_US.UTF-8&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;identity&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 기본 호스트명으로 k8s 구성을 하려면 각 node별로 다르게 지정해야 하는데&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# hostname은 추후 Ansible을 통해 변경하고자 한다. 이건 지금 뭐로 적든 무관하다.&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;hostname&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;k8s-node &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;username&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;ubuntu&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;password&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;&amp;lt;mkpasswd --method=SHA-512 --rounds=4096 &amp;#34;myPassword&amp;#34;의 결과 입력&amp;gt;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;ssh&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;install-server&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# SSH 서버를 설치&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;allow-pw&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 패스워드를 통한 접속 X&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;authorized-keys&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="s1"&gt;&amp;#39;ssh-ed25519 AAAA...&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 사용할 SSH PublicKey 입력&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;network&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;network&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;version&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;2&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;ethernets&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;node0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;&amp;lt;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="cp"&gt;*static-net&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;match&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;macaddress&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;aa:bb:cc:dd:ee:01&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 이 Mac Address에 맞는 컴퓨터면&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;addresses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;&amp;lt;할당할 ip 주소/24, ex&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;192.168.0.100&lt;/span&gt;&lt;span class="l"&gt;/24&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 이 IP가 할당되고&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;node1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;&amp;lt;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="cp"&gt;*static-net&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;match&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;macaddress&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;aa:bb:cc:dd:ee:02&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 이 Mac Address에 맞는 컴퓨터면&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;addresses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;&amp;lt;할당할 ip 주소/24, ex&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;192.168.0.101&lt;/span&gt;&lt;span class="l"&gt;/24&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 이 IP가 할당된다&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# (옵션)&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# OS가 설치될 디스크를 선택한다.&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 이 블록 전체를 제외할 경우 Storage 선택은 수동으로 해야 한다.&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 아래 match 목록에 있는 디스크 중, 해당 머신에 실제로 존재하는 것을 대상으로 한다.&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# (여러 개가 동시에 잡히면 레이아웃 정책에 따라 동작이 달라질 수 있으니, 단일 디스크 환경을 전제로 썼다.)&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;storage&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;layout&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;direct&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# LVM 없이 디스크 전체 사용&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;match&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;path&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;/dev/nvme0n1&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;path&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;/dev/nvme1n1&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;path&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;/dev/nvme2n1&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 위 목록 어디에도 해당 디스크가 없으면 설치가 실패한다&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;updates&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;security&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 보안 업데이트만 자동 적용&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# ── 아래부터는 &amp;#34;이런 것도 가능하다&amp;#34; 수준의 참고 예시 (필수 아님) ──&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 설치 중 /target 안을 건드릴 때 — 예: sudo NOPASSWD&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;late-commands&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;curtin in-target -- sh -c &amp;#34;echo &amp;#39;ubuntu ALL=(ALL) NOPASSWD:ALL&amp;#39; &amp;gt; /etc/sudoers.d/ubuntu&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;curtin in-target -- chmod 440 /etc/sudoers.d/ubuntu&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 첫 부팅 후 실행 — 예: Slack 알림 &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;user-data&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;runcmd&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="p"&gt;|&lt;/span&gt;&lt;span class="sd"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; SLACK_WEBHOOK_URL=&amp;#39;&amp;lt;Slack Webhook URL을 입력한다. https://hooks.slack.com/services...&amp;gt;&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; IP=$(hostname -I | awk &amp;#39;{print $1}&amp;#39;)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; curl -sS -X POST &amp;#34;$SLACK_WEBHOOK_URL&amp;#34; \
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; -H &amp;#39;Content-Type: application/json&amp;#39; \
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; -d &amp;#34;$(printf &amp;#39;{&amp;#34;text&amp;#34;:&amp;#34;✅ Autoinstall complete\n• IP: %s&amp;#34;}&amp;#39; &amp;#34;$IP&amp;#34;)&amp;#34; \
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; || true&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;몇 가지 포인트만 짚어두자.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;위 YAML에서 &lt;strong&gt;&lt;code&gt;identity&lt;/code&gt; · &lt;code&gt;ssh&lt;/code&gt; · &lt;code&gt;network&lt;/code&gt;가 핵심&lt;/strong&gt;이다.&lt;br&gt;
+&lt;code&gt;storage&lt;/code&gt;를 빼면 디스크 선택 화면이 뜰 수 있어, 완전 무인 설치를 원하면 넣는 편이 낫다.&lt;br&gt;
+&lt;code&gt;late-commands&lt;/code&gt;와 &lt;code&gt;user-data.runcmd&lt;/code&gt;는 autoinstall로 &lt;strong&gt;뭘 더 할 수 있는지&lt;/strong&gt; 보여 주는 참고 예시일 뿐이고, 빼도 SSH 접속까지는 문제없다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;1. &lt;code&gt;ethernets&lt;/code&gt; 아래 키 이름 (&lt;code&gt;node0&lt;/code&gt; 등)은 아무거나 OK&lt;/strong&gt;&lt;br&gt;
+YAML 블록 라벨일 뿐이고, 실제 NIC 이름과는 무관하다.&lt;br&gt;
+어떤 PC에 설치하든 &lt;strong&gt;MAC이 match되면&lt;/strong&gt; 해당 IP 블록만 적용된다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;2. &lt;code&gt;identity.hostname&lt;/code&gt;은 MAC별로 나눌 수 없다&lt;/strong&gt;&lt;br&gt;
+&lt;code&gt;network&lt;/code&gt;는 MAC별 분기가 되지만, &lt;code&gt;identity.hostname&lt;/code&gt;은 &lt;strong&gt;값 하나&lt;/strong&gt;다.&lt;br&gt;
+노드마다 hostname을 다르게 쓰려면 Ventoy &lt;code&gt;template&lt;/code&gt;을 여러 개 두거나,&lt;br&gt;
+&lt;code&gt;late-commands&lt;/code&gt; 등으로 설치 중에 바꾸는 방식을 쓴다.&lt;br&gt;
+내 경우 주석에도 달아 놨듯, 추후 Ansible을 통해 관리하고자 한다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;3. MAC이 안 맞으면 고정 IP가 통째로 스킵된다&lt;/strong&gt;&lt;br&gt;
+OS와 SSH key는 설치될 수 있지만 &lt;strong&gt;&lt;code&gt;지정한 IP&lt;/code&gt;로 SSH 접속은 안 된다.&lt;/strong&gt;&lt;br&gt;
+설치 전 &lt;code&gt;user-data&lt;/code&gt;의 MAC 주소가 &lt;strong&gt;유선 NIC&lt;/strong&gt;와 일치하는지 꼭 확인하자.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;4. k8s 준비는 autoinstall에서 하지 않는다&lt;/strong&gt;&lt;br&gt;
+containerd, kubeadm 같은 패키지는 &lt;strong&gt;Ansible&lt;/strong&gt; 쪽에서 설치한다.&lt;br&gt;
+autoinstall은 &lt;strong&gt;SSH + IP&lt;/strong&gt;까지만 맞춰 주면 된다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;5. &lt;code&gt;late-commands&lt;/code&gt; / &lt;code&gt;user-data.runcmd&lt;/code&gt;는 타이밍만 기억하면 된다&lt;/strong&gt;&lt;br&gt;
+설치 &lt;strong&gt;중&lt;/strong&gt;에 installed system(&lt;code&gt;/target&lt;/code&gt;)을 건드리려면 &lt;code&gt;late-commands&lt;/code&gt;, &lt;strong&gt;첫 부팅 이후&lt;/strong&gt;에 돌리려면 &lt;code&gt;autoinstall.user-data.runcmd&lt;/code&gt;를 쓴다.&lt;br&gt;
+YAML에 넣은 sudo·Slack 예시는 그냥 “이런 것도 된다”는 샘플이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="iac-프로젝트로-정리하기"&gt;IaC 프로젝트로 정리하기
+&lt;/h2&gt;&lt;p&gt;처음에는 &lt;code&gt;user-data&lt;/code&gt;를 손으로 작성해서 USB에 복사해 테스트했다.&lt;br&gt;
+IP, MAC, SSH key, password hash를 직접 넣고 Ventoy로 부팅해 접속까지 확인했다.&lt;/p&gt;
+&lt;p&gt;하지만 설정이 늘어나면 &lt;strong&gt;매번 YAML을 손으로 고치기&lt;/strong&gt;가 번거로워졌다.&lt;br&gt;
+그래서 &lt;a class="link" href="https://github.com/ApexCaptain/ApexCaptain.IaC.Pulumi/tree/develop" target="_blank" rel="noopener"
+&gt;ApexCaptain.IaC.Pulumi&lt;/a&gt; 레포에 &lt;code&gt;ventoy/&lt;/code&gt; 디렉토리를 두고 &lt;strong&gt;projen + Handlebars 템플릿&lt;/strong&gt;으로 생성하도록 바꿨다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ventoy/ ← 레포 디렉터리
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── ventoy.json ← projen 생성 → USB의 ventoy/ventoy.json
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── templates/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;│ └── node.yaml.tpl ← Handlebars 템플릿 (수동 편집, USB에 복사 안 함)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── user-data/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; └── node.yaml ← projen 생성 → USB의 ventoy/user-data/node.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;레포의 &lt;code&gt;ventoy/&lt;/code&gt; 폴더를 USB에 옮길 때는 &lt;strong&gt;&lt;code&gt;templates/&lt;/code&gt;를 제외&lt;/strong&gt;하고,&lt;br&gt;
+&lt;code&gt;ventoy.json&lt;/code&gt;과 &lt;code&gt;user-data/&lt;/code&gt;만 &lt;code&gt;ventoy/&lt;/code&gt; 아래에 그대로 두면 된다.&lt;/p&gt;
+&lt;p&gt;템플릿에서 변수는 &lt;code&gt;'{{ variable }}'&lt;/code&gt;처럼 &lt;strong&gt;작은따옴표로 감싼다.&lt;/strong&gt;&lt;br&gt;
+YAML 포맷터가 &lt;code&gt;{{ }}&lt;/code&gt;를 flow mapping으로 오해하지 않게 하기 위함이다.&lt;/p&gt;
+&lt;p&gt;password hash처럼 &lt;code&gt;=&lt;/code&gt; 문자가 많은 값은 Handlebars &lt;strong&gt;&lt;code&gt;{{{ passwordHash }}}&lt;/code&gt;&lt;/strong&gt; (triple mustache)로 넣어야 한다.&lt;br&gt;
+&lt;code&gt;{{ passwordHash }}&lt;/code&gt;는 HTML 이스케이프 때문에 &lt;code&gt;=&lt;/code&gt;가 &lt;code&gt;&amp;amp;#x3D;&lt;/code&gt;로 깨진다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-yaml" data-lang="yaml"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;# templates/node.yaml.tpl&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;identity&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;password&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;{{{ passwordHash }}}&amp;#39;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;생성된 파일을 USB에 옮기기 전, devcontainer 안에서 한 번 더 projen을 돌려 &lt;strong&gt;&lt;code&gt;user-data/node.yaml&lt;/code&gt;이 최신인지&lt;/strong&gt; 확인한다.&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h2 id="mac에서-usb-만들기"&gt;Mac에서 USB 만들기
+&lt;/h2&gt;&lt;p&gt;애석하게도 나는 지금 모니터가 한 대밖에 없어서(&amp;hellip;), 메인 PC(개발용)와&lt;br&gt;
+설치 대상이 되는 서버 컴퓨터를 동시에 화면에 띄울 수가 없다.&lt;/p&gt;
+&lt;p&gt;고로 OS 설치 상황을 확인하기 위해 집에 있는 모니터는 서버에 양보하고,&lt;br&gt;
+대신 Ventoy로 USB를 굽는 건 MacBook으로 진행하기로 했다.&lt;/p&gt;
+&lt;p&gt;다만 &lt;a class="link" href="https://www.ventoy.net/en/download.html" target="_blank" rel="noopener"
+&gt;Ventoy 다운로드 페이지&lt;/a&gt;를 보면 알겠지만,&lt;br&gt;
+Windows랑 Linux 버전만 있고 macOS용은 없다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/ventoy-download-page.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;다행히 &lt;a class="link" href="https://github.com/cashcon57/mactoy/releases" target="_blank" rel="noopener"
+&gt;Mactoy&lt;/a&gt;라는 도구가 있는데, Ventoy를 Mac에서도 구성 가능하도록 만든 툴이다.&lt;/p&gt;
+&lt;p&gt;&lt;a class="link" href="https://github.com/cashcon57/mactoy/releases" target="_blank" rel="noopener"
+&gt;Mactoy Release Page&lt;/a&gt;에 접속해서&lt;br&gt;
+가장 최신 버전의 dmg 파일을 다운받아 설치한다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Ventoy &lt;strong&gt;1.1.11&lt;/strong&gt;은 Ubuntu autoinstall 관련 버그가 있었다.&lt;br&gt;
+Mactoy로 설치할 때 &lt;strong&gt;1.1.10&lt;/strong&gt; 또는 &lt;strong&gt;1.1.12+&lt;/strong&gt; 를 선택하자.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;Mactoy 설치&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p align='center'&gt;
+&lt;img width=80% src="images/install-ventoy-1.png" alt&gt;
+&lt;br&gt;
+&lt;em&gt;Applications로 드래그&lt;/em&gt;
+&lt;/p&gt;
+&lt;ol start="2"&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;Install Ventoy&lt;/code&gt;&lt;/strong&gt; 탭 → USB에 Ventoy 설치&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p align='center'&gt;
+&lt;img width=80% src="images/install-ventoy-2.png" alt&gt;
+&lt;br&gt;
+&lt;em&gt;`Flash Image`는 사용하지 않는다 — ISO를 raw로 굽는 모드라 Ventoy가 사라진다&lt;/em&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;p&gt;Ventoy가 한 번 깔린 USB가 있으면, 이후에는 &lt;strong&gt;Finder로 드래그 앤 드롭&lt;/strong&gt;만 하면 된다.&lt;br&gt;
+새로 다른 USB를 산 게 아니라면 더 이상 쓸 일이 없다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/install-ventoy-3.png" alt&gt;
+&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;ubuntu-24.04.3-live-server-amd64.iso&lt;/code&gt; → USB &lt;strong&gt;루트&lt;/strong&gt;에 복사&lt;/li&gt;
+&lt;li&gt;레포 &lt;code&gt;ventoy/&lt;/code&gt;에서 &lt;code&gt;ventoy.json&lt;/code&gt;, &lt;code&gt;user-data/&lt;/code&gt; → USB **&lt;code&gt;ventoy/&lt;/code&gt;**에 복사 (&lt;code&gt;templates/&lt;/code&gt;는 제외)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ventoy/ventoy.json&lt;/code&gt;의 &lt;code&gt;image&lt;/code&gt;와 ISO &lt;strong&gt;파일명&lt;/strong&gt; 일치 확인&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h2 id="설치-절차"&gt;설치 절차
+&lt;/h2&gt;&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;USB 부팅
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; → Ventoy 메뉴에서 ISO 선택
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; → Boot in normal mode
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; → Try or Install Ubuntu Server
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; → autoinstall 진행 (질문 없음)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; → 재부팅
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; → ssh ubuntu@&amp;lt;user-data에 적은 IP&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;실제로 테스트했을 때, MAC만 맞으면 &lt;strong&gt;고정 IP + SSH key 로그인&lt;/strong&gt;까지 한 번에 성공했다.&lt;br&gt;
+OS 설치 후에는 Ansible로 k8s 노드 join을 이어가고, Longhorn·MetalLB 같은 애드온은 Helm 등으로 구성하면 된다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="주의사항-정리"&gt;주의사항 정리
+&lt;/h2&gt;&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;항목&lt;/th&gt;
+&lt;th&gt;내용&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Ventoy 버전&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;1.1.12+&lt;/strong&gt; 권장 (1.1.11 autoinstall 버그)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ISO&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;ubuntu-24.04.3-live-server-amd64.iso&lt;/code&gt; (&lt;strong&gt;Desktop&lt;/strong&gt; 말고 &lt;strong&gt;live-server&lt;/strong&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;ventoy.json&lt;/code&gt; ↔ ISO&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;ventoy/ventoy.json&lt;/code&gt;의 &lt;code&gt;image&lt;/code&gt;와 ISO &lt;strong&gt;파일명 정확히 일치&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MAC 주소&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;user-data&lt;/code&gt;의 MAC과 &lt;strong&gt;실제 유선 NIC&lt;/strong&gt; 일치 필수&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;#cloud-config&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;user-data&lt;/code&gt; &lt;strong&gt;첫 줄&lt;/strong&gt; (projen 주석이 위에 끼면 autoinstall 실패)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Handlebars&lt;/td&gt;
+&lt;td&gt;password hash는 &lt;strong&gt;&lt;code&gt;{{{ }}}&lt;/code&gt;&lt;/strong&gt; (triple mustache) 사용&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Mactoy &lt;code&gt;Flash Image&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;쓰지 않기&lt;/strong&gt; — Ventoy 파티션이 덮어써진다&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;autoinstall 안 될 때&lt;/td&gt;
+&lt;td&gt;Ventoy 부팅 메뉴 &lt;strong&gt;F5&lt;/strong&gt; → plugin json / auto install 설정 확인&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;br&gt;
+&lt;h2 id="마치며"&gt;마치며
+&lt;/h2&gt;&lt;p&gt;Ventoy + Ubuntu Autoinstall 조합으로 &lt;strong&gt;USB 한 장&lt;/strong&gt;에 다음을 모두 담을 수 있었다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Ubuntu Server ISO&lt;/li&gt;
+&lt;li&gt;노드별 MAC/IP 설정이 들어간 autoinstall 프리셋&lt;/li&gt;
+&lt;li&gt;ISO 추가·설정 수정 시 &lt;strong&gt;파일 복사만&lt;/strong&gt;으로 반영&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Rufus로 ISO를 매번 굽거나, cidata 파티션을 손으로 파는 것보다 훨씬 덜 귀찮았다.&lt;br&gt;
+특히 on-prem k8s 노드를 &lt;strong&gt;포맷 후 재설치&lt;/strong&gt;하는 실험을 반복할 때 체감이 크다.&lt;/p&gt;
+&lt;p&gt;설정 파일과 템플릿은 &lt;a class="link" href="https://github.com/ApexCaptain/ApexCaptain.IaC.Pulumi/tree/develop/ventoy" target="_blank" rel="noopener"
+&gt;ApexCaptain.IaC.Pulumi/ventoy&lt;/a&gt;에 올려 두었다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;참고 자료&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://www.ventoy.net" target="_blank" rel="noopener"
+&gt;Ventoy 공식 사이트&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://www.ventoy.net/en/doc_plugin_autoinstall.html" target="_blank" rel="noopener"
+&gt;Ventoy Auto Install 문서&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://ubuntu.com/server/docs/install/autoinstall" target="_blank" rel="noopener"
+&gt;Ubuntu Autoinstall&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://github.com/ApexCaptain/ApexCaptain.IaC.Pulumi/tree/develop/ventoy" target="_blank" rel="noopener"
+&gt;ApexCaptain.IaC.Pulumi — ventoy/&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

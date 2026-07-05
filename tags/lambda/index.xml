@@ -1,0 +1,1139 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Lambda on ApexCaptain의 기술 블로그</title><link>https://blog.ayteneve93.com/tags/lambda/</link><description>Recent content in Lambda on ApexCaptain의 기술 블로그</description><generator>Hugo -- gohugo.io</generator><language>ko-kr</language><lastBuildDate>Sat, 01 Nov 2025 00:00:00 +0900</lastBuildDate><atom:link href="https://blog.ayteneve93.com/tags/lambda/index.xml" rel="self" type="application/rss+xml"/><item><title>클라우드 비용 절약을 위한 노력</title><link>https://blog.ayteneve93.com/p/dev/how-to-save-on-cloud-costs/</link><pubDate>Sat, 01 Nov 2025 00:00:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/dev/how-to-save-on-cloud-costs/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/dev/how-to-save-on-cloud-costs/images/cover.png" alt="Featured image of post 클라우드 비용 절약을 위한 노력" /&gt;&lt;h2 id="들어가기-앞서"&gt;들어가기 앞서
+&lt;/h2&gt;&lt;p align='left'&gt;
+&lt;img src="images/aws.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;얼마 전에 &lt;a class="link" href="../install-ollama-to-k8s/" &gt;&amp;ldquo;k8s에 Ollama AI 서버 올려보기&amp;rdquo;&lt;/a&gt;라는 포스트를 통해&lt;br&gt;
+&amp;ldquo;&lt;strong&gt;GPU가 너무 비싸 인프라 구축을 어떻게 해야 할지 고민이다&lt;/strong&gt;&amp;ldquo;라는 내용을 토로했다.&lt;/p&gt;
+&lt;p&gt;얼핏 GPU 얘기에만 매몰된 것처럼 보였을 수도 있으나,&lt;br&gt;
+당연하게도 &lt;strong&gt;클라우드 비용은 GPU만의 문제가 아니다.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;클라우드에는 &lt;strong&gt;컴퓨트&lt;/strong&gt;, &lt;strong&gt;스토리지&lt;/strong&gt;, &lt;strong&gt;네트워크&lt;/strong&gt; 등 다양한 카테고리의&lt;br&gt;
+서비스가 존재하고, 상황에 따라 비용을 최적화할 수 있는 방법들도 제각각이다.&lt;br&gt;
+이번 포스트에서는 AWS를 중심으로 클라우드 비용 절약 팁을 공유하고자 한다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;왜 AWS?&lt;/strong&gt; 🤔&lt;/p&gt;
+&lt;p&gt;GCP, Azure, OCI 등 다양한 클라우드가 있지만, 전부 다 다루기엔 한계가 있다.&lt;br&gt;
+다행히 대부분 기본 개념은 유사하므로 이 포스트에서는 공통된 원칙을 위주로 기술한다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;br&gt;
+&lt;h2 id="문제의-시작"&gt;문제의 시작
+&lt;/h2&gt;&lt;h3 id="on-premise-서버-구축의-어려움"&gt;On-Premise 서버 구축의 어려움
+&lt;/h3&gt;&lt;p align='left'&gt;
+&lt;img width=85% src="images/server-engineer-in-the-past.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;서버를 구축하는 일은 힘들다.&lt;br&gt;
+CPU, 메모리, 용도에 맞는 각종 스토리지, PSU&lt;sub&gt;(파워 서플라이)&lt;/sub&gt;, 메인보드, 가끔 GPU같은 PCI-E 확장 카드.&lt;br&gt;
+구매해야 하는 게 한두 가지가 아니다.&lt;/p&gt;
+&lt;p&gt;컴퓨터를 구매한다고 끝나는 것도 아니다.&lt;br&gt;
+정전을 대비한 외부 UPS, 끊김 걱정 없는 튼튼한 회선 역시 필요하다.&lt;/p&gt;
+&lt;p&gt;그 외에도 OS, RAID 구성, 각종 네트워크 / 방화벽 설정 등등&amp;hellip;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;그런데 이런 일은 보통 IDC &lt;sub&gt;(Internet Data Center)&lt;/sub&gt;에서 알아서 다 해주는 거 아닌가?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/sms-screenshot-with-idc.png" alt&gt;
+&lt;em&gt;결코 그렇지 않다&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;막상 해보면 서버 도입부터 실제 센터에 설치/설정하는 일련의 과정 동안&lt;br&gt;
+하루에도 수십통씩 이메일과 전화, SMS 등을 보내고 받게 될 것이다. &lt;sub&gt;나도 알고싶지 않았다.&lt;/sub&gt;&lt;/p&gt;
+&lt;p&gt;그렇다고 IDC 직원이 뭔가를 잘못 했다는 건 아니다.&lt;br&gt;
+꼼꼼하게 하나하나 확인하면서 클라이언트에게 확인 받는 건 시스템 엔지니어로서 당연하다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="클라우드-서비스를-사용하는-이유"&gt;클라우드 서비스를 사용하는 이유
+&lt;/h3&gt;&lt;p&gt;바로 위 섹션의 문제점 극복을 포함해서 기업들이 클라우드를 사용하는 이유는 여러 가지가 있다.&lt;/p&gt;
+&lt;p&gt;예를 들어:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;유연성과 확장성&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;IDC에 데이터 서버를 구축한다고 생각해보자.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/30tb-hdd.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;위 제품은 Seagate IronWolf Pro 7200rpm, 512MB 캐시 모델이다.&lt;br&gt;
+용량은 30TB, 가격은 작성일 기준 120만원 정도이다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;서버에 필요한 디스크 크기가 아직 미정인 상황이다.&lt;br&gt;
+디스크를 구매해야 하는데 어떤걸 사야할까?&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;바로 제일 크고 아름다운 &lt;code&gt;30TB HDD를 구매&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;더 작은 디스크를 우선 구매 -&amp;gt; 추후 &lt;code&gt;점진적으로 늘리기&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;후자를 택하는 게 합리적이긴 하나,&lt;br&gt;
+이러면 나중에 HDD를 장착할 물리적인 &lt;code&gt;공간이나 포트가 부족&lt;/code&gt;해질 수도 있다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;그렇담 클라우드는?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;클라우드 서비스를 통해 구축한다면 이러한 고민에서 해방된다.&lt;br&gt;
+물리적 제약에 신경 쓸 필요 없이 &lt;code&gt;지금 필요한 만큼의 서버를 구성&lt;/code&gt; 할 수 있고&lt;br&gt;
+원하면 &lt;code&gt;언제든, 원하는 만큼 스펙을 조절&lt;/code&gt;할 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;보안&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;민감한 정보를 안전하게 보호하는 것은 비즈니스를 성공적으로 운영하기 위한 기본적인 요소이다.&lt;/p&gt;
+&lt;p&gt;간단하게는 보안그룹 인바운드/아웃바운드 규칙부터, &lt;sub&gt;(단일 서버 기준으로 하면 firewall에 해당)&lt;/sub&gt;&lt;br&gt;
+IAM을 통한 단일화된 그룹 / 사용자 관리, KMS와 같은 별도 Key 관리 서비스 등 클라우드의&lt;br&gt;
+고급 보안 조치를 통해 보다 쉽게 관리하고 안심하고 사용할 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;IaC를 통한 신속한 배포&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a class="link" href="https://developer.hashicorp.com/terraform" target="_blank" rel="noopener"
+&gt;Terraform&lt;/a&gt;, &lt;a class="link" href="https://www.pulumi.com/" target="_blank" rel="noopener"
+&gt;Pulumi&lt;/a&gt;, &lt;a class="link" href="https://aws.amazon.com/ko/cloudformation/" target="_blank" rel="noopener"
+&gt;CloudFormation&lt;/a&gt; 등 클라우드 서비스에 대한&lt;br&gt;
+&lt;strong&gt;인프라를 코드로 관리할 수 있는 도구&lt;/strong&gt;들을 사용하면 새로운 환경을 빠르게 구축할 수 있다.&lt;/p&gt;
+&lt;p&gt;또한, 그 자체로 일련의 정리된 문서의 역할도 겸하므로 현재 어떤 서비스가 어떻게 구성되어 있는지,&lt;br&gt;
+혹은 Git과 같은 버전 관리 도구로 인프라의 변경 이력을 추적하는 것도 용이하다.&lt;/p&gt;
+&lt;p&gt;On-Premise 환경에서도 &lt;a class="link" href="https://www.redhat.com/ko/topics/openstack" target="_blank" rel="noopener"
+&gt;OpenStack&lt;/a&gt;을 통해 비슷한 작업이 가능하지만,&lt;br&gt;
+이는 엄연히 이야기하면 그 자체로 IaC 도구는 아니고, OS 혹은 플랫폼에 가까운 물건이다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;그래 그럼 클라우드 서비스가 최고다 이건가?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;br&gt;
+&lt;h3 id="클라우드-서비스를-쓰면-생기는-문제"&gt;클라우드 서비스를 쓰면 생기는 문제
+&lt;/h3&gt;&lt;blockquote&gt;
+&lt;p&gt;그럴 리가 있나. 세상만사 &lt;strong&gt;명&lt;/strong&gt;이 있으면 &lt;strong&gt;암&lt;/strong&gt;도 있는 법이다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;이번에도 몇 가지 예시를 들어보면 다음과 같다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;의존성&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;특정 클라우드의 생태계에 지나치게 의존하다보면 그 자체로 기업의 비즈니스 운영에 영향을 줄 수 있다.&lt;/p&gt;
+&lt;p&gt;예를 들어 &lt;code&gt;AWS&lt;/code&gt;의 &lt;code&gt;ECS&lt;/code&gt;를 사용해 컨테이너 클러스터를 구성했다고 가정해보자.&lt;br&gt;
+심지어 EC2가 아닌 &lt;code&gt;Fargate&lt;/code&gt;를 컴퓨팅 엔진으로 사용했고 &lt;code&gt;ALB&lt;/code&gt;로 고유한 라우팅 규칙,&lt;br&gt;
+&lt;code&gt;CloudWatch&lt;/code&gt;를 사용한 모니터링 등등이 포함된 그야말로 &lt;strong&gt;AWS 환경에 특화된 클러스터&lt;/strong&gt;를 만들어 냈다.&lt;/p&gt;
+&lt;p&gt;그런데 어느 날 당신의 상사가 &amp;ldquo;&lt;strong&gt;AWS 이거 너무 비싸&lt;/strong&gt;&amp;ldquo;라며 자체적인 k8s 클러스터를 만들거나 아니면 다른 클라우드로의 마이그레이션을 지시했다.&lt;/p&gt;
+&lt;p&gt;대체 이 토폴로지를 어떻게 k8s 방식에 맞춰 이전해야 하는가?&lt;br&gt;
+사실상 처음부터 다시 만드는 게 현명하다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;기술적 허들&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;클라우드 서비스를 통해 인프라 환경을 설정하고 운영하는 것은 굉장히 난해한 일이다.&lt;br&gt;
+&amp;ldquo;&lt;strong&gt;클라우드 그거 마우스 딸깍 딸깍 아니냐?&lt;/strong&gt;&amp;rdquo; 라는 비아냥도 몇 번 들은 적 있는데,&lt;br&gt;
+이게 보기보다 굉장히 방대하고 복잡한 기술/지식이 필요한 분야이다.&lt;/p&gt;
+&lt;p&gt;더욱이 클라우드마다 장단점도 있어서 2~3개의 클라우드에 걸쳐 인프라를 구축하는 경우도 많다.&lt;br&gt;
+요컨대, 해당 분야에 능통한 전문 인력을 고용해야 한다는 것이다.&lt;/p&gt;
+&lt;p&gt;On-Premise에 서버를 구축/운영할 때는 적어도 전문가의 서포트를 받을 수 있다.&lt;br&gt;
+24시간 언제나 상주하는 직원들이 사용자가 &lt;strong&gt;멍멍이 떡처럼 질문을 해도, 찰떡처럼 알아채고&lt;/strong&gt; 문제 해결을 도와준다.&lt;/p&gt;
+&lt;p&gt;하지만 클라우드 서비스에서 그런 수준의 친절과 수고를 기대하긴 어렵다.&lt;br&gt;
+&lt;sub&gt;(물론 CSP가 대시보드 페이지만 띄워놓고 사용자에게 서버 임대료만 따박 따박 받아내는 자동사냥 시스템을 만들었단 소린 아니다.)&lt;/sub&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;비용&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;바로 위 &lt;code&gt;기술적 허들&lt;/code&gt;에서 이어지는 문제이자 이번 포스트의 주제이다.&lt;/p&gt;
+&lt;p&gt;아이러니하게도 &amp;ldquo;비용&amp;quot;이라는 항목은 클라우드 서비스의 &lt;strong&gt;장점&lt;/strong&gt;으로 더 많이 언급된다.&lt;br&gt;
+구축하려는 시스템의 &lt;strong&gt;성격&lt;/strong&gt;에 맞춰 &lt;strong&gt;필요한 서비스와 자원&lt;/strong&gt;을 정확하게 선택하면&lt;br&gt;
+효율성을 극대화할 수 있고, 결과적으로 비용을 최적화할 수 있다는 논리이다.&lt;/p&gt;
+&lt;p&gt;그런데 문제는 &amp;ldquo;&lt;code&gt;그걸 대체 어떻게 하냐?&lt;/code&gt;&amp;ldquo;이다.&lt;/p&gt;
+&lt;p&gt;실제로 클라우드 비용 관리를 해보면 예상치 못한 지출이 발생하기 쉽다.&lt;br&gt;
+사용한 만큼만 지불한다는 &lt;code&gt;Pay-as-you-go&lt;/code&gt; 모델의 양면성인 셈이다.&lt;br&gt;
+리소스를 제대로 관리하지 않으면 &lt;strong&gt;사용하지 않는 인스턴스&lt;/strong&gt;가 계속 돌아가고,&lt;br&gt;
+&lt;strong&gt;네트워크 트래픽&lt;/strong&gt;이나 &lt;strong&gt;스토리지 I/O&lt;/strong&gt; 같은 숨겨진 비용까지 합쳐져서&lt;br&gt;
+결국 고정 비용이 거의 없는 IDC 대비 오히려 더 많은 비용이 나올 수도 있다.&lt;/p&gt;
+&lt;p&gt;그래서 클라우드를 효과적으로 사용하려면 &lt;strong&gt;체계적인 비용 최적화 전략&lt;/strong&gt;이 필요하다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;h2 id="공통사항"&gt;공통사항
+&lt;/h2&gt;&lt;h3 id="클라우드-리소스-태깅"&gt;(클라우드) 리소스 태깅
+&lt;/h3&gt;&lt;p align='left'&gt;
+&lt;img width=80% src="images/resource-tag.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;AWS에는 &lt;a class="link" href="https://docs.aws.amazon.com/ko_kr/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html" target="_blank" rel="noopener"
+&gt;&amp;ldquo;비용 할당 태그&amp;rdquo;&lt;/a&gt;를 통해 조직의 태그 할당 정책에 따라&lt;br&gt;
+Cost Explorer로 비용 분석/추적이 가능하다. 일단 어디에 얼마를 쓰는지 알아야 절약을 할 수 있다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;개인 가계부에 비유하자면 사용한 돈에 &amp;ldquo;범주&amp;quot;를 붙이는 것과 같다.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;가령 여자/남자 친구와 주말에 롯데월드에 가서 놀았다면,&lt;br&gt;
+이때 사용한 비용들에는 다음과 같은 태그를 붙일 수 있다.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;키&lt;/th&gt;
+&lt;th&gt;값&lt;/th&gt;
+&lt;th&gt;비고&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Purpose&lt;/td&gt;
+&lt;td&gt;Personal-Date&lt;/td&gt;
+&lt;td&gt;무엇을 위한 지출인가?&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Partner&lt;/td&gt;
+&lt;td&gt;Girlfriend 혹은 Boyfriend&lt;/td&gt;
+&lt;td&gt;누구에게 할당된 비용인가?&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Location&lt;/td&gt;
+&lt;td&gt;LotteWorld&lt;/td&gt;
+&lt;td&gt;어디서 발생한 비용인가?&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;클라우드 리소스도 마찬가지다.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;예를 들어 &lt;code&gt;프로젝트 A&lt;/code&gt;의 &lt;code&gt;개발팀 A&lt;/code&gt;가 사용한 EC2 인스턴스에는 다음과 같은 태그를 붙일 수 있다.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;키&lt;/th&gt;
+&lt;th&gt;값&lt;/th&gt;
+&lt;th&gt;비고&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Project&lt;/td&gt;
+&lt;td&gt;Project-A&lt;/td&gt;
+&lt;td&gt;어떤 프로젝트의 비용인가?&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Team&lt;/td&gt;
+&lt;td&gt;Dev-Team-A&lt;/td&gt;
+&lt;td&gt;어느 팀이 사용하는가?&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Environment&lt;/td&gt;
+&lt;td&gt;Development&lt;/td&gt;
+&lt;td&gt;어떤 환경인가? (Dev/Staging/Prod)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;다만, AWS의 태그 값은 기본적으로 원자값만 사용할 수 있다.&lt;br&gt;
+CSV 형태, 예를 들어 &lt;code&gt;&amp;quot;Managers&amp;quot; : &amp;quot;Aron,Ted,James&amp;quot;&lt;/code&gt; 이렇게는 쓸 수 없다.&lt;br&gt;
+정확히는 &lt;strong&gt;사용 자체는 가능하나, AWS 네이티브 기능의 한계로 이런 태그의 필터링이 불가능&lt;/strong&gt;하다.&lt;br&gt;
+반드시 그렇게 사용해야 하는 경우 &lt;a class="link" href="https://www.datadoghq.com/" target="_blank" rel="noopener"
+&gt;DataDog&lt;/a&gt;과 같은 외부 서비스를 알아보도록 하자.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="전사적-지원"&gt;전사적 지원
+&lt;/h3&gt;&lt;p&gt;클라우드 비용 절약은 단순히 담당 엔지니어 1명, 혹은 DevOps팀만의 노력으로 달성하는 데 한계가 있다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img width=80% src="images/project-tool.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;아마 대부분 회사에서 프로젝트/일정 관리, 커뮤니케이션의 역할 등을 하는 협업 툴을 사용할 것이다.&lt;br&gt;
+이를 통해 관련된 모든 인원들에게 클라우드 비용에 대한 지속적인 관심을 환기시키고 소통을 통해 해결해 나가고자 하는 노력이 필요하다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="애플리케이션-리소스-모니터링"&gt;(애플리케이션) 리소스 모니터링
+&lt;/h3&gt;&lt;p&gt;한 명의 개발자가 인프라도 관리하면서 거기에 올라가는 모든 앱을 전부 다 만드는 경우는 없을 것이다.&lt;br&gt;
+애플리케이션을 빌드하는 건 결국 다른 팀, 다른 개발자일 확률이 높은데, 문제는 인프라에 올라간 리소스를&lt;br&gt;
+얼마나 잘 활용하는가는 그들의 손에 달려있다는 것이다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;조금 극단적인 예시를 하나 들어보겠다.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;개발팀 A&lt;/code&gt;가 구축한 &lt;code&gt;프로젝트 A&lt;/code&gt;가 있다.&lt;/p&gt;
+&lt;p&gt;이 프로젝트에는 RDS에 쿼리를 날려 데이터를 조회하고 분석한 뒤 다시 다른 테이블에 저장하는 프로세스가 있다.
+만일 조회/분석해야 하는 데이터 튜플의 수가 1,000만개인데 별 생각 없이 한꺼번에 가져와서 작업하도록 만들었다면 어떻게 될까?&lt;/p&gt;
+&lt;p&gt;pod나 container에 리소스 제한을 걸어뒀다면 해당 서비스가 종료될 것이고, 그렇지 않았다면 물리적 한계까지 자원을 소모하게 될 것이다.&lt;/p&gt;
+&lt;p&gt;해당 로직을 만들어 사단을 낸 직원을 추적/섬멸하든, 조용히 타이르든 그것은 회사 내규에 따라 다르겠으나,
+굳이 이런 극단적인 예시가 아니어도 크고 작은 메모리 누수는 제법 빈번하다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/grafana.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;a class="link" href="https://prometheus.io/" target="_blank" rel="noopener"
+&gt;Prometheus&lt;/a&gt;, &lt;a class="link" href="https://grafana.com/" target="_blank" rel="noopener"
+&gt;Grafana&lt;/a&gt;등을 활용해 리소스를 모니터링 하고 사전에 알람을 보내게 구축하도록 하자.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="컴퓨팅"&gt;컴퓨팅
+&lt;/h2&gt;&lt;p&gt;AWS는 EC2(Elastic Computing Cloud)가 이 파트에 해당한다.&lt;br&gt;
+무슨 VM, Core Instance 등등 클라우드마다 부르는 방식은 다양한데 실제 앱이 동작하는 서버 컴퓨터를 대여해주는 서비스이다.&lt;/p&gt;
+&lt;p&gt;특별한 경우가 아니라면 클라우드 비용의 거진 대부분은 여기서 발생한다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="arm-cpu"&gt;Arm CPU
+&lt;/h3&gt;&lt;p&gt;EC2 구성 요소 중 GPU를 제외하면 가장 많은 비용을 차지하는 것이 바로 CPU이다.&lt;br&gt;
+CPU 아키텍처는 보통 &lt;code&gt;AMD64(혹은 x86_64)&lt;/code&gt;와 &lt;code&gt;Arm64(혹은 aarch64)&lt;/code&gt;가 가장 많이 사용된다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img width=50% src="images/desktop.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;이런 일반적으로 생각하는 PC나 서버에 들어가던 것이 &lt;code&gt;AMD(x86)&lt;/code&gt;이고&lt;/p&gt;
+&lt;br&gt;
+&lt;p align='left'&gt;
+&lt;img width=50% src="images/smartphone.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;이런 스마트폰이나 태블릿같은 모바일 장치에 들어가던 것이 &lt;code&gt;Arm&lt;/code&gt;이다.&lt;/p&gt;
+&lt;p&gt;초고사양 모바일 게임을 즐기는 유저가 아니라면 스마트폰에 쿨링 팬을 다는 경우는 없을 것이다.&lt;br&gt;
+Arm 계열의 CPU는 AMD(x86)에 비해 &lt;strong&gt;저전력&lt;/strong&gt;, &lt;strong&gt;저발열&lt;/strong&gt;, &lt;strong&gt;고효율&lt;/strong&gt;이라는 특징을 가진다.&lt;/p&gt;
+&lt;p&gt;본래 서버용 CPU는 AMD(x86) 계열을 사용하는 것이 일반적이었는데,&lt;br&gt;
+내 기억이 맞다면 애플의 M1 칩을 탑재한 맥북을 공개한 이후로 상황이 많이 바뀌었다.&lt;/p&gt;
+&lt;p&gt;요즘은 Arm CPU를 사용하는 서버 인스턴스를 어느 클라우드에서나 기본적으로 제공한다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/arm-vs-amd.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;위 사진에서 vCPU 4, 메모리 8GiB로 통일하고 시간당 On-Demand 요금을 보면,&lt;br&gt;
+AMD(x86)의 경우 시간당 $ 0.281, Arm은 시간당 $ 0.195이다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;CPU 아키텍처를 Arm으로 바꾸면 대략 30% 정도 비용을 절감할 수 있다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;현재 근무중인 회사에서도 실제 Arm CPU를 굉장히 활발하게 사용하고 있다.&lt;br&gt;
+신규로 생성하는 서비스는 물론 기존 AMD(x86)으로 동작중인 것들도 하나씩 마이그레이션 중이다.&lt;br&gt;
+실제 수치상으로도 25~30% 정도의 비용 절감 효과를 보고 있다.&lt;/p&gt;
+&lt;p&gt;다만, 이 경우 애플리케이션을 빌드할 때 Arm CPU 아키텍처에 맞춰서 빌드해야 한다.&lt;br&gt;
+아무래도 이게 걸림돌이 되어서 전환을 망설이는 경우도 있을 것이다.&lt;/p&gt;
+&lt;p&gt;Docker로 애플리케이션을 패키징 하고 있다면 &lt;a class="link" href="https://docs.docker.com/reference/cli/docker/buildx/" target="_blank" rel="noopener"
+&gt;Docker buildx&lt;/a&gt;를 사용 해보는 것을 추천한다.&lt;/p&gt;
+&lt;p&gt;예를들어 다음은 회사에서 사용하고 있는 GitHub Action Workflow CI 스크립트중 하나의 일부이다.&lt;br&gt;
+조금 특이하게도 대상 환경이 &lt;code&gt;Production&lt;/code&gt;일 경우엔 &lt;code&gt;arm64&lt;/code&gt;, &lt;code&gt;Stage&lt;/code&gt;일 경우엔 &lt;code&gt;amd64&lt;/code&gt;에 맞춰 빌드한다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;span class="lnt"&gt;37
+&lt;/span&gt;&lt;span class="lnt"&gt;38
+&lt;/span&gt;&lt;span class="lnt"&gt;39
+&lt;/span&gt;&lt;span class="lnt"&gt;40
+&lt;/span&gt;&lt;span class="lnt"&gt;41
+&lt;/span&gt;&lt;span class="lnt"&gt;42
+&lt;/span&gt;&lt;span class="lnt"&gt;43
+&lt;/span&gt;&lt;span class="lnt"&gt;44
+&lt;/span&gt;&lt;span class="lnt"&gt;45
+&lt;/span&gt;&lt;span class="lnt"&gt;46
+&lt;/span&gt;&lt;span class="lnt"&gt;47
+&lt;/span&gt;&lt;span class="lnt"&gt;48
+&lt;/span&gt;&lt;span class="lnt"&gt;49
+&lt;/span&gt;&lt;span class="lnt"&gt;50
+&lt;/span&gt;&lt;span class="lnt"&gt;51
+&lt;/span&gt;&lt;span class="lnt"&gt;52
+&lt;/span&gt;&lt;span class="lnt"&gt;53
+&lt;/span&gt;&lt;span class="lnt"&gt;54
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-yml" data-lang="yml"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;# ...... #&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;jobs&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# ...... # &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;release_ocir&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# ...... # &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# ...... # &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 대상 Container Registry에 접근 권한 획득&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;Login to OCIR repo&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;docker/login-action@v3.5.0&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;with&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;registry&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;${{ steps.get-ocir-region.outputs.result }}.ocir.io&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;username&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ secrets.OCI_CLI_USER_NAME }}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;password&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;${{ secrets.OCI_AUTH_TOKEN }}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 목표 환경 (prod/stage)에 따라 platform(CPU 아키텍처) 값 지정 &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;Resolve target platforms&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;id&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;resolve-platforms&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;run&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;|-&lt;/span&gt;&lt;span class="sd"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; TARGET=&amp;#34;${{ inputs.target }}&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; if [ -z &amp;#34;$TARGET&amp;#34; ]; then TARGET=&amp;#34;stage&amp;#34;; fi
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; if [ &amp;#34;$TARGET&amp;#34; = &amp;#34;prod&amp;#34; ]; then
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; echo &amp;#34;platforms=linux/arm64&amp;#34; &amp;gt;&amp;gt; $GITHUB_OUTPUT
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; else
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; echo &amp;#34;platforms=linux/amd64&amp;#34; &amp;gt;&amp;gt; $GITHUB_OUTPUT
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; fi
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# Docker Buildx 설정&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;Set up Buildx&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;id&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;docker-buildx&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;docker/setup-buildx-action@v3.11.1&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;with&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;driver-opts&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;|-&lt;/span&gt;&lt;span class="sd"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; image=moby/buildkit:master
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="sd"&gt; network=host&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;platforms&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;${{ steps.resolve-platforms.outputs.platforms }}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 이미지를 빌드하고 대상 Registry에 Push &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;Build Container image and push&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;docker/build-push-action@v6.18.0&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;with&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;push&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;context&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;.&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;file&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;./Dockerfile&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 위에서 지정한 플랫폼(아키텍처)로 지정&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;platforms&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;${{ steps.resolve-platforms.outputs.platforms }}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;tags&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;${{ steps.get-ocir-repo.outputs.repo_path }}:${{ inputs.target || &amp;#39;stage&amp;#39; }}-latest,${{ steps.get-ocir-repo.outputs.repo_path }}:${{ inputs.target || &amp;#39;stage&amp;#39; }}-${{ steps.get-version.outputs.version }}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# Buildx로 Builder 항목을 지정&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;builder&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;${{ steps.docker-buildx.outputs.name }}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;cache-from&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;type=gha&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;cache-to&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;type=gha,mode=max&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# ...... #&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;Docker Buildx를 설정 해준 뒤 &lt;strong&gt;docker build action&lt;/strong&gt;의 builder 값을 buildx의 이름으로,&lt;br&gt;
+platform은 원하는 타겟에 맞춰 빌드 후 레지스트리에 올리면 된다.&lt;/p&gt;
+&lt;p&gt;대부분의 호환성 이슈는 Docker Buildx로 대응이 가능하지만, &lt;br&gt;
+이미지 내부에 설치하는 라이브러리 수준에서 문제가 있는 경우 Dockerfile에 분기를 넣어 해결한다.&lt;/p&gt;
+&lt;p&gt;예를들어:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-Dockerfile" data-lang="Dockerfile"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;# ...... #&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;RUN&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;&lt;/span&gt;&lt;span class="nv"&gt;$TARGETARCH&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;arm64&amp;#34;&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt; &lt;span class="se"&gt;\
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;# 아키텍처가 Arm64인 경우만 이 안의 코드를 실행&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;fi&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;# ...... #&lt;/span&gt;&lt;span class="err"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;단순 분기 처리 정도로는 해결이 안 될 정도로 환경이 복잡하다면 아예 파일을 나눠 사용하기도 한다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;├── Dockerfile.amd64
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;└── Dockerfile.arm64
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;br&gt;
+&lt;h3 id="serverless-프레임워크"&gt;Serverless 프레임워크
+&lt;/h3&gt;&lt;p&gt;AWS에는 &lt;a class="link" href="https://aws.amazon.com/ko/lambda/" target="_blank" rel="noopener"
+&gt;&amp;ldquo;Lambda&amp;rdquo;&lt;/a&gt;라는 서비스가 있다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/lambda.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;24시간 실행되며 지속적으로 과금되는 EC2와 달리 Lambda는 서버 관리가 필요 없는 &lt;code&gt;Serverless&lt;/code&gt; 방식이다.&lt;br&gt;
+&lt;strong&gt;특정 코드가 실행될 때만 비용이 부과&lt;/strong&gt;되어 새벽 시간대처럼 사용자가 거의 없는 유휴 시간에는 비용 부과가 되지 않는다.&lt;/p&gt;
+&lt;p&gt;주요 특징은 다음과 같다:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;이벤트 기반(Event-Driven) 방식&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;CloudWatch, API Gateway와 연동하여 특정 이벤트,&lt;br&gt;
+가령 &lt;strong&gt;API 호출&lt;/strong&gt;, &lt;strong&gt;일정 시간 경과&lt;/strong&gt;, &lt;strong&gt;파일이 업로드&lt;/strong&gt; 등이 발생할 때만 코드가 실행된다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;서버 관리 불필요&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;문자 그대로 &lt;code&gt;Serverless&lt;/code&gt; 방식이다.&lt;br&gt;
+EC2처럼 OS, H/W 용량 계획, 서버 프로비저닝, 스케일링 정책 등의 관리에 신경 쓸 필요가 없다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;실행 기반 과금&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;코드가 &lt;strong&gt;실제로 실행되는 동안에만&lt;/strong&gt; 비용이 부과된다.&lt;br&gt;
+사용자가 있든 없든 지속적으로 시간당 비용을 부과하는 EC2와의 가장 큰 차이점이다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;다만 몇 가지 단점도 있다:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;콜드 스타트 지연&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;Lambda 함수가 장시간 호출되지 않았다면&lt;br&gt;
+AWS가 런타임 환경을 준비하고 코드를 불러오는 초기 지연 시간이 발생한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;리소스 제약&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;Lambda 함수는 &lt;strong&gt;최대 15분&lt;/strong&gt;까지만 실행 될 수 있고 메모리는 &lt;strong&gt;10GB&lt;/strong&gt;가 한계이다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;구체적인 활용처:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;사용자의 요청에 즉각적인 응답이 필요하지 않은 API 서비스&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;S3에 파일이 업로드 될 때 -&amp;gt; 이미지 썸네일, 동영상 트랜스 코딩, 데이터 필터링 등 데이터 처리 작업&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;일정 시간이 되면(가령 매일 새벽 1시) -&amp;gt; 오래된 스냅샷/AMI 정리 등 관리 자동화 작업&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;본격적인 Lambda 도입을 고려하고 있다면 &lt;a class="link" href="https://docs.aws.amazon.com/ko_kr/serverless-application-model/latest/developerguide/what-is-sam.html" target="_blank" rel="noopener"
+&gt;AWS Serverless Appliaction Model&lt;/a&gt;에 대해 알아보도록 하자.&lt;br&gt;
+&lt;code&gt;Java&lt;/code&gt;, &lt;code&gt;Python&lt;/code&gt;, &lt;code&gt;Go&lt;/code&gt;등 다양한 프로그래밍 언어를 사용 할 수 있는 Lambda 기반의 프레임워크이다.&lt;/p&gt;
+&lt;p&gt;특이한 점은 Serverless의 특성상 일반적인 API 서버 프레임워크랑은 다르게 각각의 독립된 코드들을&lt;br&gt;
+&lt;a class="link" href="https://docs.aws.amazon.com/ko_kr/AWSCloudFormation/latest/UserGuide/Welcome.html" target="_blank" rel="noopener"
+&gt;CloudFormation&lt;/a&gt;을 통해 클라우드 리소스의 형태로 배포한다.&lt;/p&gt;
+&lt;p&gt;CloudFormation은 AWS내 리소스를 yml 파일을 통해 구성/관리 할 수 있는 IaC 도구이다.&lt;br&gt;
+처음 회사에 입사했을 때 Lambda를 쓰면 저렴하게 API 구성이 가능하다고 한 번 만들어 보라길래&lt;br&gt;
+열심히 공부했던 기억이 난다. 그 덕에 IaC에 입문하게 되었다. &lt;sub&gt;(지금은 Terraform 쓰고 있지만&amp;hellip;)&lt;/sub&gt;&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="스팟-인스턴스"&gt;스팟 인스턴스
+&lt;/h3&gt;&lt;p&gt;스팟 인스턴스는 AWS에서 &lt;code&gt;현재 사용되지 않고 남아있는 여유 컴퓨팅 용량&lt;/code&gt;이다.&lt;/p&gt;
+&lt;p&gt;이게 무슨 소리냐면 다른 사용자, 그러니까 다른 기업이 사용하고 있는 EC2 리소스 중&lt;br&gt;
+현재 놀고있는 분량만큼을 &lt;code&gt;빌려와서&lt;/code&gt; 사용한다는 개념이다.&lt;/p&gt;
+&lt;p&gt;당연히 원래 주인이 내놓으라고 하면 돌려줘야 한다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;비용은 기존 EC2 대비 최대 무려 90%나 저렴하다!&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;좋아 보이긴 하는데 신뢰성에 의심이 가서 나도 개념만 들었지 실 도입은 못 해봤다.&lt;br&gt;
+그래도 시의적절하게 잘 활용하면 괜찮은 대안이 될 것이다.&lt;/p&gt;
+&lt;p&gt;장점:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;비용 절감:&lt;/p&gt;
+&lt;p&gt;가장 큰 장점이다. On-Demand EC2 방식에 비해 &lt;strong&gt;70~90%까지&lt;/strong&gt; 비용을 절약할 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;대규모 컴퓨팅:&lt;/p&gt;
+&lt;p&gt;낮은 비용으로 병렬 컴퓨팅 자원을 신속하게 확보할 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;단점:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;회수 위험:&lt;/p&gt;
+&lt;p&gt;AWS가 용량을 회수하면 &lt;code&gt;언제든지 인스턴스가 중지 될 수 있다&lt;/code&gt;.&lt;br&gt;
+일반적으로 중단 약 2분 전 &lt;code&gt;Interruption Notice&lt;/code&gt;가 제공되고, 사전 분산을 위한 &lt;code&gt;Rebalance Recommendation&lt;/code&gt; 신호도 제공된다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;관리의 어려움:&lt;/p&gt;
+&lt;p&gt;중단 가능성이 상시 존재하므로 체크포인트 저장, 워크 큐(재시도 가능),&lt;br&gt;
+중간 결과를 S3/DynamoDB 등에 저장하는 설계가 필요하다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;활용처:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;배치 처리, 빅데이터 분석, 머신 러닝&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;기타 Stateless 서버의 부하 분산&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;이미지/비디오 렌더링&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h3 id="예약-인스턴스"&gt;예약 인스턴스
+&lt;/h3&gt;&lt;p&gt;EC2의 &lt;strong&gt;기본 요금&lt;/strong&gt;은 흔히 On-Demand 방식이라고 한다.&lt;br&gt;
+간단히 한국식으로 표현하면 &lt;code&gt;후불 요금제&lt;/code&gt;이다.&lt;/p&gt;
+&lt;p&gt;내가 어렸을 때는 PC방 1시간 사용료가 1,000원이었다.&lt;br&gt;
+고로 5시간 게임을 하고 나서 요금 정산을 하면 5,000원을 내야했다.&lt;br&gt;
+하지만 &lt;strong&gt;처음부터 5,000원을 내고 계정에 등록하면 6시간&lt;/strong&gt;을 할 수 있었다.&lt;/p&gt;
+&lt;p&gt;예약 인스턴스는 이와 유사한 방식이다.&lt;/p&gt;
+&lt;p&gt;예약 인스턴스(Reserved Instance, RI)는 &lt;strong&gt;1년&lt;/strong&gt; 혹은 &lt;strong&gt;3년&lt;/strong&gt;동안&lt;br&gt;
+&lt;code&gt;특정 인스턴스&lt;/code&gt; 유형과 리전을 사용할 것을 미리 약정하고 선결제 혹은 부분 선결제 함으로써&lt;br&gt;
+On-Demand 방식에 비해 상당한 할인을 받는 방식의 요금 모델이다.&lt;/p&gt;
+&lt;p&gt;마침 &lt;a class="link" href="../install-ollama-to-k8s/" &gt;기존 포스트&lt;/a&gt;에서 조사한 정보가 있으니 여기에서 활용 해보겠다.&lt;br&gt;
+다음은 AWS &lt;strong&gt;g5g.16xlarge&lt;/strong&gt; 인스턴스의 비용 비교 표이다.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;비용모델&lt;/th&gt;
+&lt;th&gt;월 평균 사용료 (서울 리전전 / 단위 : USD)&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;On-Demand&lt;/td&gt;
+&lt;td&gt;$ 2388.29&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spot&lt;/td&gt;
+&lt;td&gt;$ 672.59&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;1년 예약 분할 지불&lt;/td&gt;
+&lt;td&gt;$ 1559.73&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;1년 예약 일시불&lt;/td&gt;
+&lt;td&gt;$ 1455.74&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;3년 예약 분할 지불&lt;/td&gt;
+&lt;td&gt;$ 1102.4&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;3년 예약 일시불&lt;/td&gt;
+&lt;td&gt;$ 959.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;비교를 위해 On-Demand와 Spot도 추가 하였다.&lt;br&gt;
+&lt;strong&gt;On-Demand와 비교하면 3년 RI 일시불 방식이 60%가량 저렴하다.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;장점:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;비용 절감:&lt;/p&gt;
+&lt;p&gt;Spot과 마찬가지로 엄청난 할인을 받을 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;AZ 선점:&lt;/p&gt;
+&lt;p&gt;이건 좀 특이한 케이스인데, 인스턴스 확보가 어려운 특정 AZ(가용 영역)에&lt;br&gt;
+미리 용량 사용을 보장받을 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;단점:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;장기 약정:&lt;/p&gt;
+&lt;p&gt;1년 / 3년 이 2가지 옵션 밖에 없다. 그 기간 동안은 계속 써야한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;초기 비용 부담:&lt;/p&gt;
+&lt;p&gt;할인을 받기 위해 처음 도입 시 엄청난 양의 비용을 지불해야 할 수도 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;유연성 부족:&lt;/p&gt;
+&lt;p&gt;Standard RI의 경우 인스턴스 유형을 변경할 수 없다.&lt;br&gt;
+Convertible RI는 유형/패밀리 전환은 가능한데 할인율은 더 낮다. (On-Demand 대비 최대 72% -&amp;gt; 54%)&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;활용처:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;장기적으로 운영 해온, 혹은 운영 될 것으로 예측되는 서비스&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;k8s의 베이스 용량 확보:&lt;/p&gt;
+&lt;p&gt;k8s 클러스터를 사용하고 있다면 &lt;strong&gt;상시 필요한 최소한의 용량&lt;/strong&gt;이라는 것이 있을 것이다.&lt;br&gt;
+보수적으로 접근해 최소 용량 수준에 맞춰 RI를 쓰면 비용 절감에 도움이 된다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h3 id="절약-플랜"&gt;절약 플랜
+&lt;/h3&gt;&lt;p&gt;절약 플랜(Savings Plan)은 RI의 단점을 극복하기 위해 나온 요금제이다.&lt;br&gt;
+기본적으로 RI와 유사한 비용 절감 효과는 최대한 제공하면서 부족한 유연성 제약을 완화한다.&lt;/p&gt;
+&lt;p&gt;회사 근처 구내식당에서 점심 한 끼를 먹으려면 10,000원이라고 하자.&lt;br&gt;
+직원이 10명 정도이고 한 달에 20일씩 출근을 한다면 한 사람이 최대 200,000원,&lt;br&gt;
+10명이니 200만원 정도의 식비가 소모 될 것이다.&lt;br&gt;
+만일 회사 차원에서 매달 100만원을 구내식당에 지불하면, 직원들의 식사를 무료로 해주겠다고 하면 어떠한가?&lt;/p&gt;
+&lt;p&gt;절약 플랜은 이와 유사한 개념이다.&lt;/p&gt;
+&lt;p&gt;다만 디테일하게 들어가면 굉장히 길고 복잡해서 이 부분만 추후 별도로 포스트 하도록 하겠다.&lt;br&gt;
+기본적으로는 다음의 전제를 기억하자.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;리전, OS, 인스턴스 유형 패밀리 등의 제약이 많아질수록, 다시 말해&lt;br&gt;
+&lt;strong&gt;유연성을 포기할수록 -&amp;gt; 비용이 절감된다&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;종류:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Compute Savings Plans&lt;/strong&gt;&lt;br&gt;
+EC2, Fargate, Lambda 등 &lt;code&gt;컴퓨트 전반&lt;/code&gt;에 적용된다.&lt;br&gt;
+리전/인스턴스 패밀리/OS 제약이 비교적 적어 &lt;code&gt;유연성&lt;/code&gt;이 높다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;EC2 Instance Savings Plans&lt;/strong&gt;&lt;br&gt;
+특정 &lt;code&gt;인스턴스 패밀리 + 리전&lt;/code&gt;에 묶는 대신 &lt;code&gt;할인율&lt;/code&gt;이 더 크다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;주의사항:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;약정은 &lt;code&gt;시간당 약정 금액&lt;/code&gt; 기준이다. 미사용 약정은 그대로 비용 처리된다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;약정 기간은 &lt;code&gt;1년/3년&lt;/code&gt;, 선결제 정도에 따라 할인율이 달라진다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;RI보다 유연하지만, &lt;code&gt;약정 초과분&lt;/code&gt;은 온디맨드로 과금된다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/savings-plan.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;절약 플랜&lt;/code&gt;은 &lt;code&gt;예약 인스턴스&lt;/code&gt;에 비해 부담되는 제약사항이 덜하다.&lt;br&gt;
+그덕에 경영진을 설득해 도입하는 게 비교적 쉬웠던 것으로 기억한다.&lt;/p&gt;
+&lt;p&gt;더욱이 인스턴스 패밀리가 일치하는 모든 EC2에 구매한 절약 플랜이 일괄 적용되기 때문에&lt;br&gt;
+바로 다음달부터 즉각적으로 회사에서 소비되는 인스턴스 비용이 25~30% 줄어들었다.&lt;/p&gt;
+&lt;p&gt;다만 이는 &lt;strong&gt;절약 플랜의 제약조건에 해당하는 경우에만&lt;/strong&gt; 그렇다는 거다.&lt;br&gt;
+예를들어 현재 회사에는 인스턴스 유형이 &lt;code&gt;t2&lt;/code&gt; 패밀리에 속하는 서버가 여럿 존재한다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/aws-t2-instances.png" alt&gt;
+&lt;em&gt;현재 서비스 중인 t2 패밀리의 EC2 인스턴스 목록&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;이들은 내가 회사에 들어오기 전부터 있던 레거시 서버들인데,&lt;br&gt;
+이런 저런 이유, 가령, 클라이언트나 해당 개발팀이 독립된 EC2 인스턴스를 원하거나,&lt;br&gt;
+Arm 아키텍쳐로의 전환, 심지어는 컨테이너화 자체에 소극적인 서비스들이 이곳에 위치한다.&lt;/p&gt;
+&lt;p&gt;이 인스턴스들의 고정 비용을 줄이고자 &amp;ldquo;t2&amp;rdquo; 인스턴스 패밀리를 타겟하는 절약 플랜을 사용하고 있다.&lt;br&gt;
+아이러니하게도 그게 Excuse가 되어 되려 다른 시스템, 가령 Arm 계열의 인스턴스 패밀리나 아니면 아예&lt;br&gt;
+다른 클라우드 서비스 &lt;sub&gt;(우리의 경우 Oracle Cloud Infrastructure)&lt;/sub&gt;로의 마이그레이션에 장애가 되곤 한다.&lt;/p&gt;
+&lt;p&gt;그러니 환경에 발목 잡히지 않게 추후 계획을 충분히 고려해 도입에 신중을 기하도록 하자.&lt;/p&gt;
+&lt;p&gt;구내식당 비유를 계속 들자면 본래 매일 점심 식사 하라고 회사에서 10,000원씩 지급 해주다가&lt;br&gt;
+어느날부터 &amp;ldquo;&lt;strong&gt;앞으로 지정한 구내식당 가서 먹으면 무료니까 그쪽으로 가라&lt;/strong&gt;&amp;rdquo; 라고 하는 것과 같다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;이제 점심에 햄버거 먹고 싶으면 본인 돈으로 사야한다.&lt;/p&gt;
+&lt;p&gt;햄버거를 좋아하는 나같은 몹쓸 인간은 슬퍼 하겠지만,&lt;br&gt;
+이모님의 김치찌개 솜씨에 매료된 직원이라면 두 팔 벌려 환영할 것이다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;br&gt;
+&lt;h2 id="스토리지"&gt;스토리지
+&lt;/h2&gt;&lt;p&gt;여기서 말 하는 스토리지는 블록 볼륨이나 RDS가 아닌 파일 저장소&lt;sub&gt;(일명 Bucket)&lt;/sub&gt;를 의미한다.&lt;br&gt;
+AWS의 경우 S3(Simple Storage Service)가 이에 해당된다.&lt;/p&gt;
+&lt;p&gt;S3 비용을 절감하는 핵심 전략은 데이터의 &lt;strong&gt;접근 빈도에 따라 적절한 스토리지 클래스를 선택&lt;/strong&gt;,
+&lt;strong&gt;수명 주기(Lifecycle) 규칙을 활용하여 불필요한 데이터를 관리&lt;/strong&gt;하는 것이다.&lt;/p&gt;
+&lt;h3 id="스토리지-클래스-최적화"&gt;스토리지 클래스 최적화
+&lt;/h3&gt;&lt;p&gt;데이터 액세스 패턴에 맞는 스토리지 클래스를 선택하면 저장 비용을 크게 절감할 수 있다.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;클래스&lt;/th&gt;
+&lt;th&gt;주요 용도&lt;/th&gt;
+&lt;th&gt;특징/주의&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;S3 Intelligent-Tiering&lt;/td&gt;
+&lt;td&gt;접근 패턴이 불명확·변동이 잦은 데이터&lt;/td&gt;
+&lt;td&gt;계층 자동 이동(Frequent, Infrequent, Archive Instant, Archive, Deep Archive), 모니터링/자동화에 소액 월 비용 발생&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;S3 Standard-IA&lt;/td&gt;
+&lt;td&gt;드물게 접근하지만 밀리초 단위 즉시 조회 필요&lt;/td&gt;
+&lt;td&gt;장기 보관용, 백업/DR에 적합&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;S3 One Zone-IA&lt;/td&gt;
+&lt;td&gt;재생성 가능 데이터, 2차 백업&lt;/td&gt;
+&lt;td&gt;단일 AZ 저장으로 더 저렴, 내구성은 동일하나 가용성 리스크가 있음&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;S3 Glacier Instant Retrieval&lt;/td&gt;
+&lt;td&gt;1년에 몇 번 수준 접근 + 즉시 조회 필요&lt;/td&gt;
+&lt;td&gt;빠르게 조회 가능, 보관 단가 저렴&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;S3 Glacier Flexible Retrieval / Deep Archive&lt;/td&gt;
+&lt;td&gt;매우 드문 접근의 장기 아카이브&lt;/td&gt;
+&lt;td&gt;가장 저렴(Deep Archive), 검색 시간 느림&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;주의사항:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;적절한 주기 설정:&lt;/p&gt;
+&lt;p&gt;IA/Glacier 계열은 최소 저장 기간(대략 30~180일 수준)과 조기 삭제 위약, 조회/복원 비용이 존재한다.&lt;br&gt;
+전환 주기가 너무 짧으면 오히려 총비용이 증가할 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;파일 크기:&lt;/p&gt;
+&lt;p&gt;Intelligent-Tiering은 객체 크기/보관기간/접근 패턴에 따라 모니터링 비용 대비 이점이 작을 수 있다.&lt;br&gt;
+작은 객체를 단기적으로 보관하는 것은 효율적이지 못하다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h3 id="s3-수명-주기lifecycle-규칙-활용"&gt;S3 수명 주기(Lifecycle) 규칙 활용
+&lt;/h3&gt;&lt;p&gt;S3 수명 주기 규칙을 설정하여 자동으로 객체를 관리함으로써 비용을 절감할 수 있다.&lt;br&gt;
+요컨대, 과거 데이터를 지우거나 압축하거나 액세스 빈도가 낮은 백업 스토리지로 옮기는 것을 의미한다.&lt;/p&gt;
+&lt;p&gt;객체가 일정 기간이 지나면 액세스 빈도가 낮아질 것으로 예상하고, S3 Standard에서 Standard-IA, Glacier 등 저렴한 스토리지 클래스로 자동 전환되도록 규칙을 설정해주자.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;불필요한 객체 자동 삭제/만료:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;만료된 객체(Object Expiration):&lt;/strong&gt; 더 이상 필요 없는 데이터(예: 오래된 로그 파일, 임시 파일)를 일정 기간 후 자동으로 삭제하도록 설정한다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;이전 버전 정리 (Versioning 활성화 시):&lt;/strong&gt; 객체 버전을 활성화한 경우, 불필요하게 남아있는 이전 버전들을 일정 기간 후 영구 삭제하도록 설정한다.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;불완전한 멀티파트 업로드 정리:&lt;/strong&gt; 완료되지 않은 멀티파트 업로드 조각들이 남아있지 않도록 일정 기간 후 정리하는 규칙을 설정한다.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;h2 id="네트워크-data-transfer"&gt;네트워크 (Data Transfer)
+&lt;/h2&gt;&lt;p align='left'&gt;
+&lt;img width=55% src="images/cannot-go-out.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;AWS를 포함해서 클라우드 서비스에서 네트워크 사용 비용이란 건 기본적으로&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;밖&lt;/code&gt; -&amp;gt; &lt;code&gt;안&lt;/code&gt;(Inbound)으로 들어올 때는 문제가 없지만,&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;안&lt;/code&gt; -&amp;gt; &lt;code&gt;밖&lt;/code&gt;(Outbound)으로 데이터가 전송되어 나갈 때 부과된다.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;따라서 네트워크 비용을 낮추는 것은&lt;br&gt;
+&lt;strong&gt;아웃바운드 데이터 전송(Data Transfer Out, DTO)을 줄이는 게 포인트&lt;/strong&gt;이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="cdn-활용"&gt;CDN 활용
+&lt;/h3&gt;&lt;p&gt;CDN을 통해 컨텐츠를 캐싱하여 최종 사용자&lt;sub&gt;(ex: 페이지 방문자)&lt;/sub&gt;에게 가장 가까운 엣지 로케이션을 제공함으로써&lt;br&gt;
+서비스 품질도 올리고 비용도 줄이는 일거양득을 누릴 수 있다.&lt;/p&gt;
+&lt;p&gt;AWS의 경우 &lt;a class="link" href="https://aws.amazon.com/ko/cloudfront/" target="_blank" rel="noopener"
+&gt;CloudFront&lt;/a&gt;라는 서비스가 이에 해당한다.&lt;/p&gt;
+&lt;p&gt;리전에서 직접 인터넷으로 데이터를 전송하는 것 보다 CloudFront를 통한 전송이 훨씬 저렴하다.&lt;br&gt;
+캐싱된 데이터는 S3나 EC2에서 다시 전송할 필요가 없으므로 원본 서버의 DTO가 줄어든다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="압축-전송"&gt;압축 전송
+&lt;/h3&gt;&lt;p align='left'&gt;
+&lt;img width=60% src="images/compression.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;S3나 EC2에서 데이터를 전송할 때 &lt;strong&gt;Gzip&lt;/strong&gt;이나 &lt;strong&gt;Brotli&lt;/strong&gt; 등을 이용해 데이터를 압축해서 보내는 것이 좋다.&lt;/p&gt;
+&lt;p&gt;CloudFront를 사용한다면 CloudFront에서 자동 압축을 켜는 것이 가장 간단하다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img width=80% src="images/cloud-front-compression.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;CloudFront의 동작 설정에서 압축(Compress Objects Automatically) 옵션을 &amp;ldquo;Yes&amp;quot;로 설정해주자.&lt;/p&gt;
+&lt;p&gt;별도 CDN이 없거나 보다 세밀한 제어가 필요하다면 Origin&lt;sub&gt;(EC2, ALB 뒤의 웹 서버나 S3 등)&lt;/sub&gt;에서 처리 해줘야 한다.&lt;br&gt;
+이는 인프라 관리자가 할 일은 아니고, 각 애플리케이션을 만든 개발자의 몫이다.&lt;/p&gt;
+&lt;p&gt;다행히 방법이 어렵진 않다.&lt;br&gt;
+예를들어 Docker 빌드시 사용할 nginx 파일을 다음과 같이 작성 할 수 있다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-nginx" data-lang="nginx"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;gzip&lt;/span&gt; &lt;span class="no"&gt;on&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;gzip_static&lt;/span&gt; &lt;span class="no"&gt;on&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;# filename.gz 존재 시, 클라이언트가 gzip 지원하면 직접 제공
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;brotli&lt;/span&gt; &lt;span class="no"&gt;on&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;brotli_static&lt;/span&gt; &lt;span class="no"&gt;on&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;# filename.br 존재 시, 클라이언트가 br 지원하면 직접 제공
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;brotli_comp_level&lt;/span&gt; &lt;span class="mi"&gt;6&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;brotli_types&lt;/span&gt; &lt;span class="s"&gt;text/plain&lt;/span&gt; &lt;span class="s"&gt;text/css&lt;/span&gt; &lt;span class="s"&gt;application/javascript&lt;/span&gt; &lt;span class="s"&gt;application/json&lt;/span&gt; &lt;span class="s"&gt;image/svg+xml&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 클라이언트 지원에 따라 우선 확장자 결정 (br &amp;gt; gzip)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;map&lt;/span&gt; &lt;span class="nv"&gt;$http_accept_encoding&lt;/span&gt; &lt;span class="nv"&gt;$precompress&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kn"&gt;~*\bbr\b&lt;/span&gt; &lt;span class="s"&gt;&amp;#34;.br&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kn"&gt;~*\bgzip\b&lt;/span&gt; &lt;span class="s"&gt;&amp;#34;.gz&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kn"&gt;default&lt;/span&gt; &lt;span class="s"&gt;&amp;#34;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;location&lt;/span&gt; &lt;span class="s"&gt;/&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kn"&gt;try_files&lt;/span&gt; &lt;span class="nv"&gt;$uri$precompress&lt;/span&gt; &lt;span class="nv"&gt;$uri&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;404&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;# 지원 포맷 우선 제공, 없으면 원본
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kn"&gt;add_header&lt;/span&gt; &lt;span class="s"&gt;Vary&lt;/span&gt; &lt;span class="s"&gt;&amp;#34;Accept-Encoding&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kn"&gt;expires&lt;/span&gt; &lt;span class="s"&gt;7d&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;br&gt;
+&lt;h3 id="내부-전송-최적화"&gt;내부 전송 최적화
+&lt;/h3&gt;&lt;p&gt;클라우드 &lt;code&gt;내부적으로&lt;/code&gt; 이루어지는 통신 비용도 절약 할 필요가 있다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;동일 가용 영역(AZ)에 리소스 배치&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;동일 리전 내에서도 가용 영역(AZ)이 다르면 전송 요금이 붙는다.&lt;br&gt;
+통신이 잦은 인스턴스나 캐시같은 것들은 가급적 같은 AZ에 배치하자.&lt;br&gt;
+클라우드 서비스 제공자마다 약간의 차이는 있지만 동일 AZ 내 트래픽은 대체로 무료거나 매우 저렴하다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;⚠️ 여기서 잠깐!&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;단, &lt;strong&gt;데이터베이스와 같이 데이터 영속성이 그 무엇보다 중요한 경우&lt;/strong&gt;에는 예외이다.&lt;br&gt;
+이런건 가급적 멀티 AZ로 구성하는 걸 추천한다. &lt;sub&gt;(특히나 회사 생명이 걸려있다면)&lt;/sub&gt;&lt;/p&gt;
+&lt;p&gt;AZ라는건 결국 물리적인 데이터 센터인데, 다행히 아직까지 그런 경험은 없지만&lt;br&gt;
+&lt;strong&gt;&amp;ldquo;혹여나 센터나 불이라도 나면 어쩌지?&amp;rdquo;&lt;/strong&gt; 라는 걱정을 한시름 놓을 수 있을 것이다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;VPC 내부 통신 활용&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;EC2 인스턴스간 통신을 할 때 대상의 &lt;code&gt;Public IP&lt;/code&gt;를 목적지로 해서 보낸다고 생각해보자.&lt;br&gt;
+이는 마치 옆 집 사는 사람에게 물건을 전달하기 위해 우편을 붙이는 것과 같다.&lt;/p&gt;
+&lt;p&gt;이 경우 통신 패킷 자체가 IGW&lt;sub&gt;(Internet Gateway)&lt;/sub&gt;를 경유해 클라우드 밖으로 나갔다가&lt;br&gt;
+다시 들어오는 게 되어 &lt;strong&gt;사실상 외부 통신&lt;/strong&gt;으로 간주된다. 비용 부과는 물론 지연까지 발생한다.&lt;/p&gt;
+&lt;p&gt;심지어 호출을 요청한 EC2가 &lt;strong&gt;Private Subnet&lt;/strong&gt;에 있다면 문제는 더 심각해진다.&lt;br&gt;
+이 때는 NGW&lt;sub&gt;(NAT Gateway)&lt;/sub&gt;를 경유하게 되는데, 시간당 요금과 전송량 요금이 함께 부과된다.&lt;/p&gt;
+&lt;p&gt;이는 &lt;code&gt;월간 비용 누수의 최상위 원인&lt;/code&gt;이 되기 쉽다.&lt;/p&gt;
+&lt;p&gt;S3, DynamoDB 등에 접근할 때도 마찬가지다.&lt;br&gt;
+반드시 &lt;code&gt;VPC 엔드포인트(Gateway Endpoint)&lt;/code&gt;를 사용해 내부망으로 우회하자.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;리전 간 전송 최소화&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;가장 비싼 내부 전송은 리전 간(Region to Region)의 통신이다.&lt;br&gt;
+데이터와 데이터를 소비하는 서비스를 가까운 리전에 두어 리전 간 복제 및 액세스를 최소화 하도록 하자.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;비용 모니터링/관리&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Cost Explorer로 전송 비용을 서비스/리전/AZ 기준으로 추적하고,&lt;br&gt;
+앞서 기술한 비용 할당 태그로 프로젝트 및 팀에 귀속시켜 원인을 파악하자.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h2 id="기타-서비스"&gt;기타 서비스
+&lt;/h2&gt;&lt;h3 id="elastic-kubernetes-service-eks"&gt;Elastic Kubernetes Service (EKS)
+&lt;/h3&gt;&lt;p&gt;AWS에서 제공하는 KaaS&lt;sub&gt;(Kubernetes as a Service, 서비스형 k8s)&lt;/sub&gt;이다.&lt;br&gt;
+서비스 자체는 훌륭한데 역시나 &lt;code&gt;가격&lt;/code&gt;이 문제다.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Kubernetes 버전 지원 티어&lt;/th&gt;
+&lt;th&gt;요금&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;표준 Kubernetes 버전 지원&lt;/td&gt;
+&lt;td&gt;시간 &amp;amp; 클러스터당 0.10 USD&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;확장 Kubernetes 버전 지원&lt;/td&gt;
+&lt;td&gt;시간 &amp;amp; 클러스터당 0.60 USD&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;원화로 바꾸면 표준형의 경우 1달에 약 10만원, 확장형은 60만원(!!)이 넘게 부과된다.&lt;br&gt;
+지금 이건 Node 하나 없는 클러스터 1개의 자체적인 가격이다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;대응전략:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Arm CPU, Spot, Savings Plan등 앞서 언급했던 내용들과 중복되는 것을 제외하겠다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;클러스터 수 조절&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;EKS 클러스터의 비용은 &lt;code&gt;클러스터 개수&lt;/code&gt;에 비례한다.&lt;br&gt;
+당연한 얘기지만, 사용하지 않는 클러스터에 대해서도 비용이 부과된다.&lt;/p&gt;
+&lt;p&gt;특별한 이유가 있는게 아니라면&lt;br&gt;
+하나의 리전에는 k8s 1~2개(환경 분리 목적) 정도만 배치하도록 하자.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;표준형(Standard)을 사용&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;표준형&lt;/code&gt;과 &lt;code&gt;확장형&lt;/code&gt;의 가격 차를(6배) 보고 확장형에 엄청난 어드밴티지가 있겠거니 생각하겠지만,&lt;br&gt;
+사실 둘의 차이는 &lt;code&gt;Kubernetes API의 지원 기간&lt;/code&gt; 정도가 전부다.&lt;/p&gt;
+&lt;p&gt;보통 k8s는 3개의 마이너 버전에 대한 패치를 제공하는데 EKS는 이 지원 정책을 따라간다.&lt;br&gt;
+표준형은 k8s에 대한 보안 패치, 버그 수정, 컨트롤 플레인 관리등을 표준 k8s 업데이트 사이클에 맞춰 하고,&lt;br&gt;
+확장형은 여기서 1년을 더 사용할 수 있도록 연장해준다.&lt;/p&gt;
+&lt;p&gt;EKS를 운영하는 가장 좋은 방법은 &lt;code&gt;표준 지원 기간 내에 k8s 버전을 최신화&lt;/code&gt; 하는 것이다.&lt;br&gt;
+확장형으로 돈 더 내면서 1년 유예를 둔다고 해도 그 기간마저 지나면 API 지원이 중단된다.&lt;/p&gt;
+&lt;p&gt;그대로 방치해버리면 새로운 k8s 기능을 사용하지 못하거나 보안 위험에 노출 될 수도 있다.&lt;br&gt;
+관심을 가지고 부지런하게 대응 해주도록 하자.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h3 id="cloudfront"&gt;CloudFront
+&lt;/h3&gt;&lt;p&gt;앞서 얘기했듯 AWS의 CDN 서비스이다.&lt;br&gt;
+&lt;code&gt;HTML / CSS / JS&lt;/code&gt; 같은 파일을 S3에 두고 웹사이트를 호스팅해주는 데 주로 사용한다.&lt;/p&gt;
+&lt;p&gt;이 역시 서비스 자체는 문제가 없는데 역시나 가격이 발목을 잡는다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img width=90% src="images/cloudfront.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;a class="link" href="https://aws.amazon.com/ko/cloudfront/pricing/" target="_blank" rel="noopener"
+&gt;요금 페이지&lt;/a&gt; 첫 장부터 &lt;code&gt;진정한 '프리' 티어&lt;/code&gt; 어쩌구 하면서 유혹한다.&lt;br&gt;
+조금만 더 내려보면 다음과 같다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img width=90% src="images/cloudfront-pricing.png"&gt;
+&lt;/p&gt;
+&lt;p&gt;CloudFront는 상시 무료(Always Free) 혜택으로 &lt;code&gt;월 1TB 데이터 전송 아웃&lt;/code&gt;이 무료이며, 초과분부터 과금된다.&lt;/p&gt;
+&lt;p&gt;대한민국이 인도 칼럼 옆에 다른 국가들과 함께 낑겨있는 걸 볼 수 있는데, GB당 $0.12라고 적혀있다.&lt;br&gt;
+예시로 한국에 위치한 Cloudfront에서 한국에 있는 소비자들에게 &lt;code&gt;1달에 3TB&lt;/code&gt; 정도의 데이터를 전송한다고 생각해보자.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;기본 1TB는 무료니 2,000 * 0.12&lt;/p&gt;
+&lt;p&gt;계산해보면 달에 약 &lt;strong&gt;$240&lt;/strong&gt;가 부과될 것임을 알 수 있다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;대응전략:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;캐시 관리&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;자주 바뀌지 않는 자산(기업 로고 등)은 TTL을 길게,&lt;br&gt;
+자주 바뀌는 컨텐츠는 짧게 혹은 &lt;code&gt;no-cache&lt;/code&gt;로 설정을 해주자.&lt;/p&gt;
+&lt;p&gt;CloudFront는 요청 URL, 헤더, 쿼리 문자열 등을 기반으로 캐시 키를 생성한다.&lt;br&gt;
+캐시 키에 불필요한 Query String이나 Header는 제외해서 하나의 키로 적중 될 수 있게 단순화 하자.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;원본 요청(Origin Fetch) 줄이기&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;엣지에서 캐시 미스가 나도 원본에 곧장 가지 않도록 중앙 캐시 계층을 둬 부하를 줄이자.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;압축&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;앞서 네트워크 섹션에도 기술했듯 Gzip등을 활용해 전송 데이터를 압축해서 보내도록 하자.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;다른 CDN을 고려하자&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;위 방법들 이외에도 전략은 많지만,&lt;br&gt;
+꼭 CloudFront에 매몰될 필요가 없다면 다른 CDN 서비스를 도입하는 것도 좋다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img width=60% src="images/cloud-flare.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;개인적으로 CDN은 &lt;a class="link" href="https://www.cloudflare.com/ko-kr/" target="_blank" rel="noopener"
+&gt;Cloudflare&lt;/a&gt;를 추천한다.&lt;br&gt;
+둘을 간단히 비교하면 다음과 같다 :&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;Cloudflare&lt;/th&gt;
+&lt;th&gt;AWS CloudFront&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;네트워크 아키텍처&lt;/td&gt;
+&lt;td&gt;리버스 프록시&lt;/td&gt;
+&lt;td&gt;전통적인 CDN&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;기본 설정 방법&lt;/td&gt;
+&lt;td&gt;Nameserver&lt;/td&gt;
+&lt;td&gt;Special URLs&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;주요 기능&lt;/td&gt;
+&lt;td&gt;CDN과 DDoS 방어&lt;/td&gt;
+&lt;td&gt;CDN&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;마켓 포지셔닝&lt;/td&gt;
+&lt;td&gt;Standalone 플랫폼&lt;/td&gt;
+&lt;td&gt;AWS 클라우드 서비스 중 일부&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;프리티어&lt;/td&gt;
+&lt;td&gt;과금 없음&lt;/td&gt;
+&lt;td&gt;매달 1TB 데이터 전송, 천만건 요청, 2백만건 함수 호출 무료&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;다만 이건 어디까지나 나의 &amp;ldquo;개인적인&amp;rdquo; 의견이다.&lt;/p&gt;
+&lt;p&gt;다음과 같은 경우라면 CloudFront를 쓰는 게 낫다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;AWS 생태계와&lt;sub&gt;(S3 ,EC2등)&lt;/sub&gt; 긴밀하게 통합되길 원한다&lt;/li&gt;
+&lt;li&gt;웹 서비스가 대박이 나서 월 1,000TB 정도 트래픽이 나온다 &lt;sub&gt;(사용량이 올라갈수록 비용이 내려간다)&lt;/sub&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h3 id="elasticip-eip"&gt;ElasticIP (EIP)
+&lt;/h3&gt;&lt;p&gt;&lt;a class="link" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html" target="_blank" rel="noopener"
+&gt;ElasticIP&lt;/a&gt;는 AWS에서 제공하는 고정 IP 리소스이다. 별 건 없고 EC2 Public IP를 고정할 때 주로 쓴다.&lt;/p&gt;
+&lt;p&gt;문제는 AWS에서 Public IPv4 EIP의 경우,&lt;br&gt;
+현재 할당을 했는지 안 했는지 여부에 관계 없이 &lt;code&gt;시간당 $0.005를 부과&lt;/code&gt;한다는 것이다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img width=60% src="images/four-dollars.png" alt&gt;
+&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;계산해보면 한 달에 $3.6 ~ $3.72, &lt;code&gt;대략 $4 정도&lt;/code&gt; 부과된다. &lt;sub&gt;(그게 무슨 소리니 애떱아&amp;hellip;)&lt;/sub&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;뭐, 자기들 말로는 IPv4 주소가 전 세계적으로 고갈 되어감에 따라 내놓은 정책이라고 한다.&lt;br&gt;
+주소 하나당 1달에 4달러가 별 거 아닌 거 같아도 이런게 많아지면 은근히 도트딜이 아프게 들어온다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;대응전략:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;안 쓰는 ElasticIP는 지우도록 하자&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;IPv6 주소를 발급받아 쓰자&lt;/p&gt;
+&lt;p&gt;IPv6는 무료다. 워낙 대역폭이 넓어서 인류가 멸망할 때까지 써도 남아 돌 것이다.&lt;br&gt;
+다만 &lt;a class="link" href="https://docs.aws.amazon.com/ko_kr/vpc/latest/userguide/aws-ipv6-support.html" target="_blank" rel="noopener"
+&gt;IPv6 할당이 가능한 리소스&lt;/a&gt;는 한정되어 있다. 이 점을 유의하자.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;IPv4 문제는 다른 클라우드 서비스들도 대체로 상황은 비슷하다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="마치며"&gt;마치며
+&lt;/h2&gt;&lt;p&gt;최대한 간략하게 쓰려고 했는데, 하다보니 한도 끝도 없이 늘어져 버렸다. &lt;sub&gt;(분량 조절 실패)&lt;/sub&gt;&lt;/p&gt;
+&lt;p&gt;AWS에는 워낙 &lt;code&gt;예상치 못한 숨겨진 추가 비용&lt;/code&gt;이 많아서 관리하는데 이만저만 품이 드는 것이 아니다.&lt;/p&gt;
+&lt;p&gt;가장 좋은 접근법은 AWS에 너무 얽매이지 말고 AWS 이외의 다른 클라우드 서비스,&lt;br&gt;
+혹은 On-Premise의 인프라를 한데 묶어 &lt;code&gt;멀티 &amp;amp; 하이브리드 클라우드 인프라&lt;/code&gt;로 전환하는 것이다.&lt;/p&gt;
+&lt;p&gt;다만 그러면서 따라오는 문제점도 있다.&lt;br&gt;
+멀티/하이브리드 전환은 다음의 교환비용을 수반한다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;벤더 종속성 감소 -&amp;gt; 관리 복잡성 증가(관제, 알림, 보안정책, 빌링 통합)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;비용 최적화 옵션 확대 -&amp;gt; 아키텍처/데이터 일관성 유지 비용 상승&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;장애 내성·거점 다양성 -&amp;gt; 운영 인력/플랫폼 역량 요구 수준 상승&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;현실적인 실행 순서는 아래와 같이 추천한다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;input disabled="" type="checkbox"&gt; 비용 가시성 표준화:&lt;/p&gt;
+&lt;p&gt;비용 할당 태그 강제와 팀별 Cost 대시보드 고정 배치&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;input disabled="" type="checkbox"&gt; 낭비 차단 가드레일:&lt;/p&gt;
+&lt;p&gt;미사용 리소스 자동 종료·알림, EIP·스냅샷 정리 정기화&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;input disabled="" type="checkbox"&gt; 컴퓨팅 포트폴리오:&lt;/p&gt;
+&lt;p&gt;Arm 전환 검토 -&amp;gt; Serverless/스팟/RI·절약 플랜 혼합 적용&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;input disabled="" type="checkbox"&gt; 데이터 등급화:&lt;/p&gt;
+&lt;p&gt;S3 스토리지 클래스/라이프사이클로 자동 이전·만료 정책화&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;input disabled="" type="checkbox"&gt; DTO 최소화:&lt;/p&gt;
+&lt;p&gt;VPC 엔드포인트, 동일 AZ 배치, 압축·CDN 캐시 키/TTL 최적화&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;input disabled="" type="checkbox"&gt; 멀티·하이브리드 파일럿:&lt;/p&gt;
+&lt;p&gt;단일 워크로드부터 이중화, 관제·빌링 통합 방식 검증&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;결국 원칙은 단순하다.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;측정 → 표준화 → 자동화&lt;/code&gt;를 반복하며, 특정 환경에 과도하게 속박되지 않는 것이다.&lt;br&gt;
+각 조직의 위험 허용도와 인력 역량에 맞춰 작은 실험부터 시작해보자.&lt;/p&gt;
+&lt;br&gt;
+&lt;hr&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;참고 자료&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.aws.amazon.com/ko_kr/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html" target="_blank" rel="noopener"
+&gt;AWS 비용 할당 태그 (Cost Allocation Tags)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html" target="_blank" rel="noopener"
+&gt;AWS EC2 스팟 인스턴스 개요&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/reserved-instances-scope.html" target="_blank" rel="noopener"
+&gt;AWS EC2 예약 인스턴스(Reserved Instances)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.aws.amazon.com/ko_kr/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html" target="_blank" rel="noopener"
+&gt;AWS EC2 Auto Scaling Groups 개요&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.aws.amazon.com/savingsplans/latest/userguide/" target="_blank" rel="noopener"
+&gt;AWS Savings Plans 개요&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://aws.amazon.com/ko/lambda/" target="_blank" rel="noopener"
+&gt;AWS Lambda 개요&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.docker.com/reference/cli/docker/buildx/" target="_blank" rel="noopener"
+&gt;Docker Buildx 문서&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.aws.amazon.com/ko_kr/AmazonS3/latest/userguide/storage-class-intro.html" target="_blank" rel="noopener"
+&gt;AWS S3 스토리지 클래스 개요&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.aws.amazon.com/ko_kr/AmazonS3/latest/userguide/object-lifecycle-mgmt.html" target="_blank" rel="noopener"
+&gt;AWS S3 수명 주기(Lifecycle) 관리&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.aws.amazon.com/ko_kr/vpc/latest/privatelink/vpc-endpoints.html" target="_blank" rel="noopener"
+&gt;AWS VPC 엔드포인트(Gateway/Interface) 개요&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://aws.amazon.com/ko/vpc/pricing/" target="_blank" rel="noopener"
+&gt;AWS NAT 게이트웨이 요금&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://aws.amazon.com/ko/eks/pricing/" target="_blank" rel="noopener"
+&gt;AWS EKS 요금&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://aws.amazon.com/ko/cloudfront/pricing/" target="_blank" rel="noopener"
+&gt;AWS CloudFront 요금&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html" target="_blank" rel="noopener"
+&gt;AWS Elastic IP(IPv4) 문서&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://prometheus.io/" target="_blank" rel="noopener"
+&gt;Prometheus&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://grafana.com/" target="_blank" rel="noopener"
+&gt;Grafana&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/" target="_blank" rel="noopener"
+&gt;Kubernetes HPA (Horizontal Pod Autoscaler)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler" target="_blank" rel="noopener"
+&gt;Kubernetes Cluster Autoscaler&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://helm.sh/docs/" target="_blank" rel="noopener"
+&gt;Helm 공식 문서&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://www.cloudflare.com/ko-kr/" target="_blank" rel="noopener"
+&gt;Cloudflare CDN&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;</description></item></channel></rss>

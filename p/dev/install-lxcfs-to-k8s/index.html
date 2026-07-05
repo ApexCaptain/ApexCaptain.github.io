@@ -1,0 +1,371 @@
+<!doctype html><html lang=ko-kr dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="문제의 시작 Pod 리소스 제한 클러스터에 Pod를 배포할 때는 CPU와 메모리 사용량에 제한을 두는 경우가 일반적이다.\n이는 어찌 보면 당연한 것인데,\n이런 제한을 두지 않는다면 Pod는 자신이 동작하는 호스트의 기둥 뿌리를 모조리 뽑아 써먹으려고 할 것이고\n나아가, 다른 Pod가 해당 노드에 스케줄링되는 데 지대한 악영향을 끼칠 것이기 때문이다.\n"><title>LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법</title><link rel=canonical href=https://blog.ayteneve93.com/p/dev/install-lxcfs-to-k8s/><link rel=stylesheet href=/scss/style.min.86591c898bd806857815fbb8c47e8d3fed97c133b78e83d9bfc27b164dd0aa2b.css><meta property='og:title' content="LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법"><meta property='og:description' content="문제의 시작 Pod 리소스 제한 클러스터에 Pod를 배포할 때는 CPU와 메모리 사용량에 제한을 두는 경우가 일반적이다.\n이는 어찌 보면 당연한 것인데,\n이런 제한을 두지 않는다면 Pod는 자신이 동작하는 호스트의 기둥 뿌리를 모조리 뽑아 써먹으려고 할 것이고\n나아가, 다른 Pod가 해당 노드에 스케줄링되는 데 지대한 악영향을 끼칠 것이기 때문이다.\n"><meta property='og:url' content='https://blog.ayteneve93.com/p/dev/install-lxcfs-to-k8s/'><meta property='og:site_name' content='ApexCaptain의 기술 블로그'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Kubernetes'><meta property='article:published_time' content='2025-12-02T00:00:00+09:00'><meta property='article:modified_time' content='2025-12-02T00:00:00+09:00'><meta property='og:image' content='https://blog.ayteneve93.com/p/dev/install-lxcfs-to-k8s/images/cover.png'><meta name=twitter:title content="LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법"><meta name=twitter:description content="문제의 시작 Pod 리소스 제한 클러스터에 Pod를 배포할 때는 CPU와 메모리 사용량에 제한을 두는 경우가 일반적이다.\n이는 어찌 보면 당연한 것인데,\n이런 제한을 두지 않는다면 Pod는 자신이 동작하는 호스트의 기둥 뿌리를 모조리 뽑아 써먹으려고 할 것이고\n나아가, 다른 Pod가 해당 노드에 스케줄링되는 데 지대한 악영향을 끼칠 것이기 때문이다.\n"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://blog.ayteneve93.com/p/dev/install-lxcfs-to-k8s/images/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="메뉴 여닫기">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_dfa970e81d3cb955.png width=300 height=298 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>👋</span></figure><div class=site-meta><h1 class=site-name><a href=/>ApexCaptain의 기술 블로그</a></h1><h2 class=site-description></h2></div></header><ol class=menu-social><li><a href=https://github.com/ApexCaptain target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>다크 모드</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">목차</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#문제의-시작>문제의 시작</a><ol><li><a href=#pod-리소스-제한>Pod 리소스 제한</a></li><li><a href=#oomkilledout-of-memory>OOMKilled<sub>(Out of Memory)</sub></a></li><li><a href=#pod가-인식하는-리소스-한계치>Pod가 인식하는 리소스 한계치</a></li></ol></li><li><a href=#해결방안>해결방안</a><ol><li><a href=#lxcfs-linux-container-file-system>LXCFS (Linux Container File System)</a></li><li><a href=#helm을-통해-배포>Helm을 통해 배포</a><ol><li><a href=#사전-준비>사전 준비</a></li><li><a href=#helm-리포지토리-등록>Helm 리포지토리 등록</a></li><li><a href=#lxcfs-설치>LXCFS 설치</a></li><li><a href=#lxcfs-주입-대상-네임스페이스-라벨링>LXCFS 주입 대상 네임스페이스 라벨링</a></li><li><a href=#적용-확인>적용 확인</a></li></ol></li></ol></li><li><a href=#troubleshooting>Troubleshooting</a><ol><li><a href=#pod에-volume-개별-마운트-방식>Pod에 Volume 개별 마운트 방식</a></li><li><a href=#노드호스트-fuse-마운트-손상-시-해결>노드(호스트) FUSE 마운트 손상 시 해결</a></li></ol></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/dev/install-lxcfs-to-k8s/><img src=/p/dev/install-lxcfs-to-k8s/images/cover_hu_2c14c23cdce23e5.png srcset="/p/dev/install-lxcfs-to-k8s/images/cover_hu_2c14c23cdce23e5.png 800w, /p/dev/install-lxcfs-to-k8s/images/cover_hu_a392f77ec657232a.png 1600w" width=800 height=252 loading=lazy alt="Featured image of post LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법"></a></div><div class=article-details><header class=article-category><a href=/categories/development/ style=background-color:#efbec3;color:#3d0f14>Development</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/dev/install-lxcfs-to-k8s/>LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2025-12-02T00:00:00+09:00>2025년 12월 2일</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>7 분 정도</time></div></footer></div></header><section class=article-content><h2 id=문제의-시작>문제의 시작</h2><h3 id=pod-리소스-제한>Pod 리소스 제한</h3><p>클러스터에 Pod를 배포할 때는 CPU와 메모리 사용량에 제한을 두는 경우가 일반적이다.</p><p>이는 어찌 보면 당연한 것인데,<br>이런 제한을 두지 않는다면 Pod는 자신이 동작하는 <strong>호스트의 기둥 뿌리를 모조리 뽑아 써먹으려고</strong> 할 것이고<br>나아가, 다른 Pod가 해당 노드에 스케줄링되는 데 지대한 악영향을 끼칠 것이기 때문이다.</p><p>적용법은 대단히 쉽다.<br>다음 예시와 같이 Pod의 <code>spec</code>에 명시해 주면 된다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>requests</span><span class=p>:</span><span class=w>  
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>100m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>128Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>200m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>256Mi</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><br><p align=center><img src=images/bigdata-meme.png alt></p><p><br><br></p><h3 id=oomkilledout-of-memory>OOMKilled<sub>(Out of Memory)</sub></h3><p><sub><del>20대 Pod쪽이들 사망 원인 1위</del></sub></p><p>문제는 Pod라는 녀석이 생각 외로 멍청하다는 데 있다.</p><p>OOMKilled라고 하면 호스트 전체 메모리 부족 이후 커널 OOM killer가 개입하는 경우도 있겠으나,<br>대개 Kubernetes Pod에서는 <strong>manifest에 적어 둔 메모리 <code>limits</code>(cgroup 한도)를 넘겼을 때</strong> 해당 컨테이너 프로세스가 강제 종료되고 자원이 회수되는 흐름을 말한다고 보면 된다.</p><p>난처한 점은, 메모리 한도 초과로 발생한 OOMKilled는 일반적인 Pod 종료와 달리 커널 OOM killer가 프로세스를 즉시 <code>SIGKILL</code>로 종료시키는 경우가 많아 <code>terminationGracePeriodSeconds</code>, <code>preStop</code>, <code>SIGTERM</code> 기반의 graceful shutdown 로직이 동작하지 않을 수 있다는 것이다.</p><p>따라서 OOM 대응의 핵심은 종료 절차 설계보다는 메모리 사용량 자체를 한도 안으로 유지하는 데 있다.<br>예를 들어 <code>requests/limits</code> 재조정, 메모리 누수 제거, 런타임별 메모리 옵션 튜닝, 오토스케일링 정책 보완 같은 접근이 더 직접적이다.</p><p><br><br></p><h3 id=pod가-인식하는-리소스-한계치>Pod가 인식하는 리소스 한계치</h3><blockquote><p>그런데 생각해보면 좀 이상하다.</p></blockquote><p>당신이 메모리 8GB짜리 저렴이 노트북 하나를 구매했다고 가정해보자.<br>8GB 메모리 사용량을 약간 초과할 만한 작업을 명령할 경우 노트북은 어떻게 반응할까?</p><p>Pod들이 그러하듯, 메모리 사용량 초과로 인해 OS가 통째로 먹통이 될까?</p><p>구형 PC라면 진짜 <span style=color:#add8e6>블루 스크린</span>이 뜰 수도 있겠으나😱, 대개의 경우 OS가 페이지 회수나 스왑 같은 메커니즘으로 버티면서 성능이 먼저 저하되고 시스템이 즉시 셧다운되는 경우는 드물다.</p><p>요컨대 야근 10분 더 시킨다고 피곤해 하고 툴툴 댈 수는 있어도 그 자리에서 사표 내고 도망치지는 않는단 소리다.</p><blockquote><p>그럼 Pod들은 왜 틈만 나면 지정된 리소스 제한을 넘으려고 하는 것인가?</p></blockquote><p>결론부터 말하자면, Pod들이 기본적으로 spec에 적힌 리소스 제한과 무관하게<br>자신이 올라간 <strong>노드(호스트)의 리소스를 자신의 리소스로 착각</strong>하고 있기 때문에 발생하는 현상이다.</p><p>더도 말고 덜도 말고 다음 예시처럼 Pod를 하나 배포해서 확인해보자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl create namespace <span class=nb>test</span>
+</span></span></code></pre></td></tr></table></div></div><p>우선 <code>test</code>라는 네임스페이스를 하나 만든다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># test.pod.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>sleep</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>infinity</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>200m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>256Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>100m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>128Mi</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>CPU 200m, 메모리 256Mi로 제한된 Ubuntu Pod이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f test.pod.yml
+</span></span></code></pre></td></tr></table></div></div><p>배포가 되었다면 다음 명령어로 Pod 컨테이너 안에서 <code>free</code>가 보여주는 메모리(<code>/proc/meminfo</code> 등을 읽은 값)를 확인해보자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl <span class=nb>exec</span> <span class=nb>test</span> -n <span class=nb>test</span> -- free -h
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>               total        used        free      shared  buff/cache   available
+</span></span><span class=line><span class=cl>Mem:            31Gi        17Gi       346Mi       179Mi        14Gi        14Gi
+</span></span><span class=line><span class=cl>Swap:             0B          0B          0B
+</span></span></code></pre></td></tr></table></div></div><p>이상하게도 <code>limits.memory</code>는 256Mi로 두었는데, 컨테이너 안에서 <code>free</code>로 보면 <strong>total이 31Gi</strong>로 나온다.<br>31Gi<sub>(32GB)</sub>는 이 Pod가 스케줄된 노드의 물리 메모리 규모와 맞아떨어지는 값으로, 애플리케이션이 읽는 <code>/proc</code> 쪽 정보가 <strong>cgroup 한도가 아니라 노드 전체 스케일</strong>로 노출되어 있다는 뜻이다.</p><p><br><br></p><h2 id=해결방안>해결방안</h2><h3 id=lxcfs-linux-container-file-system><a class=link href=https://linuxcontainers.org/lxcfs/introduction/ target=_blank rel=noopener>LXCFS (Linux Container File System)</a></h3><p>LXCFS는 리눅스 커널의 한계를 우회하기 위해 만들어진 간단한 유저스페이스 파일시스템이다.<br>핵심 아이디어는 컨테이너 내부에서 읽는 <code>/proc</code> 정보를 <strong>cgroup 인식 값</strong>으로 바꿔서 보여주는 데 있다.</p><p>LXCFS가 제공하는 핵심 기능은 크게 두 가지다.</p><ol><li><code>/proc</code>의 일부 파일 위에 bind-mount로 덮어쓸 수 있는 파일 세트 제공<ul><li>컨테이너 안에서 <code>free</code>, <code>top</code> 같은 도구가 읽는 값이 호스트 전체 기준이 아니라, 컨테이너 관점(cgroup 기준)에 가깝게 보이도록 만든다.</li></ul></li><li>컨테이너 인지형 cgroupfs 유사 트리 제공<ul><li>컨테이너 내부 프로세스가 cgroup 관련 정보를 다룰 때 더 일관된 뷰를 얻을 수 있다.</li></ul></li></ol><p>즉, LXCFS는 &ldquo;리소스 제한은 걸려 있는데 앱이 보는 시스템 정보는 호스트 전체처럼 보이는&rdquo; 간극을 줄여서,<br>컨테이너를 더 독립된 시스템처럼 느끼게 해주는 보정 레이어라고 보면 된다.</p><blockquote><p>참고: cgroup namespace 도입 이후 일부 초기 목적은 줄어들었고, 현재는 <code>/proc</code> 마스킹을 통해 컨테이너의 체감 독립성을 높이는 쪽에 더 초점이 맞춰져 있다.</p></blockquote><p><br><br></p><h3 id=helm을-통해-배포>Helm을 통해 배포</h3><p><a class=link href=https://github.com/cndoit18/lxcfs-on-kubernetes target=_blank rel=noopener>lxcfs-on-kubernetes 프로젝트</a>를 사용하면 LXCFS를 클러스터에 비교적 간단하게 배포할 수 있다.<br>기본 흐름은 <code>Helm chart 설치 -> 네임스페이스 라벨링 -> 워크로드 재기동 후 확인</code> 순서다.</p><br><h4 id=사전-준비>사전 준비</h4><p><a class=link href=https://github.com/cndoit18/lxcfs-on-kubernetes target=_blank rel=noopener>차트 Repo</a>에 적힌 사전 요구사항은 다음과 같다<sub>(사용하는 차트 버전에 따라 달라질 수 있으니 설치 전 릴리스 문서를 함께 확인하자)</sub>.</p><ul><li>Kubernetes v1.19+</li><li>Helm v3</li><li>cert-manager v1.2+</li></ul><br><h4 id=helm-리포지토리-등록>Helm 리포지토리 등록</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm repo add lxcfs-on-kubernetes https://cndoit18.github.io/lxcfs-on-kubernetes/
+</span></span><span class=line><span class=cl>helm repo update
+</span></span></code></pre></td></tr></table></div></div><br><h4 id=lxcfs-설치>LXCFS 설치</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm upgrade --install lxcfs lxcfs-on-kubernetes/lxcfs-on-kubernetes -n lxcfs --create-namespace
+</span></span></code></pre></td></tr></table></div></div><p>혹은 사전에 네임스페이스를 생성해도 좋고, 그냥 <code>kube-system</code> 네임스페이스에 설치해도 무방하다.</p><br><h4 id=lxcfs-주입-대상-네임스페이스-라벨링>LXCFS 주입 대상 네임스페이스 라벨링</h4><p>아래 예시는 <code>test</code> 네임스페이스에 라벨로 LXCFS 마운트 주입을 활성화하는 방법이다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl label namespace <span class=nb>test</span> mount-lxcfs<span class=o>=</span>enabled
+</span></span></code></pre></td></tr></table></div></div><p>이미 실행 중인 Pod에는 즉시 반영되지 않을 수 있으므로, 대상 워크로드를 재시작해서 새 Pod가 뜨도록 맞춰 주는 편이 안전하다.</p><br><h4 id=적용-확인>적용 확인</h4><p>라벨링한 네임스페이스에 테스트 Pod를 띄운 뒤, 이전과 동일하게 <code>free -h</code> 또는 <code>/proc/meminfo</code>를 확인한다.
+LXCFS가 정상 동작하면 애플리케이션이 보는 리소스 정보가 컨테이너(cgroup) 관점으로 더 가깝게 보정된다.</p><blockquote><p>참고: 차트/버전별로 마운트 경로나 검증 로직이 달라질 수 있으니, 실제 운영 적용 전에는 사용하는 릴리즈 문서의 Breaking Changes를 꼭 확인하자.</p></blockquote><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl <span class=nb>exec</span> <span class=nb>test</span> -n <span class=nb>test</span> -- free -h
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>               total        used        free      shared  buff/cache   available
+</span></span><span class=line><span class=cl>Mem:           256Mi       1.1Mi       254Mi          0B       129Ki       254Mi
+</span></span><span class=line><span class=cl>Swap:             0B          0B          0B
+</span></span></code></pre></td></tr></table></div></div><p>재배포 후 다시 확인해보면 메모리가 의도한 대로 출력되는 것을 확인할 수 있다.</p><p><br><br></p><h2 id=troubleshooting>Troubleshooting</h2><h3 id=pod에-volume-개별-마운트-방식>Pod에 Volume 개별 마운트 방식</h3><p>가장 쉬운 적용 방법은 위에서 언급한 것처럼 대상 네임스페이스에 <code>mount-lxcfs=enabled</code> 라벨을 다는 것이지만,
+보다 선택적/제한적으로 적용하고자 할 경우에는 개별 파일을 Volume으로 마운트해 구현할 수 있다.</p><p>우선 <code>test</code> 네임스페이스의 해당 라벨을 제거해 준다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl label namespace <span class=nb>test</span> mount-lxcfs-
+</span></span></code></pre></td></tr></table></div></div><p><code>lxcfs-on-kubernetes</code> Helm Chart는 클러스터 내 모든 노드에 대해 DaemonSet으로 LXCFS를 설치한다.<br>기본 설치 경로는 <code>/var/lib/lxcfs-on-k8s/lxcfs</code>이다. Values를 조절해서 경로를 바꿀 수 있으나,<br>기본값으로 두었다고 가정하고 Pod Spec을 다음과 같이 수정해주자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># test.pod.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>sleep</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>infinity</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>200m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>256Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>100m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>128Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/proc/meminfo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>mountPropagation</span><span class=p>:</span><span class=w> </span><span class=l>None</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-meminfo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>readOnly</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/proc/cpuinfo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>mountPropagation</span><span class=p>:</span><span class=w> </span><span class=l>None</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-cpuinfo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>readOnly</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/proc/stat</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>mountPropagation</span><span class=p>:</span><span class=w> </span><span class=l>None</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-stat</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>readOnly</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/proc/loadavg</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>mountPropagation</span><span class=p>:</span><span class=w> </span><span class=l>None</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-loadavg</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>readOnly</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/proc/uptime</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>mountPropagation</span><span class=p>:</span><span class=w> </span><span class=l>None</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-uptime</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>readOnly</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>hostPath</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/lxcfs-on-k8s/lxcfs/proc/meminfo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>File</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-meminfo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>hostPath</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/lxcfs-on-k8s/lxcfs/proc/cpuinfo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>File</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-cpuinfo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>hostPath</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/lxcfs-on-k8s/lxcfs/proc/stat</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>File</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-stat</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>hostPath</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/lxcfs-on-k8s/lxcfs/proc/loadavg</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>File</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-loadavg</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>hostPath</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/lxcfs-on-k8s/lxcfs/proc/uptime</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>File</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-uptime</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>수정된 <code>test.pod.yml</code> 파일을 배포한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f test.pod.yml
+</span></span></code></pre></td></tr></table></div></div><p>이제 다시 test Pod의 메모리 할당 정보를 확인해보자.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl <span class=nb>exec</span> <span class=nb>test</span> -n <span class=nb>test</span> -- free -h
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>               total        used        free      shared  buff/cache   available
+</span></span><span class=line><span class=cl>Mem:           256Mi       1.1Mi       254Mi          0B       129Ki       254Mi
+</span></span><span class=line><span class=cl>Swap:             0B          0B          0B
+</span></span></code></pre></td></tr></table></div></div><p><br><br></p><h3 id=노드호스트-fuse-마운트-손상-시-해결>노드(호스트) FUSE 마운트 손상 시 해결</h3><p>노드(호스트)에서 LXCFS는 FUSE로 마운트되어 있다.<br>경로는 앞서 언급한 바와 같이 <code>/var/lib/lxcfs-on-k8s/lxcfs</code></p><p>간혹 해당 경로의 FUSE 마운트가 깨지는 경우가 있는데, 노드를 강제로 리부트할 때 종종 발생한다.<br>마운트 손상 시 <code>lxcfs-on-kubernetes</code> Helm Chart는 이를 자동으로 복구하는 기능이 없어 별도의 DaemonSet을 추가했다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># lxcfs-mount-recovery.daemonset.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>DaemonSet</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app.kubernetes.io/name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-mount-recovery</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-mount-recovery-daemon-set</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app.kubernetes.io/name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-mount-recovery</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app.kubernetes.io/name</span><span class=p>:</span><span class=w> </span><span class=l>lxcfs-mount-recovery</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>automountServiceAccountToken</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c># 60초(ENV에 명시)마다 1번씩 노드(호스트)의 LXCFS FUSE 마운트 상태를 확인한 후</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c># 비정상일 경우 마운트를 해제한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c># 마운트가 해제되면 LXCFS Helm Chart가 자동으로 다시 마운트를 진행한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>args</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=p>|-</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>              while true; do
+</span></span></span><span class=line><span class=cl><span class=sd>                OUT=$(nsenter -t 1 -m -- stat &#34;$MOUNT_PATH&#34; 2&gt;&amp;1 || true)
+</span></span></span><span class=line><span class=cl><span class=sd>                if echo &#34;$OUT&#34; | grep -qiE &#39;transport endpoint|not connected|stale&#39;; then
+</span></span></span><span class=line><span class=cl><span class=sd>                  echo &#34;$(date +%Y-%m-%dT%H:%M:%SZ) broken lxcfs mount at $MOUNT_PATH, lazy unmount&#34; &gt;&amp;2
+</span></span></span><span class=line><span class=cl><span class=sd>                  nsenter -t 1 -m -- umount -l &#34;$MOUNT_PATH&#34; 2&gt;/dev/null || true
+</span></span></span><span class=line><span class=cl><span class=sd>                fi
+</span></span></span><span class=line><span class=cl><span class=sd>                sleep &#34;$INTERVAL&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>              done</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=l>/bin/sh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- -<span class=l>c</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>env</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=c># 확인 주기</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>INTERVAL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;60&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=c># LXCFS 호스트 마운트 경로</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>MOUNT_PATH</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/lxcfs-on-k8s/lxcfs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>mount-recovery</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>100m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>64Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>10m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>32Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>securityContext</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>hostPID</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>priorityClassName</span><span class=p>:</span><span class=w> </span><span class=l>system-node-critical</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>tolerations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>effect</span><span class=p>:</span><span class=w> </span><span class=l>NoExecute</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>operator</span><span class=p>:</span><span class=w> </span><span class=l>Exists</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>effect</span><span class=p>:</span><span class=w> </span><span class=l>NoSchedule</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>operator</span><span class=p>:</span><span class=w> </span><span class=l>Exists</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>updateStrategy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>RollingUpdate</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>작성한 매니페스트를 적용해 데몬셋을 배포한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f lxcfs-mount-recovery.daemonset.yml
+</span></span></code></pre></td></tr></table></div></div><p>배포 후에는 다음 명령으로 각 노드에 Pod가 정상적으로 뜨는지 확인한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl get pods -n lxcfs -l app.kubernetes.io/name<span class=o>=</span>lxcfs-mount-recovery -o wide
+</span></span></code></pre></td></tr></table></div></div></section><footer class=article-footer><section class=article-tags><a href=/tags/kubernetes/>Kubernetes</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>관련 글</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/dev/init-linux-using-ventoy/><div class=article-image><img src=/p/dev/init-linux-using-ventoy/images/cover.e7058149f4d64cdb9b20cdb1bd266ad7_hu_afe4fcc38280b927.png width=250 height=150 loading=lazy alt="Featured image of post Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기" data-key=dev/init-linux-using-ventoy data-hash="md5-5wWBSfTWTNubIM2xvSZq1w=="></div><div class=article-details><h2 class=article-title>Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기</h2></div></a></article><article class=has-image><a href=/p/dev/configuring-monitoring-stack-on-multiple-cluster/><div class=article-image><img src=/p/dev/configuring-monitoring-stack-on-multiple-cluster/images/cover.681d13adab6bda2e4d88aa163c5941c2_hu_8a165ec2662c71d7.png width=250 height=150 loading=lazy alt="Featured image of post Multi-Cluster 모니터링 스택 구축하기" data-key=dev/configuring-monitoring-stack-on-multiple-cluster data-hash="md5-aB0Tratr2i5NiKoWPFlBwg=="></div><div class=article-details><h2 class=article-title>Multi-Cluster 모니터링 스택 구축하기</h2></div></a></article><article class=has-image><a href=/p/dev/istio-multi-cluster-service-mesh/><div class=article-image><img src=/p/dev/istio-multi-cluster-service-mesh/images/cover.719547f5df4b331d1a803ccba29e740b_hu_1c26ba9f3ac76210.png width=250 height=150 loading=lazy alt="Featured image of post Istio를 활용해 다중 Cluster에 Service Mesh 구성하기" data-key=dev/istio-multi-cluster-service-mesh data-hash="md5-cZVH9d9LMx0agDzLop50Cw=="></div><div class=article-details><h2 class=article-title>Istio를 활용해 다중 Cluster에 Service Mesh 구성하기</h2></div></a></article><article class=has-image><a href=/p/dev/how-to-save-on-cloud-costs/><div class=article-image><img src=/p/dev/how-to-save-on-cloud-costs/images/cover.14b59636c30192a3efc4c6f489887f77_hu_9bae20601bdbb0bd.png width=250 height=150 loading=lazy alt="Featured image of post 클라우드 비용 절약을 위한 노력" data-key=dev/how-to-save-on-cloud-costs data-hash="md5-FLWWNsMBkqPvxMb0iYh/dw=="></div><div class=article-details><h2 class=article-title>클라우드 비용 절약을 위한 노력</h2></div></a></article><article class=has-image><a href=/p/dev/install-ollama-to-k8s/><div class=article-image><img src=/p/dev/install-ollama-to-k8s/images/cover.890153c8439a4d0f4a4200a801147e5d_hu_70d411d22563d643.png width=250 height=150 loading=lazy alt="Featured image of post k8s에 Ollama AI 서버 올려보기" data-key=dev/install-ollama-to-k8s data-hash="md5-iQFTyEOaTQ9KQgCoARR+XQ=="></div><div class=article-details><h2 class=article-title>k8s에 Ollama AI 서버 올려보기</h2></div></a></article></div></div></aside><script src=https://utteranc.es/client.js repo=ApexCaptain/ApexCaptain.github.io issue-term=pathname label=comments crossorigin=anonymous async></script><style>.utterances{max-width:unset}</style><script>let utterancesLoaded=!1;function setUtterancesTheme(e){let t=document.querySelector(".utterances iframe");t&&t.contentWindow.postMessage({type:"set-theme",theme:`github-${e}`},"https://utteranc.es")}addEventListener("message",e=>{if(e.origin!=="https://utteranc.es")return;utterancesLoaded=!0,setUtterancesTheme(document.documentElement.dataset.scheme)}),window.addEventListener("onColorSchemeChange",e=>{if(!utterancesLoaded)return;setUtterancesTheme(e.detail)})</script><footer class=site-footer><section class=copyright>&copy;
+2025 -
+2026 ApexCaptain의 기술 블로그</section><section class=powerby><a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a>로 만듦<br><a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a>의 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.34.2>Stack</a></b> 테마 사용 중</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

@@ -1,0 +1,263 @@
+<!doctype html><html lang=ko-kr dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="on-prem 노드 OS 설치, USB 한 장으로 끝내기"><title>Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기</title><link rel=canonical href=https://blog.ayteneve93.com/p/dev/init-linux-using-ventoy/><link rel=stylesheet href=/scss/style.min.86591c898bd806857815fbb8c47e8d3fed97c133b78e83d9bfc27b164dd0aa2b.css><meta property='og:title' content="Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기"><meta property='og:description' content="on-prem 노드 OS 설치, USB 한 장으로 끝내기"><meta property='og:url' content='https://blog.ayteneve93.com/p/dev/init-linux-using-ventoy/'><meta property='og:site_name' content='ApexCaptain의 기술 블로그'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Ventoy'><meta property='article:tag' content='Linux'><meta property='article:tag' content='Ubuntu'><meta property='article:tag' content='Autoinstall'><meta property='article:tag' content='On-Premise'><meta property='article:tag' content='Kubernetes'><meta property='article:tag' content='Ansible'><meta property='article:published_time' content='2025-12-24T00:00:00+09:00'><meta property='article:modified_time' content='2025-12-24T00:00:00+09:00'><meta property='og:image' content='https://blog.ayteneve93.com/p/dev/init-linux-using-ventoy/images/cover.png'><meta name=twitter:title content="Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기"><meta name=twitter:description content="on-prem 노드 OS 설치, USB 한 장으로 끝내기"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://blog.ayteneve93.com/p/dev/init-linux-using-ventoy/images/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="메뉴 여닫기">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_dfa970e81d3cb955.png width=300 height=298 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>👋</span></figure><div class=site-meta><h1 class=site-name><a href=/>ApexCaptain의 기술 블로그</a></h1><h2 class=site-description></h2></div></header><ol class=menu-social><li><a href=https://github.com/ApexCaptain target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>다크 모드</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">목차</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#들어가기-앞서>들어가기 앞서</a></li><li><a href=#문제의-시작>문제의 시작</a><ol><li><a href=#기존-방식의-한계>기존 방식의 한계</a></li></ol></li><li><a href=#ventoy란-무엇인가>Ventoy란 무엇인가</a></li><li><a href=#ubuntu-autoinstall>Ubuntu Autoinstall</a></li><li><a href=#ventoy-usb-구성>Ventoy USB 구성</a><ol><li><a href=#ventoyjson>ventoy.json</a></li><li><a href=#user-data-핵심>user-data 핵심</a></li></ol></li><li><a href=#iac-프로젝트로-정리하기>IaC 프로젝트로 정리하기</a></li><li><a href=#mac에서-usb-만들기>Mac에서 USB 만들기</a></li><li><a href=#설치-절차>설치 절차</a></li><li><a href=#주의사항-정리>주의사항 정리</a></li><li><a href=#마치며>마치며</a></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/dev/init-linux-using-ventoy/><img src=/p/dev/init-linux-using-ventoy/images/cover_hu_a09c086f59f63040.png srcset="/p/dev/init-linux-using-ventoy/images/cover_hu_a09c086f59f63040.png 800w, /p/dev/init-linux-using-ventoy/images/cover_hu_1331615861dbbc9.png 1600w" width=800 height=450 loading=lazy alt="Featured image of post Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기"></a></div><div class=article-details><header class=article-category><a href=/categories/development/ style=background-color:#efbec3;color:#3d0f14>Development</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/dev/init-linux-using-ventoy/>Ventoy로 k8s Node를 위한 Linux 부팅 디스크 만들기</a></h2><h3 class=article-subtitle>on-prem 노드 OS 설치, USB 한 장으로 끝내기</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2025-12-24T00:00:00+09:00>2025년 12월 24일</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>11 분 정도</time></div></footer></div></header><section class=article-content><h2 id=들어가기-앞서>들어가기 앞서</h2><p>k8s 클러스터를 운영할 때는 <code>Node 레벨에서의 작업</code>이 필요한 경우가 왕왕 있다.</p><p>클러스터를 구성하고 운영하는 방식은 여러가지가 있겠지만,<br>우선 현재 회사에서 사용하는 EKS의 경우 k8s API나 kubelet version<br>혹은 Node 자체(EC2)의 OS를 업데이트하거나 하는 작업이 생각보다 자주 있는 편이다.</p><p>다행히 EKS와 같은 KaaS를 사용할 때는 EKS 서비스 자체적으로 혹은 Karpenter Node Autoscaler를 통해<br>이런 기능들이 지원되기 때문에 복잡하게 생각할 거 없이 자연스럽고 신뢰성 높게 작업을 수행할 수 있다.</p><blockquote><p>그렇담 On-Premise는?</p></blockquote><p><strong>당연히 Karpenter 같은 친절한 도구가 있을 리 만무하다.</strong><br>Node Autoscaling은 고사하고 방금 산 따끈따끈한 컴퓨터에 마치 마법처럼 OS에서부터 각종 패키지, k8s가 설치되고 그게 저절로 기존 클러스터에 Join 하길 기대하긴 힘들다.<br><sub>(진짜 이게 그냥 되면 정말 좋겠지만&mldr;)</sub></p><p>본래 이런 작업은 수동으로 진행하곤 했는데,<br>이를 보다 일관적이고 신뢰성 높게 구성하고자 <code>Ansible</code>을 통한 k8s 구성을 하기로 마음 먹었다.</p><br><blockquote><p>갑자기 왠 <code>Ansible</code>?<br>내용이 제목이랑 다른데?</p></blockquote><p>Terraform이나 Pulumi와 같은 도구의 역할이 <code>이미 존재하는 k8s 위에 서비스를 배포</code>하는 것이라면,<br>여기서 Ansible의 역할은 <code>깡통 컴퓨터들을 모아다가 k8s를 최초 구성</code>하는 것이다.</p><p>Ansible은 기본적으로 다음과 같이 동작한다.</p><p align=center><img src=images/ansible-how-does-it-work.png alt></p><ul><li>대상 컴퓨터의 SSH(리눅스) 혹은 Winrm(윈도우) 서비스를 통해 접속</li><li>사전에 지정한 작업을 수행. 가령, 어떤 패키지를 설치한다거나 특정 서비스를 활성화 한다거나 등등</li></ul><p><code>깡통 컴퓨터</code>라고는 했으나, 그래도 최소한의 조건은 있다.</p><ul><li>우선 연결하고자 하는 컴퓨터에 <code>SSHD</code>가 동작 중이어야 한다.</li><li>당연히 <code>IP, Username, SSH Private Key File 혹은 패스워드</code>가 필요하다.</li></ul><blockquote><p>요컨대, 진짜 아무리 깡통 옵션이라고 해도 최소한 열쇠 놓고 돌리면 시동은 걸려야 한다는 거다.</p></blockquote><p>전체 인프라 구성을 시간 순서대로 보면 다음과 같다.</p><ol><li>Node가 될 컴퓨터에 Linux OS 설치, SSH 설정, IP 고정</li><li>Ansible을 통해 k8s 구성</li><li>Helm / Terraform / Pulumi 등으로 서비스 배포</li></ol><p>여기서 <code>1</code>의 작업을 자동화하고 싶다는 생각이 들었다.</p><p><br><br></p><h2 id=문제의-시작>문제의 시작</h2><p>앞서 어느정도 문제 상황을 제시했지만, 한번 더 요약하자면 다음과 같다.</p><p>Kubernetes 위에 올릴 애플리케이션은 Helm이나 Pulumi로 자동화할 수 있지만,<br><strong>그 기저에 존재하는 Linux OS 설치 작업</strong>은 여전히 손이 많이 간다.</p><ul><li>설치 USB를 Rufus로 매번 새로 굽기</li><li>IP, SSH key, hostname등을 설치 화면에서 일일이 입력</li><li>같은 설정으로 재설치할 때마다 무한 반복</li></ul><blockquote><p>OS 설치 및 초기화라는 게 별 것도 아닌데 은근히 귀찮고 시간을 많이 잡아 먹는다.<br>거의 유일하게 원격 작업이 불가능한 영역이기도 하다.</p></blockquote><p>이번 포스트에서는 <strong>Ventoy</strong>와 <strong>Ubuntu Autoinstall</strong>을 조합해서,<br>USB 한 장으로 <strong>질문 없이 Ubuntu Server가 설치</strong>되도록 만든 과정을 정리한다.</p><blockquote><p>왜 하필 Ubuntu?</p></blockquote><p>k8s 노드 OS로는 Rocky, Debian 등도 충분히 쓸 만하지만,<br>이번 작업의 목표가 **&ldquo;설치 질문 없이 SSH까지 열어 두고 Ansible에 넘기기&rdquo;**였기 때문에 OS 선택의 기준은 <strong>무인 설치 가능 여부</strong>가 됐다.</p><p>Ubuntu Server는 <strong>Autoinstall(Subiquity + cloud-init)</strong> 을 공식 지원하고, <code>user-data</code> 한 파일로 IP·SSH key·디스크 레이아웃까지 선언할 수 있다.</p><p>kubeadm·containerd로 노드를 맞출 때도 문서와 Ansible 예제가 가장 많고, <strong>24.04 LTS</strong>면 지원 기간도 넉넉하다.</p><p>실제로 Ventoy의 Auto Install 플러그인도 Ubuntu autoinstall 조합으로 쓰는 사례가 많아, on-prem 노드를 반복해서 포맷·재설치하는 흐름에 맞았다.</p><p>그리고 무엇보다 내가 가장 오랫동안 써서 익숙하기도 하다.</p><br><h3 id=기존-방식의-한계>기존 방식의 한계</h3><p>물리 PC에 Ubuntu Server를 깔 때 흔히 쓰는 방법은 대략 네 가지다.</p><div class=table-wrapper><table><thead><tr><th>방식</th><th>USB 1장</th><th>설정 수정</th><th>ISO 여러 개</th></tr></thead><tbody><tr><td><strong>Rufus + 원본 ISO</strong></td><td>✅</td><td>❌ 매번 재플래시</td><td>❌</td></tr><tr><td><strong>커스텀 ISO</strong> (autoinstall 내장)</td><td>✅</td><td>❌ ISO 재빌드</td><td>❌</td></tr><tr><td><strong>Rufus + cidata 파티션</strong></td><td>✅</td><td>△ 파일만 교체</td><td>❌</td></tr><tr><td><strong>Ventoy</strong></td><td>✅</td><td>✅ 파일만 교체</td><td>✅</td></tr></tbody></table></div><p><strong>Rufus + 원본 ISO</strong>는 가장 단순하지만, autoinstall 설정을 넣으려면<br>같은 USB에 <strong><code>cidata</code> 라벨 FAT 파티션</strong>을 추가로 만들어 <code>user-data</code> / <code>meta-data</code>를 넣어야 한다.<br>파티션 작업이 번거롭고, USB 용량도 ISO + cidata를 동시에 담을 만큼 넉넉해야 한다.</p><p><strong>커스텀 ISO</strong>는 <a class=link href=https://github.com/linuxrrze/ubuntu-24.04-autoinstall-generator target=_blank rel=noopener>ubuntu-autoinstall-generator</a> 같은 도구로<br>설정을 ISO 안에 박아 넣은 뒤 Rufus로 굽는 방식이다. USB 1장으로 끝나지만,<br>IP나 SSH key를 바꿀 때마다 <strong>ISO를 다시 빌드</strong>해야 한다.</p><p>나는 on-prem k8s 노드를 포맷하고 다시 깔아보는 실험을 반복할 예정이었고,<br><strong>설정만 고치면 되는 USB</strong>가 필요했다. 그래서 <strong>Ventoy</strong>를 선택했다.</p><br><h2 id=ventoy란-무엇인가>Ventoy란 무엇인가</h2><p><a class=link href=https://www.ventoy.net target=_blank rel=noopener>Ventoy</a>는 USB를 <strong>한 번만 초기화</strong>해 두면,<br>이후에는 ISO 파일을 <strong>그냥 복사</strong>만 해도 부팅 USB로 쓸 수 있게 해 주는 오픈소스 도구다.</p><p>Rufus처럼 ISO를 디스크에 <strong>덮어쓰는</strong> 방식이 아니라, 구조는 대략 이렇다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>16GB USB
+</span></span><span class=line><span class=cl>├── [작은 Ventoy 부팅 파티션]
+</span></span><span class=line><span class=cl>└── [큰 데이터 파티션 exFAT]   ← &#34;남는 공간&#34; 전체
+</span></span><span class=line><span class=cl>      ├── ubuntu-24.04.3-live-server-amd64.iso   (파일 ~3GB)
+</span></span><span class=line><span class=cl>      └── ventoy/
+</span></span><span class=line><span class=cl>            ├── ventoy.json
+</span></span><span class=line><span class=cl>            └── user-data/
+</span></span><span class=line><span class=cl>                  └── node.yaml
+</span></span></code></pre></td></tr></table></div></div><p>ISO도 <strong>파일 하나</strong>로 복사하고, autoinstall 설정도 <strong>같은 파티션</strong>에 같이 둔다.<br>16GB USB면 ISO 하나 + 설정 파일 여러 개를 넣기에 충분하다.</p><br><h2 id=ubuntu-autoinstall>Ubuntu Autoinstall</h2><p>Ubuntu Server <strong>24.04 LTS</strong>(<code>ubuntu-24.04.3-live-server-amd64.iso</code>)는 <strong>Autoinstall(Subiquity + cloud-init)</strong> 을 지원한다.<br>설치 USB가 부팅될 때 <strong><code>user-data</code></strong>(설치 설정)를 읽어 <strong>질문 없이 설치</strong>한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Ubuntu Server ISO 부팅
+</span></span><span class=line><span class=cl>    → autoinstall + nocloud 데이터 소스
+</span></span><span class=line><span class=cl>        → user-data: IP, SSH key, hostname, 디스크, 패키지
+</span></span><span class=line><span class=cl>        → (선택) meta-data: 인스턴스 ID
+</span></span></code></pre></td></tr></table></div></div><p><code>user-data</code> 파일의 첫 줄에는 반드시 <code>#cloud-config</code>가 와야 하고,<br>그 아래에 <code>autoinstall:</code> 블록을 작성한다.</p><p>Ventoy의 <strong>Auto Install</strong> 플러그인을 쓰면,<br><code>ventoy.json</code>에서 <strong>ISO ↔ user-data</strong>를 연결해 줄 수 있다.<br>이 방식에서는 파일명이 <code>user-data</code>일 필요는 없다.<br><code>node.yaml</code>처럼 <strong>자유로운 이름</strong>을 써도 된다.</p><br><h2 id=ventoy-usb-구성>Ventoy USB 구성</h2><h3 id=ventoyjson>ventoy.json</h3><p>ISO <strong>파일명</strong>과 <code>image</code> 경로가 <strong>정확히 일치</strong>해야 한다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;auto_install&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span> 
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;image&#34;</span><span class=p>:</span> <span class=s2>&#34;/ubuntu-24.04.3-live-server-amd64.iso&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;template&#34;</span><span class=p>:</span> <span class=s2>&#34;/ventoy/user-data/node.yaml&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;autosel&#34;</span><span class=p>:</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;control&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span> <span class=nt>&#34;VTOY_MENU_TIMEOUT&#34;</span><span class=p>:</span> <span class=s2>&#34;5&#34;</span> <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span> <span class=nt>&#34;VTOY_DEFAULT_IMAGE&#34;</span><span class=p>:</span> <span class=s2>&#34;/ubuntu-24.04.3-live-server-amd64.iso&#34;</span> <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span> <span class=nt>&#34;VTOY_SECONDARY_BOOT_MENU&#34;</span><span class=p>:</span> <span class=s2>&#34;1&#34;</span> <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span> <span class=nt>&#34;VTOY_SECONDARY_TIMEOUT&#34;</span><span class=p>:</span> <span class=s2>&#34;5&#34;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><div class=table-wrapper><table><thead><tr><th>키</th><th>역할</th></tr></thead><tbody><tr><td><code>auto_install[].image</code></td><td>부팅할 ISO 파일 경로 (USB 루트 기준)</td></tr><tr><td><code>auto_install[].template</code></td><td>autoinstall에 넘길 user-data 파일(다음 섹션 참고)</td></tr><tr><td><code>auto_install[].autosel</code></td><td><code>1</code>이면 해당 ISO 선택 시 template 자동 적용</td></tr><tr><td><code>control</code></td><td>Ventoy 메뉴 타임아웃, 기본 ISO 등</td></tr></tbody></table></div><p><code>ventoy.json</code>은 <strong>Ventoy 설정</strong>이고,<br><code>node.yaml</code>은 <strong>Ubuntu autoinstall 내용</strong>이다. 역할이 다르다.</p><blockquote><p><strong>경로 정리</strong> — Ventoy는 <code>ventoy/ventoy.json</code> 위치를 고정으로 읽는다.<br><code>image</code>·<code>template</code>에 적는 <code>/...</code> 경로는 <strong>USB 데이터 파티션 루트</strong> 기준이며, ISO는 루트에, autoinstall YAML은 <code>ventoy/user-data/</code> 아래에 둔다.</p></blockquote><br><h3 id=user-data-핵심>user-data 핵심</h3><p>on-prem k8s 노드 여러 대를 <strong>USB 한 장</strong>으로 깔려면,<br><code>user-data</code> <strong>하나</strong>에 <strong>NIC MAC별 netplan</strong>을 넣는 방식이 깔끔하다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c>#cloud-config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>x-static-net</span><span class=p>:</span><span class=w> </span><span class=cp>&amp;static-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dhcp4</span><span class=p>:</span><span class=w> </span><span class=kc>no</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>routes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>to</span><span class=p>:</span><span class=w> </span><span class=l>default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>via</span><span class=p>:</span><span class=w> </span><span class=l>&lt;GW 주소, 예를 들어 192.168.0.1&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nameservers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>addresses</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>1.1.1.1</span><span class=w> </span><span class=c># Nameserver 입력</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>8.8.8.8</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>autoinstall</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>locale</span><span class=p>:</span><span class=w> </span><span class=l>en_US.UTF-8</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>identity</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># 기본 호스트명으로 k8s 구성을 하려면 각 node별로 다르게 지정해야 하는데</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># hostname은 추후 Ansible을 통해 변경하고자 한다. 이건 지금 뭐로 적든 무관하다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>k8s-node </span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>username</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>password</span><span class=p>:</span><span class=w> </span><span class=l>&lt;mkpasswd --method=SHA-512 --rounds=4096 &#34;myPassword&#34;의 결과 입력&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ssh</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>install-server</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w> </span><span class=c># SSH 서버를 설치</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>allow-pw</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w> </span><span class=c># 패스워드를 통한 접속 X</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>authorized-keys</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;ssh-ed25519 AAAA...&#39;</span><span class=w> </span><span class=c># 사용할 SSH PublicKey 입력</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>network</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=m>2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ethernets</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>node0</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>&lt;&lt;</span><span class=p>:</span><span class=w> </span><span class=cp>*static-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>match</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>macaddress</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;aa:bb:cc:dd:ee:01&#39;</span><span class=w> </span><span class=c># 이 Mac Address에 맞는 컴퓨터면</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>addresses</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>&lt;할당할 ip 주소/24, ex</span><span class=p>:</span><span class=w> </span><span class=m>192.168.0.100</span><span class=l>/24&gt;</span><span class=w> </span><span class=c># 이 IP가 할당되고</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>node1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>&lt;&lt;</span><span class=p>:</span><span class=w> </span><span class=cp>*static-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>match</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>macaddress</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;aa:bb:cc:dd:ee:02&#39;</span><span class=w> </span><span class=c># 이 Mac Address에 맞는 컴퓨터면</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>addresses</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>&lt;할당할 ip 주소/24, ex</span><span class=p>:</span><span class=w> </span><span class=m>192.168.0.101</span><span class=l>/24&gt;</span><span class=w> </span><span class=c># 이 IP가 할당된다</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># (옵션)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># OS가 설치될 디스크를 선택한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># 이 블록 전체를 제외할 경우 Storage 선택은 수동으로 해야 한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># 아래 match 목록에 있는 디스크 중, 해당 머신에 실제로 존재하는 것을 대상으로 한다.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># (여러 개가 동시에 잡히면 레이아웃 정책에 따라 동작이 달라질 수 있으니, 단일 디스크 환경을 전제로 썼다.)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>storage</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>layout</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>direct</span><span class=w> </span><span class=c># LVM 없이 디스크 전체 사용</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>match</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/dev/nvme0n1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/dev/nvme1n1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/dev/nvme2n1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c># 위 목록 어디에도 해당 디스크가 없으면 설치가 실패한다</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>updates</span><span class=p>:</span><span class=w> </span><span class=l>security</span><span class=w> </span><span class=c># 보안 업데이트만 자동 적용</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># ── 아래부터는 &#34;이런 것도 가능하다&#34; 수준의 참고 예시 (필수 아님) ──</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># 설치 중 /target 안을 건드릴 때 — 예: sudo NOPASSWD</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>late-commands</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>curtin in-target -- sh -c &#34;echo &#39;ubuntu ALL=(ALL) NOPASSWD:ALL&#39; &gt; /etc/sudoers.d/ubuntu&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>curtin in-target -- chmod 440 /etc/sudoers.d/ubuntu</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># 첫 부팅 후 실행 — 예: Slack 알림 </span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>user-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>runcmd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>        SLACK_WEBHOOK_URL=&#39;&lt;Slack Webhook URL을 입력한다. https://hooks.slack.com/services...&gt;&#39;
+</span></span></span><span class=line><span class=cl><span class=sd>        IP=$(hostname -I | awk &#39;{print $1}&#39;)
+</span></span></span><span class=line><span class=cl><span class=sd>        curl -sS -X POST &#34;$SLACK_WEBHOOK_URL&#34; \
+</span></span></span><span class=line><span class=cl><span class=sd>          -H &#39;Content-Type: application/json&#39; \
+</span></span></span><span class=line><span class=cl><span class=sd>          -d &#34;$(printf &#39;{&#34;text&#34;:&#34;✅ Autoinstall complete\n• IP: %s&#34;}&#39; &#34;$IP&#34;)&#34; \
+</span></span></span><span class=line><span class=cl><span class=sd>          || true</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>몇 가지 포인트만 짚어두자.</p><blockquote><p>위 YAML에서 <strong><code>identity</code> · <code>ssh</code> · <code>network</code>가 핵심</strong>이다.<br><code>storage</code>를 빼면 디스크 선택 화면이 뜰 수 있어, 완전 무인 설치를 원하면 넣는 편이 낫다.<br><code>late-commands</code>와 <code>user-data.runcmd</code>는 autoinstall로 <strong>뭘 더 할 수 있는지</strong> 보여 주는 참고 예시일 뿐이고, 빼도 SSH 접속까지는 문제없다.</p></blockquote><p><strong>1. <code>ethernets</code> 아래 키 이름 (<code>node0</code> 등)은 아무거나 OK</strong><br>YAML 블록 라벨일 뿐이고, 실제 NIC 이름과는 무관하다.<br>어떤 PC에 설치하든 <strong>MAC이 match되면</strong> 해당 IP 블록만 적용된다.</p><p><strong>2. <code>identity.hostname</code>은 MAC별로 나눌 수 없다</strong><br><code>network</code>는 MAC별 분기가 되지만, <code>identity.hostname</code>은 <strong>값 하나</strong>다.<br>노드마다 hostname을 다르게 쓰려면 Ventoy <code>template</code>을 여러 개 두거나,<br><code>late-commands</code> 등으로 설치 중에 바꾸는 방식을 쓴다.<br>내 경우 주석에도 달아 놨듯, 추후 Ansible을 통해 관리하고자 한다.</p><p><strong>3. MAC이 안 맞으면 고정 IP가 통째로 스킵된다</strong><br>OS와 SSH key는 설치될 수 있지만 <strong><code>지정한 IP</code>로 SSH 접속은 안 된다.</strong><br>설치 전 <code>user-data</code>의 MAC 주소가 <strong>유선 NIC</strong>와 일치하는지 꼭 확인하자.</p><p><strong>4. k8s 준비는 autoinstall에서 하지 않는다</strong><br>containerd, kubeadm 같은 패키지는 <strong>Ansible</strong> 쪽에서 설치한다.<br>autoinstall은 <strong>SSH + IP</strong>까지만 맞춰 주면 된다.</p><p><strong>5. <code>late-commands</code> / <code>user-data.runcmd</code>는 타이밍만 기억하면 된다</strong><br>설치 <strong>중</strong>에 installed system(<code>/target</code>)을 건드리려면 <code>late-commands</code>, <strong>첫 부팅 이후</strong>에 돌리려면 <code>autoinstall.user-data.runcmd</code>를 쓴다.<br>YAML에 넣은 sudo·Slack 예시는 그냥 “이런 것도 된다”는 샘플이다.</p><br><h2 id=iac-프로젝트로-정리하기>IaC 프로젝트로 정리하기</h2><p>처음에는 <code>user-data</code>를 손으로 작성해서 USB에 복사해 테스트했다.<br>IP, MAC, SSH key, password hash를 직접 넣고 Ventoy로 부팅해 접속까지 확인했다.</p><p>하지만 설정이 늘어나면 <strong>매번 YAML을 손으로 고치기</strong>가 번거로워졌다.<br>그래서 <a class=link href=https://github.com/ApexCaptain/ApexCaptain.IaC.Pulumi/tree/develop target=_blank rel=noopener>ApexCaptain.IaC.Pulumi</a> 레포에 <code>ventoy/</code> 디렉토리를 두고 <strong>projen + Handlebars 템플릿</strong>으로 생성하도록 바꿨다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>ventoy/                                  ← 레포 디렉터리
+</span></span><span class=line><span class=cl>├── ventoy.json                          ← projen 생성 → USB의 ventoy/ventoy.json
+</span></span><span class=line><span class=cl>├── templates/
+</span></span><span class=line><span class=cl>│   └── node.yaml.tpl                    ← Handlebars 템플릿 (수동 편집, USB에 복사 안 함)
+</span></span><span class=line><span class=cl>└── user-data/
+</span></span><span class=line><span class=cl>    └── node.yaml                        ← projen 생성 → USB의 ventoy/user-data/node.yaml
+</span></span></code></pre></td></tr></table></div></div><p>레포의 <code>ventoy/</code> 폴더를 USB에 옮길 때는 <strong><code>templates/</code>를 제외</strong>하고,<br><code>ventoy.json</code>과 <code>user-data/</code>만 <code>ventoy/</code> 아래에 그대로 두면 된다.</p><p>템플릿에서 변수는 <code>'{{ variable }}'</code>처럼 <strong>작은따옴표로 감싼다.</strong><br>YAML 포맷터가 <code>{{ }}</code>를 flow mapping으로 오해하지 않게 하기 위함이다.</p><p>password hash처럼 <code>=</code> 문자가 많은 값은 Handlebars <strong><code>{{{ passwordHash }}}</code></strong> (triple mustache)로 넣어야 한다.<br><code>{{ passwordHash }}</code>는 HTML 이스케이프 때문에 <code>=</code>가 <code>&amp;#x3D;</code>로 깨진다.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># templates/node.yaml.tpl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=nt>identity</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>password</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;{{{ passwordHash }}}&#39;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>생성된 파일을 USB에 옮기기 전, devcontainer 안에서 한 번 더 projen을 돌려 <strong><code>user-data/node.yaml</code>이 최신인지</strong> 확인한다.</p><p><br><br></p><h2 id=mac에서-usb-만들기>Mac에서 USB 만들기</h2><p>애석하게도 나는 지금 모니터가 한 대밖에 없어서(&mldr;), 메인 PC(개발용)와<br>설치 대상이 되는 서버 컴퓨터를 동시에 화면에 띄울 수가 없다.</p><p>고로 OS 설치 상황을 확인하기 위해 집에 있는 모니터는 서버에 양보하고,<br>대신 Ventoy로 USB를 굽는 건 MacBook으로 진행하기로 했다.</p><p>다만 <a class=link href=https://www.ventoy.net/en/download.html target=_blank rel=noopener>Ventoy 다운로드 페이지</a>를 보면 알겠지만,<br>Windows랑 Linux 버전만 있고 macOS용은 없다.</p><p align=center><img src=images/ventoy-download-page.png alt></p><p>다행히 <a class=link href=https://github.com/cashcon57/mactoy/releases target=_blank rel=noopener>Mactoy</a>라는 도구가 있는데, Ventoy를 Mac에서도 구성 가능하도록 만든 툴이다.</p><p><a class=link href=https://github.com/cashcon57/mactoy/releases target=_blank rel=noopener>Mactoy Release Page</a>에 접속해서<br>가장 최신 버전의 dmg 파일을 다운받아 설치한다.</p><blockquote><p>Ventoy <strong>1.1.11</strong>은 Ubuntu autoinstall 관련 버그가 있었다.<br>Mactoy로 설치할 때 <strong>1.1.10</strong> 또는 <strong>1.1.12+</strong> 를 선택하자.</p></blockquote><ol><li>Mactoy 설치</li></ol><p align=center><img width=80% src=images/install-ventoy-1.png alt><br><em>Applications로 드래그</em></p><ol start=2><li><strong><code>Install Ventoy</code></strong> 탭 → USB에 Ventoy 설치</li></ol><p align=center><img width=80% src=images/install-ventoy-2.png alt><br><em>`Flash Image`는 사용하지 않는다 — ISO를 raw로 굽는 모드라 Ventoy가 사라진다</em></p><br><p>Ventoy가 한 번 깔린 USB가 있으면, 이후에는 <strong>Finder로 드래그 앤 드롭</strong>만 하면 된다.<br>새로 다른 USB를 산 게 아니라면 더 이상 쓸 일이 없다.</p><p align=center><img src=images/install-ventoy-3.png alt></p><ol><li><code>ubuntu-24.04.3-live-server-amd64.iso</code> → USB <strong>루트</strong>에 복사</li><li>레포 <code>ventoy/</code>에서 <code>ventoy.json</code>, <code>user-data/</code> → USB **<code>ventoy/</code>**에 복사 (<code>templates/</code>는 제외)</li><li><code>ventoy/ventoy.json</code>의 <code>image</code>와 ISO <strong>파일명</strong> 일치 확인</li></ol><br><h2 id=설치-절차>설치 절차</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>USB 부팅
+</span></span><span class=line><span class=cl>  → Ventoy 메뉴에서 ISO 선택
+</span></span><span class=line><span class=cl>  → Boot in normal mode
+</span></span><span class=line><span class=cl>  → Try or Install Ubuntu Server
+</span></span><span class=line><span class=cl>  → autoinstall 진행 (질문 없음)
+</span></span><span class=line><span class=cl>  → 재부팅
+</span></span><span class=line><span class=cl>  → ssh ubuntu@&lt;user-data에 적은 IP&gt;
+</span></span></code></pre></td></tr></table></div></div><p>실제로 테스트했을 때, MAC만 맞으면 <strong>고정 IP + SSH key 로그인</strong>까지 한 번에 성공했다.<br>OS 설치 후에는 Ansible로 k8s 노드 join을 이어가고, Longhorn·MetalLB 같은 애드온은 Helm 등으로 구성하면 된다.</p><br><h2 id=주의사항-정리>주의사항 정리</h2><div class=table-wrapper><table><thead><tr><th>항목</th><th>내용</th></tr></thead><tbody><tr><td>Ventoy 버전</td><td><strong>1.1.12+</strong> 권장 (1.1.11 autoinstall 버그)</td></tr><tr><td>ISO</td><td><code>ubuntu-24.04.3-live-server-amd64.iso</code> (<strong>Desktop</strong> 말고 <strong>live-server</strong>)</td></tr><tr><td><code>ventoy.json</code> ↔ ISO</td><td><code>ventoy/ventoy.json</code>의 <code>image</code>와 ISO <strong>파일명 정확히 일치</strong></td></tr><tr><td>MAC 주소</td><td><code>user-data</code>의 MAC과 <strong>실제 유선 NIC</strong> 일치 필수</td></tr><tr><td><code>#cloud-config</code></td><td><code>user-data</code> <strong>첫 줄</strong> (projen 주석이 위에 끼면 autoinstall 실패)</td></tr><tr><td>Handlebars</td><td>password hash는 <strong><code>{{{ }}}</code></strong> (triple mustache) 사용</td></tr><tr><td>Mactoy <code>Flash Image</code></td><td><strong>쓰지 않기</strong> — Ventoy 파티션이 덮어써진다</td></tr><tr><td>autoinstall 안 될 때</td><td>Ventoy 부팅 메뉴 <strong>F5</strong> → plugin json / auto install 설정 확인</td></tr></tbody></table></div><br><h2 id=마치며>마치며</h2><p>Ventoy + Ubuntu Autoinstall 조합으로 <strong>USB 한 장</strong>에 다음을 모두 담을 수 있었다.</p><ul><li>Ubuntu Server ISO</li><li>노드별 MAC/IP 설정이 들어간 autoinstall 프리셋</li><li>ISO 추가·설정 수정 시 <strong>파일 복사만</strong>으로 반영</li></ul><p>Rufus로 ISO를 매번 굽거나, cidata 파티션을 손으로 파는 것보다 훨씬 덜 귀찮았다.<br>특히 on-prem k8s 노드를 <strong>포맷 후 재설치</strong>하는 실험을 반복할 때 체감이 크다.</p><p>설정 파일과 템플릿은 <a class=link href=https://github.com/ApexCaptain/ApexCaptain.IaC.Pulumi/tree/develop/ventoy target=_blank rel=noopener>ApexCaptain.IaC.Pulumi/ventoy</a>에 올려 두었다.</p><p><strong>참고 자료</strong></p><ul><li><a class=link href=https://www.ventoy.net target=_blank rel=noopener>Ventoy 공식 사이트</a></li><li><a class=link href=https://www.ventoy.net/en/doc_plugin_autoinstall.html target=_blank rel=noopener>Ventoy Auto Install 문서</a></li><li><a class=link href=https://ubuntu.com/server/docs/install/autoinstall target=_blank rel=noopener>Ubuntu Autoinstall</a></li><li><a class=link href=https://github.com/ApexCaptain/ApexCaptain.IaC.Pulumi/tree/develop/ventoy target=_blank rel=noopener>ApexCaptain.IaC.Pulumi — ventoy/</a></li></ul></section><footer class=article-footer><section class=article-tags><a href=/tags/ventoy/>Ventoy</a>
+<a href=/tags/linux/>Linux</a>
+<a href=/tags/ubuntu/>Ubuntu</a>
+<a href=/tags/autoinstall/>Autoinstall</a>
+<a href=/tags/on-premise/>On-Premise</a>
+<a href=/tags/kubernetes/>Kubernetes</a>
+<a href=/tags/ansible/>Ansible</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>관련 글</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/dev/install-ollama-to-k8s/><div class=article-image><img src=/p/dev/install-ollama-to-k8s/images/cover.890153c8439a4d0f4a4200a801147e5d_hu_70d411d22563d643.png width=250 height=150 loading=lazy alt="Featured image of post k8s에 Ollama AI 서버 올려보기" data-key=dev/install-ollama-to-k8s data-hash="md5-iQFTyEOaTQ9KQgCoARR+XQ=="></div><div class=article-details><h2 class=article-title>k8s에 Ollama AI 서버 올려보기</h2></div></a></article><article class=has-image><a href=/p/dev/install-metallb-to-on-premise-k8s/><div class=article-image><img src=/p/dev/install-metallb-to-on-premise-k8s/images/cover.2c0e356b72e9a7a9380e959e98ea4e20_hu_777ca3fd721abd81.png width=250 height=150 loading=lazy alt="Featured image of post On-Premise k8s에 Metallb 설치" data-key=dev/install-metallb-to-on-premise-k8s data-hash="md5-LA41a3Lpp6k4DpWemOpOIA=="></div><div class=article-details><h2 class=article-title>On-Premise k8s에 Metallb 설치</h2></div></a></article><article class=has-image><a href=/p/dev/install-lxcfs-to-k8s/><div class=article-image><img src=/p/dev/install-lxcfs-to-k8s/images/cover.0632ef054b50fa9e2854c6dd611af5e6_hu_3455f26d4d182c8e.png width=250 height=150 loading=lazy alt="Featured image of post LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법" data-key=dev/install-lxcfs-to-k8s data-hash="md5-BjLvBUtQ+p4oVMbdYRr15g=="></div><div class=article-details><h2 class=article-title>LXCFS로 우리 Pod쪽이를 똑똑하게 키우는 법</h2></div></a></article><article class=has-image><a href=/p/dev/configuring-monitoring-stack-on-multiple-cluster/><div class=article-image><img src=/p/dev/configuring-monitoring-stack-on-multiple-cluster/images/cover.681d13adab6bda2e4d88aa163c5941c2_hu_8a165ec2662c71d7.png width=250 height=150 loading=lazy alt="Featured image of post Multi-Cluster 모니터링 스택 구축하기" data-key=dev/configuring-monitoring-stack-on-multiple-cluster data-hash="md5-aB0Tratr2i5NiKoWPFlBwg=="></div><div class=article-details><h2 class=article-title>Multi-Cluster 모니터링 스택 구축하기</h2></div></a></article><article class=has-image><a href=/p/dev/istio-multi-cluster-service-mesh/><div class=article-image><img src=/p/dev/istio-multi-cluster-service-mesh/images/cover.719547f5df4b331d1a803ccba29e740b_hu_1c26ba9f3ac76210.png width=250 height=150 loading=lazy alt="Featured image of post Istio를 활용해 다중 Cluster에 Service Mesh 구성하기" data-key=dev/istio-multi-cluster-service-mesh data-hash="md5-cZVH9d9LMx0agDzLop50Cw=="></div><div class=article-details><h2 class=article-title>Istio를 활용해 다중 Cluster에 Service Mesh 구성하기</h2></div></a></article></div></div></aside><script src=https://utteranc.es/client.js repo=ApexCaptain/ApexCaptain.github.io issue-term=pathname label=comments crossorigin=anonymous async></script><style>.utterances{max-width:unset}</style><script>let utterancesLoaded=!1;function setUtterancesTheme(e){let t=document.querySelector(".utterances iframe");t&&t.contentWindow.postMessage({type:"set-theme",theme:`github-${e}`},"https://utteranc.es")}addEventListener("message",e=>{if(e.origin!=="https://utteranc.es")return;utterancesLoaded=!0,setUtterancesTheme(document.documentElement.dataset.scheme)}),window.addEventListener("onColorSchemeChange",e=>{if(!utterancesLoaded)return;setUtterancesTheme(e.detail)})</script><footer class=site-footer><section class=copyright>&copy;
+2025 -
+2026 ApexCaptain의 기술 블로그</section><section class=powerby><a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a>로 만듦<br><a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a>의 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.34.2>Stack</a></b> 테마 사용 중</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

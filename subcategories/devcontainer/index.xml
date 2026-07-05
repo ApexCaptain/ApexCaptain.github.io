@@ -1,0 +1,1209 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>DevContainer on ApexCaptain의 기술 블로그</title><link>https://blog.ayteneve93.com/subcategories/devcontainer/</link><description>Recent content in DevContainer on ApexCaptain의 기술 블로그</description><generator>Hugo -- gohugo.io</generator><language>ko-kr</language><lastBuildDate>Sat, 18 Oct 2025 00:00:00 +0900</lastBuildDate><atom:link href="https://blog.ayteneve93.com/subcategories/devcontainer/index.xml" rel="self" type="application/rss+xml"/><item><title>DevContainer 톺아보기</title><link>https://blog.ayteneve93.com/p/dev/what-is-devcontainer/</link><pubDate>Sat, 18 Oct 2025 00:00:00 +0900</pubDate><guid>https://blog.ayteneve93.com/p/dev/what-is-devcontainer/</guid><description>&lt;img src="https://blog.ayteneve93.com/p/dev/what-is-devcontainer/images/cover.png" alt="Featured image of post DevContainer 톺아보기" /&gt;&lt;h2 id="들어가기-앞서"&gt;들어가기 앞서
+&lt;/h2&gt;&lt;p&gt;회사의 서버 인프라를 관리하는 한 사람의 엔지니어로써&lt;br&gt;
+개인적으로 &lt;strong&gt;정말 듣기 싫어하는 소리&lt;/strong&gt;가 하나 있다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img width=40% src="images/ralph wiggum.png" alt&gt;
+&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;제 컴퓨터에선 잘 돌아가던데요?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;개발자 PC에선 잘 동작하던 코드가 서버에 올리기만 하면 온갖 에러를 내면서 뻗어버리는 경우가 있는데, &lt;br&gt;
+이는 근본적으로 저마다 서로 다른 개발 및 테스트 환경을 구축해 두었기 때문에 생기는 문제이다.&lt;/p&gt;
+&lt;p&gt;예를들어:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;운영체제&lt;/li&gt;
+&lt;li&gt;개발도구(IDE 등)&lt;/li&gt;
+&lt;li&gt;환경 설정 &lt;sub&gt;(dev/prod/test/stage)&lt;/sub&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;등등&amp;hellip;&lt;/p&gt;
+&lt;p&gt;더 볼 것도 없이 애초에 작업은 &lt;code&gt;Windows&lt;/code&gt;나 &lt;code&gt;Mac&lt;/code&gt;에서 하면서 그걸 실행하는 서버가 &lt;code&gt;Linux&lt;/code&gt;이니 &lt;strong&gt;문제가 안 생길래야 안 생길 수가 없다.&lt;/strong&gt;&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/ritual-in-server-room.png" alt&gt;
+&lt;em&gt;오죽하면 서버실에서 제단 쌓고 기도까지 올릴 지경이다&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;다행히 &lt;strong&gt;Docker&lt;/strong&gt;와 &lt;strong&gt;Container&lt;/strong&gt;를 도입한 이래로는 이러한 일의 발생 빈도가 확연히 줄어들었다.&lt;br&gt;
+환경변수 설정을 잘못 잡아놨다거나, 이미지를 빌드할 때 CPU Architecture&lt;sub&gt;(ARM/AMD)&lt;/sub&gt;를 고려하지 않았다 수준의 특이 케이스를 제외하면 말이다.&lt;/p&gt;
+&lt;p&gt;작업한 소스코드를 &lt;strong&gt;테스트 할 때&lt;/strong&gt;, 빌드한 소스가 &lt;strong&gt;서버에서 실행 될 때&lt;/strong&gt; 모두 Container 위에서 동작하는 것이므로 일관성이 보장된다. 👍&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="문제의-시작"&gt;문제의 시작
+&lt;/h2&gt;&lt;h3 id="개발환경-구축의-어려움"&gt;개발환경 구축의 어려움
+&lt;/h3&gt;&lt;blockquote&gt;
+&lt;p&gt;그런데 정작 개발환경 그 자체는 어떠한가?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;개발자의 로컬 PC에서 이미지를 빌드하고 컨테이너로 실행시켜 테스트 해보는 건 어렵지 않다.&lt;br&gt;
+하지만 여전히 개발자의 작업 환경은 &lt;code&gt;Windows&lt;/code&gt; 혹은 &lt;code&gt;Mac&lt;/code&gt;이라는 OS에 종속되어 있다.&lt;br&gt;
+이러한 OS에 Native하게 환경을 구축하는 것은 여전히 매우 번거로운 일이다.&lt;/p&gt;
+&lt;p&gt;Windows에 &lt;code&gt;Java Spring Boot&lt;/code&gt; + &lt;code&gt;Oracle DB&lt;/code&gt;를 쓰는 웹 애플리케이션 개발환경을 구축한다고 생각해보자.&lt;/p&gt;
+&lt;p&gt;우선 Java부터 설치해야 한다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Oracle에 접속해 원하는 버전의 JDK를 다운&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;1에서 다운받은 파일을 실행시켜 설치 진행&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;JDK의 설치 경로를 확인, 가령 &lt;code&gt;C:\Program Files\Java\jdk-x.y.z&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Windows 환경 변수에 &lt;code&gt;JAVA_HOME&lt;/code&gt; 시스템 변수를 생성하고 3의 경로를 입력&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;시스템 변수 &lt;code&gt;Path&lt;/code&gt;에 4에서 입력한 환경변수를 추가, 가령 &lt;code&gt;%JAVA_HOME%\bin&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;이 정도는 별 거 아니라고 생각할 수도 있다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;같은 스택의 새 프로젝트를 맡게 되었다.&lt;br&gt;
+근데 사용하는 &lt;strong&gt;Java 버전이 달라졌다&lt;/strong&gt;고 한다.&lt;br&gt;
+어떻게 하지?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;새로운 JDK를 설치해야할까? 아니면 &lt;code&gt;IntelliJ IDEA&lt;/code&gt;같은 IDE로 넘어가야 하나?&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;연결하는 &lt;strong&gt;데이터베이스 버전도 바뀐다면?&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;code&gt;Oracle DB 19C&lt;/code&gt;를 사용해서 프로젝트를 진행했었는데,&lt;br&gt;
+새 프로젝트에선 &lt;code&gt;Oracle DB 21C&lt;/code&gt;를 사용한다고 한다.&lt;/p&gt;
+&lt;p&gt;로컬 PC에 그럼 DB를 2개 설치해야 하는 걸까? 기존 DB를 지워야 하나?&lt;br&gt;
+아니면 아예 DB 서버에 &lt;code&gt;개발용&lt;/code&gt; Schema를 따로 만들어야 하나?&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;다 떠나서 아예 컴퓨터를 새로 사거나 포맷이라도 하면&amp;hellip;?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/Kim-Jong-un.gif" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&amp;hellip;이건 정말 상상하기도 싫다.&lt;br&gt;
+그나마 고유의 환경 구축 절차를 별도로 문서화 해두지 않았다면 감히 엄두도 못 낼 일이다.&lt;/p&gt;
+&lt;p&gt;여태 언급된 것들은 결코 허황되거나 과장된 예시가 아니다.&lt;br&gt;
+&lt;sub&gt;(왜냐하면 내가 지금 다니고 있는 회사가 처음에 딱 저런 상황이었으니까&amp;hellip;)&lt;/sub&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Java Spring Boot&lt;/code&gt;에 &lt;code&gt;Oracle DB&lt;/code&gt;&lt;br&gt;
+이는 대한민국에서 한 때 &lt;sub&gt;(어쩌면 지금도)&lt;/sub&gt; 가장 보편적으로 쓰이던 애플리케이션 스택이다.&lt;br&gt;
+이렇게 단순한 예시에서도 문제점이 훤히 보이는데, 실제 개발 환경은 저것보다 훨씬 더 복잡하고 다양한 의존성을 요구하기 마련이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="devcontainer-기본설정"&gt;DevContainer 기본설정
+&lt;/h2&gt;&lt;p&gt;&lt;a class="link" href="https://github.com/features/codespaces?locale=ko-KR" target="_blank" rel="noopener"
+&gt;&lt;strong&gt;Codespaces&lt;/strong&gt;&lt;/a&gt;, &lt;a class="link" href="https://gitpod.io/" target="_blank" rel="noopener"
+&gt;&lt;strong&gt;Gitpod&lt;/strong&gt;&lt;/a&gt;, &lt;a class="link" href="https://devpod.sh/" target="_blank" rel="noopener"
+&gt;&lt;strong&gt;DevPod&lt;/strong&gt;&lt;/a&gt;등 여러가지 방법론이 제시되어 왔으나,&lt;br&gt;
+대개 별도 플랫폼에 종속된 서비스의 형태(SaaS)로 제공되거나 &lt;sub&gt;(당연히 무료는 아니다)&lt;/sub&gt;&lt;br&gt;
+자체 호스팅을 하더라고 &lt;strong&gt;Kubernetes 클러스터가 전제 조건&lt;/strong&gt;인 경우도 있다.&lt;/p&gt;
+&lt;p&gt;처음부터 이렇게 밑밥을 깔아버리면 도전하고자 하는 마음이 꺾일 지도 모른다.&lt;br&gt;
+고로 이번 포스트에선 개발자에게 가장 익숙하고 직관적인 방식으로 접근하고자 한다.&lt;/p&gt;
+&lt;p&gt;우선 앞서 기술한 문제의 요지를 정리하면 다음과 같다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;개발환경의 일관성 보장 &lt;strong&gt;X&lt;/strong&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;각 프로젝트별로 격리된 환경 보장 &lt;strong&gt;X&lt;/strong&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;인간의 실수가 발생할 여지가 많은 복잡한 구성 절차&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;그런데 이거&amp;hellip; 어디서 많이 봐왔던 이슈 아닌가?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;그렇다, 우리가 Docker를 사용하는 이유와 일맥상통한다.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;테스트 환경&lt;/code&gt;과 &lt;code&gt;운영 환경&lt;/code&gt;을 Container로 일관화 시켰듯,&lt;br&gt;
+&lt;code&gt;개발환경&lt;/code&gt;도 Container화 해보도록 하자.&lt;/p&gt;
+&lt;p&gt;이번에 알아볼 주제는 &lt;code&gt;DevContainer&lt;/code&gt;이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="devcontainer란-무엇인가"&gt;DevContainer란 무엇인가?
+&lt;/h3&gt;&lt;p align='left'&gt;
+&lt;img src="images/i-will-explain.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;a class="link" href="https://containers.dev/" target="_blank" rel="noopener"
+&gt;DevContainer (Development Container)&lt;/a&gt;는 Microsoft에서 만든 오픈소스 프로젝트로,&lt;br&gt;
+&lt;code&gt;vsCode&lt;/code&gt; 혹은 &lt;code&gt;Cursor&lt;/code&gt;와 같은 vsCode의 파생 IDE 에서 사용할 수 있는 개발 전용 라이브러리이다.&lt;br&gt;
+개발에 필요한 &lt;code&gt;모든 도구&lt;/code&gt;, &lt;code&gt;모든 설정&lt;/code&gt;을 Container로 패키징하여 사용할 수 있게 해준다.&lt;/p&gt;
+&lt;p&gt;주요 특징은 다음과 같다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;일관성&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;사용자가 PC를 포맷을 하든, 새로운 PC를 구매하든 관계없다.&lt;br&gt;
+심지어 어떤 OS를 사용해도 항상 동일한 환경을 보장한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;재현성&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;환경 구축 자체를 Docker를 사용해서 하므로,&lt;br&gt;
+복잡한 과정 없이 단 한 번의 클릭으로 모든 개발환경이 완벽하게 세팅된다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;격리성&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;프로젝트별로 &lt;strong&gt;고유한&lt;/strong&gt; 개발 환경을 구축할 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;br&gt;
+&lt;h3 id="사전준비"&gt;사전준비
+&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Docker&lt;/strong&gt; 실행환경&lt;/p&gt;
+&lt;p&gt;당연한 얘기지만 Docker에 접근 할 수 있어야 한다.&lt;/p&gt;
+&lt;p&gt;Windows 사용자라면 &lt;code&gt;WSL&lt;/code&gt;과 &lt;code&gt;Docker Desktop&lt;/code&gt;이 필요하고&lt;br&gt;
+Mac 사용자라면 &lt;code&gt;Docker Desktop&lt;/code&gt;을 설치하도록 하자.&lt;/p&gt;
+&lt;p&gt;만일 &lt;code&gt;별도의 Linux 개발서버&lt;/code&gt;를 사용한다면 해당 서버에 &lt;code&gt;Docker&lt;/code&gt;와 &lt;code&gt;Docker Compose&lt;/code&gt;를 설치하고 &lt;code&gt;SSH&lt;/code&gt;로 접속 가능하도록 설정해주자.&lt;/p&gt;
+&lt;p&gt;이 내용을 다 적었다간 지나치게 장황해지므로 추후 별도로 포스트 하도록 하겠다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a class="link" href="https://code.visualstudio.com/" target="_blank" rel="noopener"
+&gt;&lt;strong&gt;vsCode&lt;/strong&gt;&lt;/a&gt; 혹은 &lt;a class="link" href="https://cursor.com/agents" target="_blank" rel="noopener"
+&gt;&lt;strong&gt;Cursor&lt;/strong&gt;&lt;/a&gt; 설치&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;IDE에 &lt;strong&gt;Extension&lt;/strong&gt; 설치&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;vsCode&lt;/code&gt; 사용자라면 &lt;a class="link" href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack" target="_blank" rel="noopener"
+&gt;Remote Development&lt;/a&gt;으로 한 번에 필요한 모든 Extension을 설치할 수 있다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;Cursor&lt;/code&gt; 사용자라면&lt;/p&gt;
+&lt;p&gt;우선 &lt;code&gt;Dev Container&lt;/code&gt; Extension이 필요하다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/cursor-extension-devContainers.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;추가로 &lt;code&gt;WSL&lt;/code&gt;을 사용하는 경우는 &lt;code&gt;WSL&lt;/code&gt; Extension을&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/cursor-extension-wsl.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;SSH&lt;/code&gt;로 원격 개발 서버를 통해서 사용한다면 &lt;code&gt;Remote - SSH&lt;/code&gt; Extension을 설치해야 한다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/cursor-extension-remote-ssh.png" alt&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;h3 id="설정-파일-준비"&gt;설정 파일 준비
+&lt;/h3&gt;&lt;h4 id="devcontainer-디렉토리"&gt;DevContainer 디렉토리
+&lt;/h4&gt;&lt;p&gt;DevContainer 설정 파일들을 저장하기 위해 프로젝트 루트에 &lt;code&gt;.devcontainer&lt;/code&gt;라는 디렉토리를 만들어주자.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img width=30% src="images/settings/base-directory.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;devcontainer 구성을 위한 모든 파일은 전부 이 디렉토리 안에 저장된다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h4 id="devcontainerjson"&gt;&lt;code&gt;devcontainer.json&lt;/code&gt;
+&lt;/h4&gt;&lt;p&gt;DevContainer 빌드의 시작점이 되는 파일이다.&lt;br&gt;
+이 파일의 전체적인 Spec이 궁금하다면 &lt;a class="link" href="https://containers.dev/implementors/json_reference/" target="_blank" rel="noopener"
+&gt;다음의 링크&lt;/a&gt;에서 확인 해보자.&lt;/p&gt;
+&lt;p&gt;사용할 수 있는 옵션이 굉장히 많은데,&lt;br&gt;
+우선은 최대한 간단하게 예시와 같이 작성해주자.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// .devcontainer/devcontainer.json
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// General
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker Desktop을 쓴다면 UI에 다음의 속성이 표시된다.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;My First DevContainer&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Container 내부에서 사용할 사용자명
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// 특별한 이유가 없다면 그냥 `vscode`로 두자
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;remoteUser&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;vscode&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker Compose
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker Image로 설정하는 방식도 있는데
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// 멀티 컨테이너로의 확장성을 고려하면 docker compose를 사용하는 걸 추천한다.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// 대상 Docker Compose 파일
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;dockerComposeFile&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;docker-compose.dev.yml&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// compose 파일에서 DevContainer로 동작시킬 service의 이름이다
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;service&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;workspace&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// devcontainer로 동작시킬 대상 service에서 프로젝트가 위치할 경로이다.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;workspaceFolder&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/home/vscode/workspace/my-project-name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;br&gt;
+&lt;h4 id="docker-composedevyml"&gt;&lt;code&gt;docker-compose.dev.yml&lt;/code&gt;
+&lt;/h4&gt;&lt;p&gt;위에서 지정한 &lt;code&gt;dockerComposeFile&lt;/code&gt;이다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-yml" data-lang="yml"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;# .devcontainer/docker-compose.dev.yml&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;services&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# `devcontainer.json`에서 service를 &amp;#34;workspace&amp;#34;라고 &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# 지정했으므로 여기에도 같은 이름을 적어야한다.&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;workspace&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;container_name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;my-devcontainer-workspace&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# Base on Ubuntu Noble&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;image&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;mcr.microsoft.com/devcontainers/base:dev-noble&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;command&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;sleep infinity&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;volumes&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# Workspace Cache&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# `devcontainer.json`의 `workspaceFolder`와 동일한 값이어야 한다.&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;..:/home/vscode/workspace/my-project-name:cached&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;여기까지 진행했다면 기본적인 준비는 끝이 났다. 🎉&lt;br&gt;
+&lt;code&gt;F1&lt;/code&gt; 키를 누르고 &lt;code&gt;Dev Containers: Rebuild Container&lt;/code&gt;를 실행하자.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/settings/first-build.gif" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;간단히 컨테이너가 빌드 / 실행되고 내부로 IDE가 진입하는 모습이다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/that-easy.png" alt&gt;
+&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;자 이제 하나씩 &lt;strong&gt;심화 과정&lt;/strong&gt;으로 들어가보자.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;br&gt;
+&lt;h2 id="심화-과정"&gt;심화 과정
+&lt;/h2&gt;&lt;h3 id="image는-뭘-고르지"&gt;Image는 뭘 고르지?
+&lt;/h3&gt;&lt;p&gt;예시에서 사용한 Docker Image는 &lt;code&gt;mcr.microsoft.com/devcontainers/base:dev-noble&lt;/code&gt;이다.&lt;/p&gt;
+&lt;p&gt;이 이미지에 대해 간단히 설명하면 다음과 같다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;mcr&lt;/strong&gt; &lt;sub&gt;(Microsoft Artifact Registry 혹은 Microsoft Container Registry)&lt;/sub&gt;에 배포된&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Microsoft&lt;/strong&gt;가 만든&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;DevContainer&lt;/strong&gt;용&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;base&lt;/strong&gt;(기반) 이미지의&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;dev-noble&lt;/strong&gt; 태그 (Ubuntu Noble 버전)&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;당연히 &lt;a class="link" href="https://mcr.microsoft.com/en-us/catalog?search=devcontainer&amp;amp;type=partial" target="_blank" rel="noopener"
+&gt;다른 이미지&lt;/a&gt;도 엄청나게 많다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/settings/mcr-devcon-images.png" alt&gt;
+&lt;em&gt;내가 고른 건 여기서 가장 오른쪽 아래 이미지이다&lt;/em&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;base image&lt;/code&gt;는 말 그대로 기반이 되는 이미지로, 안에는 &lt;code&gt;Git&lt;/code&gt;이나 &lt;code&gt;Bash&lt;/code&gt; 같은 걸 제외하고는 &lt;em&gt;아무것도 설치되어 있지 않다.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;원하는 개발 환경에 맞춰 이미지를 고르면 된다.&lt;/p&gt;
+&lt;p&gt;예를들어:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://mcr.microsoft.com/en-us/artifact/mar/devcontainers/typescript-node/tags" target="_blank" rel="noopener"
+&gt;&lt;strong&gt;Typescript&lt;/strong&gt;를 써서 &lt;strong&gt;Node.Js&lt;/strong&gt; 앱 만들어야지&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://mcr.microsoft.com/en-us/artifact/mar/devcontainers/dotnet/tags" target="_blank" rel="noopener"
+&gt;&lt;strong&gt;.NET 프레임워크&lt;/strong&gt; 기반으로 앱 만들고싶어&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://mcr.microsoft.com/en-us/artifact/mar/devcontainers/universal/tags" target="_blank" rel="noopener"
+&gt;모르겠고, 그냥 &lt;strong&gt;모든 언어&lt;/strong&gt;가 다 설치되어 있으면 좋겠어&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;하지만 나는 개인적으로는 &lt;code&gt;base&lt;/code&gt; 이미지를 고수하는 걸 추천한다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;어? 그럼 개발도구 설치는 어떻게 하지?&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Dockerfile&lt;/code&gt;을 커스텀 해서 써야하나?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;지극히 당연한 추론이다.&lt;br&gt;
+하지만 &lt;strong&gt;그보다 더 좋은 방법&lt;/strong&gt;이 있다.&lt;br&gt;
+다음 섹션을 참고하자.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="features로-개발도구-설치하기"&gt;Features로 개발도구 설치하기
+&lt;/h3&gt;&lt;p&gt;DevContainer에는 &lt;code&gt;Features&lt;/code&gt;라는 항목이 있다.&lt;br&gt;
+&lt;code&gt;devcontainer.json&lt;/code&gt;파일에 원하는 Feature(기능)를 선언하면,&lt;br&gt;
+해당하는 기능들이 DevContainer에 설치된다.&lt;/p&gt;
+&lt;p&gt;사용 가능한 기능들은 &lt;a class="link" href="https://containers.dev/features" target="_blank" rel="noopener"
+&gt;&lt;strong&gt;DevContainer 페이지의 Available Features 탭&lt;/strong&gt;&lt;/a&gt;에서 확인 가능하다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h4 id="설치"&gt;설치
+&lt;/h4&gt;&lt;p&gt;말해 뭐 하겠는가, 직접 해보도록 하자.&lt;br&gt;
+예시로 &lt;code&gt;Java&lt;/code&gt;, &lt;code&gt;nodejs&lt;/code&gt;, &lt;code&gt;python&lt;/code&gt; 그리고 &lt;code&gt;Docker in Docker&lt;/code&gt;를 DevContainer에 설치해보겠다.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;.devcontainer/devcontainer.json&lt;/code&gt; 파일을 다음과 같이 수정하자.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// .devcontainer/devcontainer.json
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// General
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;My First DevContainer&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;remoteUser&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;vscode&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker Compose
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;dockerComposeFile&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;docker-compose.dev.yml&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;service&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;workspace&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;workspaceFolder&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/home/vscode/workspace/my-project-name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// ------ 위는 기존 설정 그대로이다 ------ //
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Features
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;features&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Java 설치
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/java
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/java:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Node.js 설치
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/node
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/node:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Python 설치
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/python
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/python:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker in Docker 설치
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/docker-in-docker
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/docker-in-docker:2&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;br&gt;
+&lt;p&gt;이후 다시 &lt;code&gt;F1&lt;/code&gt; 키를 누르고 &lt;code&gt;Dev Containers: Rebuild Container&lt;/code&gt;를 실행하자.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;저것들 다 설치하려면 제법 시간이 걸린다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;커피 한 잔 끓여 오도록 하자.&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;br&gt;
+&lt;h4 id="설치-확인"&gt;설치 확인
+&lt;/h4&gt;&lt;p&gt;DevContainer가 Rebuild 되었다면 터미널을 열고 제대로 설치가 되었는지 확인해보자.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Java&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vscode ➜ ~/workspace/my-project-name $ java --version
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;openjdk &lt;span class="m"&gt;25&lt;/span&gt; 2025-09-16 LTS
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;OpenJDK Runtime Environment Microsoft-12398176 &lt;span class="o"&gt;(&lt;/span&gt;build 25+36-LTS&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;OpenJDK 64-Bit Server VM Microsoft-12398176 &lt;span class="o"&gt;(&lt;/span&gt;build 25+36-LTS, mixed mode, sharing&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;nodejs&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vscode ➜ ~/workspace/my-project-name $ node --version
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;v22.20.0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;python&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vscode ➜ ~/workspace/my-project-name $ python --version
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Python 3.12.3
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Docker in Docker&lt;/strong&gt; &lt;sub&gt;(Host와 격리된 Docker 환경)&lt;/sub&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vscode ➜ ~/workspace/my-project-name $ docker --version
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Docker version 28.5.1-1, build e180ab8ab82d22b7895a3e6e110cf6dd5c45f1d7
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;모든 개발 도구들이 성공적으로 잘 설치되었다.&lt;br&gt;
+주석을 제외하면 추가한 내용은 &lt;strong&gt;고작 4줄&lt;/strong&gt;밖에 되지 않는다.&lt;/p&gt;
+&lt;p align='left'&gt;
+&lt;img src="images/amazing.gif" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;어디서 뭘 받고, 하나 하나 다음(Next) 눌러주면서 설치 해주고, 환경변수 설정하고&amp;hellip;&lt;/em&gt;&lt;br&gt;
+이런 고생은 이제 안녕이다.&lt;br&gt;
+&lt;sub&gt;(덕분에 온보딩 기간에 신입 직원이 개발환경 구성한답시고 일주일 날로 먹는 혜택은 누리기 힘들어지겠지만)&lt;/sub&gt;&lt;/p&gt;
+&lt;p&gt;DevContainer를 쓰면 &lt;code&gt;Features&lt;/code&gt;를 통해 원하는 환경을 입맛에 맞춰 아주 간편하게 구성할 수 있다.&lt;/p&gt;
+&lt;p&gt;당연히 이는 모두 &lt;code&gt;Container&lt;/code&gt; 안에 설치되는 것이므로, Host PC 환경에 영향을 줄 일도, 다른 container에 영향을 줄 일도 없다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h4 id="상세-설정"&gt;상세 설정
+&lt;/h4&gt;&lt;p&gt;Feature에는 상세 옵션도 설정 가능하다.&lt;br&gt;
+마침 Java를 예시로 들었으니 내친김에 JDK 버전을 한 번 변경해보자.&lt;br&gt;
+&lt;code&gt;devcontainer.json&lt;/code&gt;의 주석에도 적어둔 &lt;a class="link" href="https://github.com/devcontainers/features/tree/main/src/java" target="_blank" rel="noopener"
+&gt;Java Feature Repository 링크&lt;/a&gt;로 들어가면 보다 상세한 설정 정보가 나온다.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Options Id&lt;/th&gt;
+&lt;th&gt;Description&lt;/th&gt;
+&lt;th&gt;Type&lt;/th&gt;
+&lt;th&gt;Default Value&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;version&lt;/td&gt;
+&lt;td&gt;Select or enter a Java version to install&lt;/td&gt;
+&lt;td&gt;string&lt;/td&gt;
+&lt;td&gt;latest&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;additionalVersions&lt;/td&gt;
+&lt;td&gt;Enter additional Java versions, separated by commas.&lt;/td&gt;
+&lt;td&gt;string&lt;/td&gt;
+&lt;td&gt;-&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;jdkDistro&lt;/td&gt;
+&lt;td&gt;Select or enter a JDK distribution&lt;/td&gt;
+&lt;td&gt;string&lt;/td&gt;
+&lt;td&gt;ms&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;installGradle&lt;/td&gt;
+&lt;td&gt;Install Gradle, a build automation tool for multi-language software development&lt;/td&gt;
+&lt;td&gt;boolean&lt;/td&gt;
+&lt;td&gt;false&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;gradleVersion&lt;/td&gt;
+&lt;td&gt;Select or enter a Gradle version&lt;/td&gt;
+&lt;td&gt;string&lt;/td&gt;
+&lt;td&gt;latest&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;installMaven&lt;/td&gt;
+&lt;td&gt;Install Maven, a management tool for Java&lt;/td&gt;
+&lt;td&gt;boolean&lt;/td&gt;
+&lt;td&gt;false&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;mavenVersion&lt;/td&gt;
+&lt;td&gt;Select or enter a Maven version&lt;/td&gt;
+&lt;td&gt;string&lt;/td&gt;
+&lt;td&gt;latest&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;installAnt&lt;/td&gt;
+&lt;td&gt;Install Ant, a software tool for automating software build processes&lt;/td&gt;
+&lt;td&gt;boolean&lt;/td&gt;
+&lt;td&gt;false&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;antVersion&lt;/td&gt;
+&lt;td&gt;Select or enter an Ant version&lt;/td&gt;
+&lt;td&gt;string&lt;/td&gt;
+&lt;td&gt;latest&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;installGroovy&lt;/td&gt;
+&lt;td&gt;Install Groovy, powerful, optionally typed and dynamic language with static-typing and static compilation capabilities&lt;/td&gt;
+&lt;td&gt;boolean&lt;/td&gt;
+&lt;td&gt;false&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;groovyVersion&lt;/td&gt;
+&lt;td&gt;Select or enter a Groovy version&lt;/td&gt;
+&lt;td&gt;string&lt;/td&gt;
+&lt;td&gt;latest&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;이 표는 DevContainer Java Feature에서 사용 가능한 옵션들이다.&lt;br&gt;
+특별히 명시를 안 해주면 &lt;code&gt;기본값(Default Value)&lt;/code&gt;이 적용된다.&lt;br&gt;
+Java 버전을 정하는 &lt;code&gt;version&lt;/code&gt; 옵션의 기본값은 &lt;code&gt;latest&lt;/code&gt;다.&lt;br&gt;
+실제로 확인해보면 작성일 기준, &lt;code&gt;JDK 25&lt;/code&gt;가 설치되어 있다.&lt;br&gt;
+이를 &lt;code&gt;21&lt;/code&gt;로 변경해보자.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// .devcontainer/devcontainer.json
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// ------ 기존 설정 ------ //
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;features&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Java Feature
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/java
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/java:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;version&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;21&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;// Java 21 버전으로 변경
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;다시 &lt;code&gt;F1&lt;/code&gt; 키를 누르고 &lt;code&gt;Dev Containers: Rebuild Container&lt;/code&gt;를 실행하자.&lt;/p&gt;
+&lt;p&gt;Docker가 작업을 마치고 나면 터미널을 열고 Java 버전을 확인해보자.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vscode ➜ ~/workspace/my-project-name $ java --version
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;openjdk 21.0.8 2025-07-15 LTS
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;OpenJDK Runtime Environment Microsoft-11933203 &lt;span class="o"&gt;(&lt;/span&gt;build 21.0.8+9-LTS&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;OpenJDK 64-Bit Server VM Microsoft-11933203 &lt;span class="o"&gt;(&lt;/span&gt;build 21.0.8+9-LTS, mixed mode, sharing&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;openjdk 21.0.8&lt;/code&gt;이 출력되었다. 잘 적용된 모습이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="customizations-설정"&gt;Customizations 설정
+&lt;/h3&gt;&lt;p&gt;DevContainer에는 &lt;code&gt;Customizations&lt;/code&gt;라는 항목도 있다.&lt;/p&gt;
+&lt;p&gt;이는 해당 DevContainer만을 위한 IDE(vsCode) 커스텀 설정을 구성한다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;settings&lt;/strong&gt;&lt;br&gt;
+vsCode의 &lt;code&gt;settings.json&lt;/code&gt;의 기본값을 설정해준다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;extensions&lt;/strong&gt;&lt;br&gt;
+지정한 &lt;code&gt;Extension&lt;/code&gt;을 container에 설치한다.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;br&gt;
+&lt;h4 id="settings"&gt;Settings
+&lt;/h4&gt;&lt;p&gt;vsCode 설정을 프로젝트별로 다르게 하고 싶을 때는 보통&lt;br&gt;
+루트 경로의 &lt;code&gt;.vscode/settings.json&lt;/code&gt; 파일을 만들어 사용하는 것이 일반적이다. &lt;sub&gt;(개인적으로 이 방식을 추천한다)&lt;/sub&gt;&lt;br&gt;
+&lt;code&gt;devcontainer.json&lt;/code&gt;에 지정하는 &lt;code&gt;custom settings&lt;/code&gt;는 이와 유사하게 동작한다.&lt;/p&gt;
+&lt;p&gt;IDE 화면이 맨날 새까만 화면이라 지루하지 않았는가?&lt;br&gt;
+간단한 예시로 IDE의 테마를 한 번 변경해보자.&lt;/p&gt;
+&lt;p&gt;가장 하단의 &lt;code&gt;customizations&lt;/code&gt;을 보면 된다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;span class="lnt"&gt;37
+&lt;/span&gt;&lt;span class="lnt"&gt;38
+&lt;/span&gt;&lt;span class="lnt"&gt;39
+&lt;/span&gt;&lt;span class="lnt"&gt;40
+&lt;/span&gt;&lt;span class="lnt"&gt;41
+&lt;/span&gt;&lt;span class="lnt"&gt;42
+&lt;/span&gt;&lt;span class="lnt"&gt;43
+&lt;/span&gt;&lt;span class="lnt"&gt;44
+&lt;/span&gt;&lt;span class="lnt"&gt;45
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// .devcontainer/devcontainer.json
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// General
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;My First DevContainer&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;remoteUser&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;vscode&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker Compose
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;dockerComposeFile&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;docker-compose.dev.yml&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;service&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;workspace&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;workspaceFolder&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/home/vscode/workspace/my-project-name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Features
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;features&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Java Feature
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/java
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/java:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;version&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;21&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;// Java 21 버전으로 변경
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Node.js Feature
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/node
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/node:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Python Feature
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/python
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/python:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker in Docker Feature
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/docker-in-docker
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/docker-in-docker:2&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Custom
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;customizations&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;vscode&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// ------ 위는 기존 설정 그대로이다 ------ //
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Settings
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;settings&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;workbench.colorTheme&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;Red&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;F1&lt;/code&gt; 키를 누르고 &lt;code&gt;Dev Containers: Rebuild Container&lt;/code&gt;를 실행한다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/settings/blood-red-cursor-ide.png" alt&gt;
+&lt;em&gt;당신의 눈 건강을 위해 준비한 &lt;span style="color:red"&gt;붉은색&lt;/span&gt; 테마이다&lt;/em&gt;
+&lt;br&gt;
+&lt;sub&gt;&lt;i&gt;내 눈은 아직 건강하므로 바로 원상복귀 해주었다.&lt;/i&gt;&lt;/sub&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;h4 id="extensions"&gt;Extensions
+&lt;/h4&gt;&lt;p&gt;아무런 HTML 파일이나 하나 만들어보자.&lt;br&gt;
+내 경우 Cursor에게 자기 자신에 대해 소개하는 HTML을 생성하라고 해보았다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/settings/test-html.png" alt&gt;
+&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;갑자기 이게 무슨 뚱딴지같은 소린가 싶겠지만 일단 계속 들어보길 바란다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;DevContainer에서 html 파일을 열어보면 다음과 같이 나올 것이다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/settings/open-html-without-extension.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;평범한 Editor 화면이 나온다.&lt;br&gt;
+&lt;code&gt;html 미리보기&lt;/code&gt;가 가능하다면 좋겠는데 어떻게 할까?&lt;br&gt;
+&lt;code&gt;Extension Marketplace&lt;/code&gt;에서 &lt;code&gt;List Preview&lt;/code&gt;라고 검색해서 Extension을 설치해주면 된다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/settings/list-preview-extension.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;위 이미지 우측 하단에 있는 &lt;code&gt;마켓플레이스&lt;/code&gt; 블록의 &lt;code&gt;식별자&lt;/code&gt;를 살펴보자.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ms-vscode.live-server&lt;/code&gt;라고 적혀있는 걸 볼 수 있다.&lt;/p&gt;
+&lt;p&gt;이는 이 Extension의 고유 ID이다. 이제 이 값을 &lt;code&gt;devcontainer.json&lt;/code&gt;에 기입해 자동으로 설치되게 해보자.&lt;br&gt;
+가장 하단에 있는 &lt;code&gt;customizations&lt;/code&gt; 블록을 보면 된다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// .devcontainer/devcontainer.json
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// General
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;My First DevContainer&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;remoteUser&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;vscode&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker Compose
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;dockerComposeFile&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;docker-compose.dev.yml&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;service&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;workspace&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;workspaceFolder&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/home/vscode/workspace/my-project-name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Features
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;features&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/java:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;version&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;21&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/node:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/python:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/docker-in-docker:2&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// ------ 위는 기존 설정 그대로이다 ------ //
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Customizations
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;customizations&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;vscode&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Extensions
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;extensions&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// HTML Viewer Extension
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;ms-vscode.live-server&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;한 번 더 &lt;code&gt;F1&lt;/code&gt; 키를 누르고 &lt;code&gt;Dev Containers: Rebuild Container&lt;/code&gt;를 실행한다.&lt;/p&gt;
+&lt;p&gt;이후 HTML 파일을 다시 열어보면 오른쪽 상단에 미리보기 버튼이 활성화된 것을 볼 수 있다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/settings/open-html-with-extension-1.png" alt&gt;
+&lt;/p&gt;
+&lt;p&gt;이 버튼을 누르면 HTML 미리보기가 가능하다.&lt;/p&gt;
+&lt;p align='center'&gt;
+&lt;img src="images/settings/open-html-with-extension-2.png" alt&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="lifecycle-scripts"&gt;Lifecycle Scripts
+&lt;/h3&gt;&lt;p&gt;DevContainer는 일정한 &lt;a class="link" href="https://containers.dev/implementors/json_reference/#lifecycle-scripts" target="_blank" rel="noopener"
+&gt;생명주기(lifecycle)&lt;/a&gt;를 가지고 있다.&lt;br&gt;
+그리고 각 생명주기에서 실행될 별도의 Script를 지정해줄 수 있는데 이를 &lt;code&gt;Lifecycle Scripts&lt;/code&gt;라고 한다.&lt;/p&gt;
+&lt;p&gt;순서는 다음과 같다.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;initializeCommand&lt;/strong&gt;&lt;br&gt;
+DevContainer가 &lt;code&gt;생성되기 전&lt;/code&gt;에&lt;br&gt;
+&lt;code&gt;호스트&lt;/code&gt;에서 실행 &lt;em&gt;(이 이후 커맨드는 전부 Container 내부에서 실행된다.)&lt;/em&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;onCreateCommand&lt;/strong&gt;&lt;br&gt;
+DevContainer가 &lt;code&gt;생성된 직후&lt;/code&gt; 실행&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;updateContentCommand&lt;/strong&gt;&lt;br&gt;
+DevContainer의 &lt;code&gt;내용이 업데이트될 때&lt;/code&gt; 실행&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;postCreateCommand&lt;/strong&gt;&lt;br&gt;
+DevContainer &lt;code&gt;생성 완료 후&lt;/code&gt; 실행&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;postStartCommand&lt;/strong&gt;&lt;br&gt;
+DevContainer가 &lt;code&gt;시작(start)될 때마다&lt;/code&gt; 실행&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;postAttachCommand&lt;/strong&gt;&lt;br&gt;
+VS Code나 Cursor등 &lt;code&gt;IDE가 DevContainer에 연결될 때&lt;/code&gt; 실행&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;waitFor&lt;/strong&gt;&lt;br&gt;
+특정 조건이 만족될 때까지 대기&lt;br&gt;
+예: 데이터베이스가 준비될 때까지, 특정 포트가 열릴 때까지 대기&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;대부분의 도구&lt;/strong&gt;는 &lt;code&gt;Features&lt;/code&gt;로 설치가 가능하지만,&lt;br&gt;
+&lt;em&gt;마이너한&lt;/em&gt; 혹은 &lt;em&gt;회사에서만 사용하는&lt;/em&gt; &lt;strong&gt;독특한 프로그램&lt;/strong&gt;이 있다면, Lifecycle Scripts를 사용해 구현이 가능하다.&lt;/p&gt;
+&lt;p&gt;이번엔 Lifecycle Scripts 중 하나인 &lt;code&gt;updateContentCommand&lt;/code&gt;를 이용해서 DevContainer에 &lt;code&gt;redis-cli&lt;/code&gt;라는 프로그램을 설치해보자.&lt;/p&gt;
+&lt;p&gt;우선 &lt;code&gt;.devcontainer&lt;/code&gt; 밑에 &lt;code&gt;lifecycle&lt;/code&gt;이라는 디렉토리를 만들어주자.&lt;br&gt;
+이후 &lt;code&gt;updateContentCommand.sh&lt;/code&gt; 파일을 다음과 같이 작성해준다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-sh" data-lang="sh"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#!/usr/bin/env bash
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# .devcontainer/lifecycle/updateContentCommand.sh&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;🔄 Updating apt package manager&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo apt update -y
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo apt upgrade -y
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;🔄 Installing apt packages&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo apt install -y &lt;span class="se"&gt;\
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; redis-tools
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;devcontainer.json&lt;/code&gt; 파일에 LifeCycle Scripts를 추가한다.&lt;br&gt;
+가장 하단을 보면 된다.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;span class="lnt"&gt;37
+&lt;/span&gt;&lt;span class="lnt"&gt;38
+&lt;/span&gt;&lt;span class="lnt"&gt;39
+&lt;/span&gt;&lt;span class="lnt"&gt;40
+&lt;/span&gt;&lt;span class="lnt"&gt;41
+&lt;/span&gt;&lt;span class="lnt"&gt;42
+&lt;/span&gt;&lt;span class="lnt"&gt;43
+&lt;/span&gt;&lt;span class="lnt"&gt;44
+&lt;/span&gt;&lt;span class="lnt"&gt;45
+&lt;/span&gt;&lt;span class="lnt"&gt;46
+&lt;/span&gt;&lt;span class="lnt"&gt;47
+&lt;/span&gt;&lt;span class="lnt"&gt;48
+&lt;/span&gt;&lt;span class="lnt"&gt;49
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// .devcontainer/devcontainer.json
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// General
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;My First DevContainer&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;remoteUser&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;vscode&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker Compose
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;dockerComposeFile&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;docker-compose.dev.yml&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;service&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;workspace&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;workspaceFolder&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/home/vscode/workspace/my-project-name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Features
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;features&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Java Feature
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/java
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/java:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;version&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;21&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;// Java 21 버전으로 변경
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Node.js Feature
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/node
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/node:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Python Feature
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/python
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/python:1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Docker in Docker Feature
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// https://github.com/devcontainers/features/tree/main/src/docker-in-docker
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;ghcr.io/devcontainers/features/docker-in-docker:2&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Custom
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;customizations&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;vscode&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Extensions
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;extensions&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// HTML Viewer Extension
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;ms-vscode.live-server&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// ------ 위는 기존 설정 그대로이다 ------ //
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// LifeCycle Scripts
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;updateContentCommand&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;bash ./.devcontainer/lifecycle/updateContentCommand.sh&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;F1&lt;/code&gt; 키를 누르고 &lt;code&gt;Dev Containers: Rebuild Container&lt;/code&gt;를 실행한다.&lt;/p&gt;
+&lt;p&gt;컨테이너가 Rebuild 되고 나면 터미널을 열어 제대로 설치가 되어있는지 확인해보자.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vscode ➜ ~/workspace/my-project-name $ redis-cli --version
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;redis-cli 7.0.15
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;이렇게 버전이 출력되면 잘 설치 된 것이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="멀티-컨테이너-구성하기"&gt;멀티 컨테이너 구성하기
+&lt;/h3&gt;&lt;p&gt;작업하는 프로젝트에 &lt;code&gt;외부 의존성&lt;/code&gt;이 존재한다고 해보자.&lt;/p&gt;
+&lt;p&gt;예를들어:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a class="link" href="https://www.elastic.co/kr/elasticsearch" target="_blank" rel="noopener"
+&gt;ElasticSearch&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a class="link" href="https://www.postgresql.org/" target="_blank" rel="noopener"
+&gt;PostgreSQL&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a class="link" href="https://redis.io/" target="_blank" rel="noopener"
+&gt;Redis&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;등등&amp;hellip;&lt;/p&gt;
+&lt;p&gt;이것들은 단순히 &amp;ldquo;&lt;strong&gt;개발에 필요한 도구&lt;/strong&gt;&amp;ldquo;라기 보단 &amp;ldquo;&lt;strong&gt;개발 환경&lt;/strong&gt;&amp;rdquo; 내지는 &amp;ldquo;&lt;strong&gt;개발 인프라&lt;/strong&gt;&amp;ldquo;에 더 가깝다.&lt;br&gt;
+DevContainer에 직접 설치 할 수도 있지만 그다지 추천하는 방법은 아니다.&lt;/p&gt;
+&lt;p&gt;지금까지의 예시에서 사용한 DevContainer는 &lt;code&gt;docker-compose.dev.yml&lt;/code&gt; 파일을 사용하고 있다.&lt;br&gt;
+당연히 일반적인 &lt;code&gt;docker compose&lt;/code&gt;처럼 다른 &lt;code&gt;service(container)&lt;/code&gt;를 등록하는 것도 가능하다.&lt;/p&gt;
+&lt;p&gt;외부 의존성은 이 &lt;code&gt;docker compose&lt;/code&gt; 파일에 정의 해줌으로써 간편하게 설정 할 수 있다.&lt;br&gt;
+예시로 Redis Container를 &lt;code&gt;docker-compose.dev.yml&lt;/code&gt;에 추가해보자.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-yml" data-lang="yml"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;# .devcontainer/docker-compose.dev.yml&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;services&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;workspace&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;container_name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;my-devcontainer-workspace&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;image&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;mcr.microsoft.com/devcontainers/base:dev-noble&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;command&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;sleep infinity&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;volumes&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# Workspace Cache&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;..:/home/vscode/workspace/my-project-name:cached&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# ----- 위는 기존 설정 그대로이다 ----- #&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;redis&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;container_name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;my-devcontainer-redis&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;image&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;redis:alpine&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;volumes&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;my-project-name-redis:/data&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;command&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;redis-server --save 20 1 --loglevel warning --requirepass my-redis-password&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;volumes&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;my-project-name-redis&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;F1&lt;/code&gt; 키를 누르고 &lt;code&gt;Dev Containers: Rebuild Container&lt;/code&gt;를 실행한다.&lt;/p&gt;
+&lt;p&gt;Rebuild가 되면 터미널을 열고 &lt;code&gt;redis-cli&lt;/code&gt; 명령어로 새롭게 추가된 Redis 컨테이너에 접속해보자.&lt;br&gt;
+바로 위 &lt;code&gt;Lifecycle Scripts&lt;/code&gt; 섹션에 설치 방법을 적어두었다.&lt;/p&gt;
+&lt;p&gt;명령어는 다음과 같이 구성되어 있다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;redis-cli -u redis://&lt;code&gt;&amp;lt;사용자명&amp;gt;&lt;/code&gt;:&lt;code&gt;&amp;lt;비밀번호&amp;gt;&lt;/code&gt;@&lt;code&gt;&amp;lt;접속 주소&amp;gt;&lt;/code&gt;:&lt;code&gt;&amp;lt;포트&amp;gt;&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;위 &lt;code&gt;docker-compose.dev.yml&lt;/code&gt;에서는 별도 사용자명은 지정하지 않았고&lt;br&gt;
+비밀번호는 &lt;code&gt;my-redis-password&lt;/code&gt;로 해두었다.&lt;br&gt;
+포트는 기본값을 그대로 쓰므로 굳이 지정하지 않아도 된다.&lt;br&gt;
+URL은 docker compose의 service명을 그대로 쓴다.&lt;/p&gt;
+&lt;p&gt;따라서 다음과 같이 입력한다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;redis-cli -u redis://default:my-redis-password@redis&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vscode ➜ ~/workspace/my-project-name $ redis-cli -u redis://default:my-redis-password@redis
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Warning: Using a password with &lt;span class="s1"&gt;&amp;#39;-a&amp;#39;&lt;/span&gt; or &lt;span class="s1"&gt;&amp;#39;-u&amp;#39;&lt;/span&gt; option on the &lt;span class="nb"&gt;command&lt;/span&gt; line interface may not be safe.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;redis:6379&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;이와 같은 터미널 결과를 봤다면 정상적으로 연결이 된 것이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h2 id="마치며"&gt;마치며
+&lt;/h2&gt;&lt;p&gt;이번 포스트에서는 DevContainer를 통해 개발환경의 일관성과 격리성을 확보하는 방법에 대해 알아보았다.&lt;/p&gt;
+&lt;p&gt;처음에 언급했던 &amp;ldquo;제 컴퓨터에선 잘 돌아가던데요?&amp;ldquo;라는 말을 들을 일이 이제는 훨씬 줄어들 것이다.&lt;br&gt;
+DevContainer를 사용하면:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;개발환경의 일관성&lt;/strong&gt;이 보장되고&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;프로젝트별 격리된 환경&lt;/strong&gt;을 구축할 수 있으며&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;복잡한 수동 설정 과정&lt;/strong&gt;을 자동화할 수 있다&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;특히 &lt;code&gt;Features&lt;/code&gt;를 통한 개발도구 설치, &lt;code&gt;Customizations&lt;/code&gt;을 통한 IDE 설정, &lt;code&gt;Lifecycle Scripts&lt;/code&gt;를 통한 커스텀 스크립트 실행 등은 정말 강력한 기능들이다.&lt;/p&gt;
+&lt;p&gt;물론 처음 설정할 때는 조금 번거로울 수 있다.&lt;br&gt;
+하지만 한 번 구축해두면 팀원 누구나 동일한 환경에서 개발을 시작할 수 있고,&lt;br&gt;
+새로운 PC를 구매하거나 포맷을 해도 개발환경 구축에 대한 걱정은 이제 그만이다.&lt;/p&gt;
+&lt;p&gt;더 나아가 &lt;code&gt;멀티 컨테이너 구성&lt;/code&gt;을 통해 데이터베이스나 캐시 서버 같은 외부 의존성까지도 함께 관리할 수 있다는 점은 정말 매력적이다.&lt;/p&gt;
+&lt;br&gt;
+&lt;h3 id="추후-계획"&gt;추후 계획
+&lt;/h3&gt;&lt;p&gt;현재 DevContainer를 통해 로컬 개발환경의 일관성을 확보했지만, 더 나아가 &lt;strong&gt;클라우드 기반의 개발환경&lt;/strong&gt;을 구축하는 것도 고려해볼 만하다.&lt;/p&gt;
+&lt;p&gt;&lt;a class="link" href="https://devpod.sh/" target="_blank" rel="noopener"
+&gt;&lt;strong&gt;DevPod&lt;/strong&gt;&lt;/a&gt;는 DevContainer 설정을 거의 그대로 사용할 수 있는 오픈소스 도구로, 다양한 클라우드 프로바이더를 지원한다. 특히 &lt;strong&gt;Kubernetes 클러스터&lt;/strong&gt;를 프로바이더로 설정하면 다음과 같은 장점을 얻을 수 있다:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;확장성&lt;/strong&gt;: 필요에 따라 개발환경의 리소스를 동적으로 조정&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;격리성&lt;/strong&gt;: 각 개발자마다 완전히 독립된 네임스페이스에서 작업&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;중앙 관리&lt;/strong&gt;: 모든 개발환경을 Kubernetes 클러스터에서 통합 관리&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;비용 효율성&lt;/strong&gt;: 사용하지 않는 개발환경은 자동으로 종료하여 리소스 절약&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;DevContainer에서 작성한 &lt;code&gt;.devcontainer/devcontainer.json&lt;/code&gt; 설정을 DevPod에서도 거의 그대로 활용할 수 있으므로, 기존 설정을 최대한 재사용하면서 클라우드 환경으로 확장할 수 있다.&lt;/p&gt;
+&lt;p&gt;이를 통해 팀 전체가 동일한 클라우드 환경에서 개발할 수 있는 인프라를 구축할 계획이다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;참고 자료&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://containers.dev/" target="_blank" rel="noopener"
+&gt;DevContainer 공식 문서&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://containers.dev/features" target="_blank" rel="noopener"
+&gt;Available Features&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://containers.dev/implementors/json_reference/" target="_blank" rel="noopener"
+&gt;devcontainer.json 스펙&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>
